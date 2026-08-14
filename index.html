@@ -258,6 +258,36 @@
   .profile-stat{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 6px;text-align:center;min-width:0;}
   .profile-stat .value{font-size:15px;font-weight:800;color:var(--primary-dark);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .profile-stat .label{font-size:10.5px;color:var(--text-muted);line-height:1.3;}
+
+  /* ---------- withdraw ---------- */
+  .withdraw-method-list{display:flex;flex-direction:column;gap:10px;}
+  .withdraw-method{
+    display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid var(--border);
+    background:#fff;text-align:left;width:100%;
+    transition:transform .15s var(--ease), box-shadow .15s var(--ease), border-color .15s;
+  }
+  .withdraw-method:hover{border-color:transparent;box-shadow:var(--shadow-sm);transform:translateY(-1px);}
+  .withdraw-method:active{transform:scale(.98);}
+  .withdraw-method.disabled{opacity:.5;cursor:not-allowed;}
+  .wm-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;}
+  .wm-icon.bank{background:#166534;}
+  .wm-icon.airtime{background:#2563EB;}
+  .wm-icon.data{background:#7C3AED;}
+  .wm-icon svg{width:20px;height:20px;}
+  .wm-info{flex:1;min-width:0;}
+  .wm-info h4{font-size:14.5px;font-weight:700;margin-bottom:2px;}
+  .wm-info p{font-size:12px;color:var(--text-muted);}
+  .wm-chevron{width:18px;height:18px;color:var(--text-muted);flex-shrink:0;}
+  .withdraw-method-header{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+  .withdraw-method-header h3{font-size:17px;font-weight:800;}
+  .network-chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .network-chip{
+    padding:10px 16px;border-radius:11px;border:1.5px solid var(--border-strong);font-size:13.5px;font-weight:700;
+    background:#fff;color:var(--text);transition:background .15s var(--ease), color .15s var(--ease), border-color .15s var(--ease), transform .15s var(--ease);
+  }
+  .network-chip.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .network-chip:active{transform:scale(.94);}
+  .activity-amount-inline.debit{color:var(--danger);}
   .profile-btn span{font-size:13.5px;font-weight:600;}
   .profile-btn svg{width:15px;height:15px;color:var(--text-muted);}
 
@@ -914,6 +944,103 @@
       </section>
     </div>
 
+    <!-- WITHDRAW VIEW -->
+    <div id="withdrawView" hidden>
+      <div class="balance-card" style="margin-bottom:16px;">
+        <div class="balance-label">Available Balance</div>
+        <div class="balance-amount">₦<span id="withdrawAvailBalance">0.00</span></div>
+      </div>
+
+      <div id="withdrawMethodsStep">
+        <section class="panel">
+          <div class="panel-head"><h3>Choose a withdrawal method</h3></div>
+          <div class="withdraw-method-list">
+            <button type="button" class="withdraw-method" data-method="bank">
+              <div class="wm-icon bank"><svg data-lucide="landmark"></svg></div>
+              <div class="wm-info"><h4>Bank Transfer</h4><p>Nigerian banks · Min ₦500</p></div>
+              <svg data-lucide="chevron-right" class="wm-chevron"></svg>
+            </button>
+            <button type="button" class="withdraw-method" data-method="airtime">
+              <div class="wm-icon airtime"><svg data-lucide="smartphone"></svg></div>
+              <div class="wm-info"><h4>Airtime</h4><p>MTN, Glo, Airtel, 9mobile · Min ₦100</p></div>
+              <svg data-lucide="chevron-right" class="wm-chevron"></svg>
+            </button>
+            <button type="button" class="withdraw-method disabled" disabled>
+              <div class="wm-icon data"><svg data-lucide="wifi"></svg></div>
+              <div class="wm-info"><h4>Data</h4><p>Coming soon</p></div>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <div id="withdrawBankStep" hidden>
+        <button type="button" class="back-link" data-withdraw-back><svg data-lucide="arrow-left"></svg>Back</button>
+        <section class="panel">
+          <div class="withdraw-method-header">
+            <div class="wm-icon bank"><svg data-lucide="landmark"></svg></div>
+            <h3>Bank Transfer</h3>
+          </div>
+          <div class="field">
+            <label for="withdrawBankAmount">Amount (₦)</label>
+            <div class="input-wrap"><svg data-lucide="wallet"></svg><input type="number" id="withdrawBankAmount" placeholder="Minimum ₦500" min="500"></div>
+            <div class="field-error" id="withdrawBankAmountError"></div>
+          </div>
+          <div class="field">
+            <label for="withdrawBankName">Bank Name</label>
+            <div class="input-wrap"><svg data-lucide="landmark"></svg><input type="text" id="withdrawBankName" placeholder="e.g. GTBank, Access Bank"></div>
+            <div class="field-error" id="withdrawBankNameError"></div>
+          </div>
+          <div class="field">
+            <label for="withdrawBankAccount">Account Number</label>
+            <div class="input-wrap"><svg data-lucide="hash"></svg><input type="text" id="withdrawBankAccount" placeholder="10-digit account number" maxlength="10" inputmode="numeric"></div>
+            <div class="field-error" id="withdrawBankAccountError"></div>
+          </div>
+          <div class="field">
+            <label for="withdrawBankAccountName">Account Name</label>
+            <div class="input-wrap"><svg data-lucide="user"></svg><input type="text" id="withdrawBankAccountName" placeholder="Account holder's name"></div>
+            <div class="field-error" id="withdrawBankAccountNameError"></div>
+          </div>
+          <button type="button" class="btn btn-primary btn-block" id="withdrawBankSubmit"><span class="btn-label">Request Withdrawal</span></button>
+        </section>
+      </div>
+
+      <div id="withdrawAirtimeStep" hidden>
+        <button type="button" class="back-link" data-withdraw-back><svg data-lucide="arrow-left"></svg>Back</button>
+        <section class="panel">
+          <div class="withdraw-method-header">
+            <div class="wm-icon airtime"><svg data-lucide="smartphone"></svg></div>
+            <h3>Airtime</h3>
+          </div>
+          <div class="field">
+            <label>Network</label>
+            <div class="network-chips" id="airtimeNetworkChips">
+              <button type="button" class="network-chip" data-network="MTN">MTN</button>
+              <button type="button" class="network-chip" data-network="Glo">Glo</button>
+              <button type="button" class="network-chip" data-network="Airtel">Airtel</button>
+              <button type="button" class="network-chip" data-network="9mobile">9mobile</button>
+            </div>
+            <div class="field-error" id="withdrawAirtimeNetworkError"></div>
+          </div>
+          <div class="field">
+            <label for="withdrawAirtimePhone">Phone Number</label>
+            <div class="input-wrap"><svg data-lucide="phone"></svg><input type="tel" id="withdrawAirtimePhone" placeholder="e.g. 08012345678" maxlength="11" inputmode="numeric"></div>
+            <div class="field-error" id="withdrawAirtimePhoneError"></div>
+          </div>
+          <div class="field">
+            <label for="withdrawAirtimeAmount">Amount (₦)</label>
+            <div class="input-wrap"><svg data-lucide="wallet"></svg><input type="number" id="withdrawAirtimeAmount" placeholder="Minimum ₦100" min="100"></div>
+            <div class="field-error" id="withdrawAirtimeAmountError"></div>
+          </div>
+          <button type="button" class="btn btn-primary btn-block" id="withdrawAirtimeSubmit"><span class="btn-label">Request Withdrawal</span></button>
+        </section>
+      </div>
+
+      <section class="panel" style="margin-top:16px;">
+        <div class="panel-head"><h3>Your Withdrawal Requests</h3></div>
+        <div id="withdrawRequestsList"></div>
+      </section>
+    </div>
+
     <!-- COMING SOON VIEW -->
     <div id="comingSoonView" hidden>
       <div class="coming-soon-wrap">
@@ -1303,11 +1430,11 @@ const APP_ROUTES = {
   "/earn": { type: "coming", feature: "Earn", navKey: "earn" },
   "/referrals": { type: "referrals" },
   "/profile": { type: "profile" },
-  "/withdraw": { type: "coming", feature: "Withdrawals", navKey: null },
+  "/withdraw": { type: "withdraw" },
   "/history": { type: "history" },
 };
 const AUTH_ROUTES = { "/login": "login", "/signup": "signup", "/reset-password": "reset" };
-const ALL_VIEW_IDS = ["homeView", "tasksView", "historyView", "referralsView", "profileView", "comingSoonView"];
+const ALL_VIEW_IDS = ["homeView", "tasksView", "historyView", "referralsView", "profileView", "withdrawView", "comingSoonView"];
 
 function matchAppRoute(path) {
   if (APP_ROUTES[path]) return APP_ROUTES[path];
@@ -1360,6 +1487,13 @@ function renderProfileUI() {
   renderProfilePage();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
+function renderWithdrawUI() {
+  showView("withdrawView");
+  setActiveNav(null);
+  showWithdrawStep("withdrawMethodsStep");
+  renderWithdrawPage();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 function renderComingSoonUI(feature, navKey) {
   $("comingSoonFeature").textContent = feature;
   showView("comingSoonView");
@@ -1387,6 +1521,8 @@ function renderRoute() {
       renderReferralsUI();
     } else if (match.type === "profile") {
       renderProfileUI();
+    } else if (match.type === "withdraw") {
+      renderWithdrawUI();
     } else {
       renderComingSoonUI(match.feature, match.navKey);
     }
@@ -1742,6 +1878,23 @@ function formatFullDate(date) {
 }
 
 let profileCreatedDate = new Date();
+function txIcon(t) {
+  if (t.type === "referral_reward") return "users";
+  if (t.type === "withdrawal") return "landmark";
+  if (t.type === "withdrawal_refund") return "rotate-ccw";
+  return "check-circle";
+}
+function txAmountHtml(t) {
+  const isDebit = t.amount < 0;
+  return `<div class="activity-amount-inline${isDebit ? " debit" : ""}">${isDebit ? "-" : "+"}₦${formatMoney(Math.abs(t.amount))}</div>`;
+}
+function txLabel(t) {
+  if (t.type === "referral_reward") return "Referral reward";
+  if (t.type === "withdrawal") return "Withdrawal request";
+  if (t.type === "withdrawal_refund") return "Refund";
+  return "Task reward";
+}
+
 function renderActivity() {
   const container = $("activityList");
   if (!myTransactions.length) {
@@ -1759,13 +1912,13 @@ function renderActivity() {
   }
   container.innerHTML = myTransactions.slice(0, 5).map((t) => `
     <div class="activity-row">
-      <div class="activity-icon"><svg data-lucide="${t.type === "referral_reward" ? "users" : "check-circle"}"></svg></div>
+      <div class="activity-icon"><svg data-lucide="${txIcon(t)}"></svg></div>
       <div class="activity-info">
         <h5>${t.description}</h5>
-        <p>${t.type === "referral_reward" ? "Referral reward" : "Task reward"}</p>
+        <p>${txLabel(t)}</p>
       </div>
       <div class="activity-trailing">
-        <div class="activity-amount-inline">+₦${formatMoney(t.amount)}</div>
+        ${txAmountHtml(t)}
         <div class="activity-time">${timeAgo(txDate(t))}</div>
       </div>
     </div>
@@ -1818,12 +1971,12 @@ function renderHistoryPage() {
   }
   container.innerHTML = myTransactions.map((t) => `
     <div class="activity-row">
-      <div class="activity-icon"><svg data-lucide="${t.type === "referral_reward" ? "users" : t.type === "withdrawal" ? "landmark" : "check-circle"}"></svg></div>
+      <div class="activity-icon"><svg data-lucide="${txIcon(t)}"></svg></div>
       <div class="activity-info">
         <h5>${t.description}</h5>
         <p>${formatFullDate(txDate(t))}</p>
       </div>
-      <div class="activity-trailing"><div class="activity-amount-inline">+₦${formatMoney(t.amount)}</div></div>
+      <div class="activity-trailing">${txAmountHtml(t)}</div>
     </div>
   `).join("");
   refreshIcons();
@@ -1874,6 +2027,171 @@ function renderReferralsPage() {
     </div>`;
   }).join("");
   refreshIcons();
+}
+
+/* ---------------- withdrawals ---------------- */
+const WITHDRAW_MIN = { bank: 500, airtime: 100 };
+let myWithdrawals = [];
+let selectedAirtimeNetwork = null;
+
+async function loadWithdrawals() {
+  if (!currentUser) { myWithdrawals = []; return; }
+  try {
+    const q = query(collection(db, "withdrawals"), where("userId", "==", currentUser.uid));
+    const snap = await getDocs(q);
+    myWithdrawals = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    myWithdrawals.sort((a, b) => txDate(b).getTime() - txDate(a).getTime());
+  } catch (e) {
+    myWithdrawals = [];
+  }
+}
+
+function withdrawStatusMeta(status) {
+  if (status === "completed") return { icon: "check-circle", label: "Completed", cls: "" };
+  if (status === "rejected") return { icon: "x-circle", label: "Rejected", cls: "rejected" };
+  return { icon: "clock", label: "Pending", cls: "pending" };
+}
+
+function renderWithdrawPage() {
+  $("withdrawAvailBalance").textContent = formatMoney(currentProfile?.balance || 0);
+
+  const container = $("withdrawRequestsList");
+  if (!myWithdrawals.length) {
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="inbox"></svg><p>No withdrawal requests yet.</p></div>`;
+    refreshIcons();
+    return;
+  }
+  container.innerHTML = myWithdrawals.map((w) => {
+    const meta = withdrawStatusMeta(w.status);
+    const detail = w.method === "bank"
+      ? `${w.details?.bankName || ""} · ${w.details?.accountNumber || ""}`
+      : `${w.details?.network || ""} · ${w.details?.phone || ""}`;
+    return `
+    <div class="activity-row">
+      <div class="activity-icon"><svg data-lucide="${w.method === "bank" ? "landmark" : "smartphone"}"></svg></div>
+      <div class="activity-info">
+        <h5>₦${formatMoney(w.amount)} — ${w.method === "bank" ? "Bank Transfer" : "Airtime"}</h5>
+        <p>${detail}</p>
+      </div>
+      <div class="task-card-status ${meta.cls}"><svg data-lucide="${meta.icon}"></svg>${meta.label}</div>
+    </div>`;
+  }).join("");
+  refreshIcons();
+}
+
+function showWithdrawStep(step) {
+  ["withdrawMethodsStep", "withdrawBankStep", "withdrawAirtimeStep"].forEach((id) => {
+    $(id).hidden = id !== step;
+  });
+}
+$$(".withdraw-method[data-method]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    haptic();
+    const method = btn.dataset.method;
+    showWithdrawStep(method === "bank" ? "withdrawBankStep" : "withdrawAirtimeStep");
+  });
+});
+$$("[data-withdraw-back]").forEach((btn) => {
+  btn.addEventListener("click", () => { haptic(); showWithdrawStep("withdrawMethodsStep"); });
+});
+$$("#airtimeNetworkChips .network-chip").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    haptic();
+    selectedAirtimeNetwork = chip.dataset.network;
+    $$("#airtimeNetworkChips .network-chip").forEach((c) => c.classList.toggle("active", c === chip));
+    clearFieldError("withdrawAirtimeNetwork");
+  });
+});
+
+async function submitWithdrawal(method, amount, details, btn) {
+  const available = currentProfile?.balance || 0;
+  if (amount > available) { toast("You don't have enough balance for this withdrawal.", "error"); return; }
+  setLoading(btn, true);
+  try {
+    await updateDoc(doc(db, "users", currentUser.uid), { balance: increment(-amount) });
+    await addDoc(collection(db, "withdrawals"), {
+      userId: currentUser.uid,
+      method,
+      amount,
+      details,
+      status: "pending",
+      refunded: false,
+      createdAt: serverTimestamp(),
+    });
+    const desc = method === "bank"
+      ? `Withdrawal — Bank transfer to ${details.accountNumber}`
+      : `Withdrawal — ₦${amount} ${details.network} airtime to ${details.phone}`;
+    await addDoc(collection(db, "transactions"), {
+      userId: currentUser.uid,
+      type: "withdrawal",
+      amount: -amount,
+      description: desc,
+      createdAt: serverTimestamp(),
+    });
+    currentProfile.balance = available - amount;
+    renderDashboard(currentUser, currentProfile);
+    await Promise.all([loadWithdrawals(), loadTransactions()]);
+    renderWithdrawPage();
+    renderHistoryPage();
+    renderActivity();
+    haptic(15);
+    toast("Withdrawal request submitted. We'll process it shortly.", "success");
+    showWithdrawStep("withdrawMethodsStep");
+  } catch (e) {
+    toast("Could not submit your withdrawal request. Try again.", "error");
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+$("withdrawBankSubmit").addEventListener("click", async () => {
+  clearFormErrors(["withdrawBankAmount", "withdrawBankName", "withdrawBankAccount", "withdrawBankAccountName"]);
+  const amount = Number($("withdrawBankAmount").value);
+  const bankName = $("withdrawBankName").value.trim();
+  const accountNumber = $("withdrawBankAccount").value.trim();
+  const accountName = $("withdrawBankAccountName").value.trim();
+  let valid = true;
+  if (!amount || amount < WITHDRAW_MIN.bank) { showFieldError("withdrawBankAmount", `Minimum withdrawal is ₦${WITHDRAW_MIN.bank}.`); valid = false; }
+  if (!bankName) { showFieldError("withdrawBankName", "Please enter your bank name."); valid = false; }
+  if (!/^\d{10}$/.test(accountNumber)) { showFieldError("withdrawBankAccount", "Enter a valid 10-digit account number."); valid = false; }
+  if (!accountName) { showFieldError("withdrawBankAccountName", "Please enter the account holder's name."); valid = false; }
+  if (!valid) return;
+  await submitWithdrawal("bank", amount, { bankName, accountNumber, accountName }, $("withdrawBankSubmit"));
+});
+
+$("withdrawAirtimeSubmit").addEventListener("click", async () => {
+  clearFormErrors(["withdrawAirtimePhone", "withdrawAirtimeAmount"]);
+  const amount = Number($("withdrawAirtimeAmount").value);
+  const phone = $("withdrawAirtimePhone").value.trim();
+  let valid = true;
+  if (!selectedAirtimeNetwork) { showFieldError("withdrawAirtimeNetwork", "Please select a network."); valid = false; }
+  if (!/^0\d{10}$/.test(phone)) { showFieldError("withdrawAirtimePhone", "Enter a valid 11-digit phone number."); valid = false; }
+  if (!amount || amount < WITHDRAW_MIN.airtime) { showFieldError("withdrawAirtimeAmount", `Minimum withdrawal is ₦${WITHDRAW_MIN.airtime}.`); valid = false; }
+  if (!valid) return;
+  await submitWithdrawal("airtime", amount, { network: selectedAirtimeNetwork, phone }, $("withdrawAirtimeSubmit"));
+});
+
+async function refundRejectedWithdrawals() {
+  let refundedAny = false;
+  for (const w of myWithdrawals) {
+    if (w.status !== "rejected" || w.refunded) continue;
+    try {
+      await updateDoc(doc(db, "users", currentUser.uid), { balance: increment(w.amount) });
+      await addDoc(collection(db, "transactions"), {
+        userId: currentUser.uid,
+        type: "withdrawal_refund",
+        amount: w.amount,
+        description: `Withdrawal request refunded (${w.method === "bank" ? "Bank Transfer" : "Airtime"})`,
+        createdAt: serverTimestamp(),
+      });
+      await updateDoc(doc(db, "withdrawals", w.id), { refunded: true });
+      w.refunded = true;
+      refundedAny = true;
+    } catch (e) {
+      break;
+    }
+  }
+  return refundedAny;
 }
 
 /* ---------------- crediting: task rewards + referral rewards ---------------- */
@@ -1957,7 +2275,8 @@ async function runCreditingPipeline() {
   const a = await creditApprovedTaskRewards();
   await syncMyReferralProgress();
   const b = await creditEligibleReferralRewards();
-  return a || b;
+  const c = await refundRejectedWithdrawals();
+  return a || b || c;
 }
 
 /* ---------------- profile page ---------------- */
@@ -2048,7 +2367,7 @@ onAuthStateChanged(auth, async (user) => {
 
     if (isNewProfile) await finalizeNewUserExtras(user, profile);
 
-    await Promise.all([loadTasks(), loadReferrals()]);
+    await Promise.all([loadTasks(), loadReferrals(), loadWithdrawals()]);
     const credited = await runCreditingPipeline();
     if (credited) {
       try {
@@ -2056,18 +2375,22 @@ onAuthStateChanged(auth, async (user) => {
         if (freshSnap.exists()) currentProfile = freshSnap.data();
       } catch (e) { /* keep in-memory profile */ }
       renderDashboard(user, currentProfile);
+      await loadWithdrawals();
     }
     await loadTransactions();
     renderActivity();
     renderHistoryPage();
     renderReferralsPage();
     renderProfilePage();
+    renderWithdrawPage();
   } else {
     currentUser = null;
     currentProfile = null;
     myTransactions = [];
     myReferralAsReferred = null;
     myReferralsAsReferrer = [];
+    myWithdrawals = [];
+    selectedAirtimeNetwork = null;
     $("loginForm").reset();
     $("signupForm").reset();
     prefillReferralField();
