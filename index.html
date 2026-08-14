@@ -123,6 +123,19 @@
   .toast svg{width:18px;height:18px;flex-shrink:0;}
   @keyframes toastIn{from{opacity:0;transform:translateY(-10px) scale(.96);}to{opacity:1;transform:none;}}
 
+  /* ---------- splash ---------- */
+  #splashScreen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(1000px 500px at 15% -5%, var(--primary-light) 0%, transparent 60%),
+      radial-gradient(800px 500px at 105% 15%, #EFFDF4 0%, transparent 55%),
+      var(--bg);
+  }
+  .splash-inner{display:flex;flex-direction:column;align-items:center;gap:18px;}
+  .splash-logo{width:56px;height:56px;object-fit:contain;animation:splashPulse 1.6s ease-in-out infinite;}
+  @keyframes splashPulse{0%,100%{opacity:.55;transform:scale(.94);}50%{opacity:1;transform:scale(1);}}
+  .splash-spinner{width:28px;height:28px;border-radius:50%;border:3px solid var(--border-strong);border-top-color:var(--primary);animation:spin .8s linear infinite;}
+
   /* ================= AUTH ================= */
   #authScreen{
     min-height:100vh;display:flex;align-items:center;justify-content:center;
@@ -401,6 +414,28 @@
   .bn-fab-circle svg{width:20px;height:20px;}
   .bn-fab:active .bn-fab-circle{transform:translateY(-14px) scale(.9);}
 
+  @media (max-width:480px){
+    .balance-amount{font-size:30px;}
+    .balance-label{font-size:14px;}
+    .stat-pill .value{font-size:18px;}
+    .stat-pill .label{font-size:12.5px;}
+    .task-info h4{font-size:14.5px;}
+    .task-info p{font-size:13px;}
+    .task-meta{font-size:12px;}
+    .task-reward .amount{font-size:14.5px;}
+    .task-reward .label{font-size:11.5px;}
+    .activity-info h5{font-size:13.5px;}
+    .activity-info p{font-size:12.5px;}
+    .activity-time{font-size:12px;}
+    .referral-text p{font-size:12.5px;}
+    .referral-link-preview{font-size:12px;}
+    .bn-item span{font-size:11px;}
+    .qa-card{padding:17px;}
+    .qa-card h4{font-size:14.5px;}
+    .qa-card p{font-size:12.5px;}
+    .panel{padding:20px;}
+  }
+
   @media (min-width:1024px){
     .sidebar{display:flex;}
     .bottom-nav{display:none;}
@@ -421,8 +456,16 @@
 
 <div id="toastRoot"></div>
 
+<!-- ================= SPLASH / SKELETON LOADING ================= -->
+<div id="splashScreen">
+  <div class="splash-inner">
+    <img class="splash-logo" src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="Rare Earners">
+    <div class="splash-spinner"></div>
+  </div>
+</div>
+
 <!-- ================= AUTH SCREEN ================= -->
-<div id="authScreen">
+<div id="authScreen" hidden>
   <div class="auth-card glass">
 
     <div class="auth-brand">
@@ -522,6 +565,13 @@
             <button type="button" class="toggle-pw" data-toggle="signupConfirm"><svg data-lucide="eye"></svg></button>
           </div>
           <div class="field-error" id="signupConfirmError"></div>
+        </div>
+        <div class="field">
+          <label for="signupReferral">Referral code <span style="font-weight:400;">(optional)</span></label>
+          <div class="input-wrap">
+            <svg data-lucide="gift"></svg>
+            <input type="text" id="signupReferral" autocomplete="off" placeholder="Enter a referral code">
+          </div>
         </div>
         <button type="submit" class="btn btn-primary btn-block" id="signupSubmitBtn">
           <span class="btn-label">Create account</span>
@@ -892,19 +942,36 @@ function showAuthView(view) {
   $("signupView").hidden = view !== "signup";
   $("resetView").hidden = view !== "reset";
 }
-$("goSignup").addEventListener("click", () => { haptic(); showAuthView("signup"); });
-$("goLogin").addEventListener("click", () => { haptic(); showAuthView("login"); });
-$("forgotLink").addEventListener("click", (e) => { e.preventDefault(); haptic(); showAuthView("reset"); });
-$("backToLogin").addEventListener("click", () => { haptic(); showAuthView("login"); });
+$("goSignup").addEventListener("click", () => { haptic(); navigate("/signup"); });
+$("goLogin").addEventListener("click", () => { haptic(); navigate("/login"); });
+$("forgotLink").addEventListener("click", (e) => { e.preventDefault(); haptic(); navigate("/reset-password"); });
+$("backToLogin").addEventListener("click", () => { haptic(); navigate("/login"); });
 
 /* ---------------- referral capture ---------------- */
+function prefillReferralField() {
+  const stored = localStorage.getItem("pendingReferral");
+  if (stored) {
+    const field = $("signupReferral");
+    if (field) field.value = stored;
+  }
+}
 (function captureReferral() {
   const params = new URLSearchParams(location.search);
   const ref = params.get("ref");
   if (ref) localStorage.setItem("pendingReferral", ref);
+  prefillReferralField();
 })();
 
-function buildDefaultProfile(user, nameOverride) {
+function toSlug(str) {
+  return (str || "")
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildDefaultProfile(user, nameOverride, referredByOverride) {
   const fallbackName = user.email ? user.email.split("@")[0] : "User";
   const name = nameOverride || user.displayName || fallbackName;
   const username = slugify(name) || slugify(fallbackName) || user.uid.slice(0, 6);
@@ -916,7 +983,7 @@ function buildDefaultProfile(user, nameOverride) {
     todayEarnings: 0,
     totalEarned: 0,
     referralCode: username,
-    referredBy: localStorage.getItem("pendingReferral") || null,
+    referredBy: referredByOverride !== undefined ? referredByOverride : (localStorage.getItem("pendingReferral") || null),
     createdAt: serverTimestamp(),
   };
 }
@@ -930,6 +997,7 @@ $("signupForm").addEventListener("submit", async (e) => {
   const email = $("signupEmail").value.trim();
   const password = $("signupPassword").value;
   const confirm = $("signupConfirm").value;
+  const referral = $("signupReferral").value.trim();
   let valid = true;
 
   if (name.length < 2) { showFieldError("signupName", "Please enter your full name."); valid = false; }
@@ -946,7 +1014,7 @@ $("signupForm").addEventListener("submit", async (e) => {
     await updateProfile(cred.user, { displayName: name });
 
     try {
-      await setDoc(doc(db, "users", cred.user.uid), buildDefaultProfile(cred.user, name));
+      await setDoc(doc(db, "users", cred.user.uid), buildDefaultProfile(cred.user, name, referral || null));
       localStorage.removeItem("pendingReferral");
     } catch (profileErr) {
       toast("Account created, but saving your profile failed. We'll retry automatically.", "error");
@@ -1051,34 +1119,93 @@ $("menuBtn").addEventListener("click", () => { haptic(); openDrawer(); });
 $("drawerCloseBtn").addEventListener("click", () => { haptic(); closeDrawer(); });
 $("drawerOverlay").addEventListener("click", closeDrawer);
 
-/* ---------------- home / coming-soon navigation ---------------- */
+/* ---------------- routing ---------------- */
+let currentUser = null;
+
+const APP_ROUTES = {
+  "/home": { type: "home" },
+  "/tasks": { type: "coming", feature: "Tasks", navKey: "tasks" },
+  "/earn": { type: "coming", feature: "Earn", navKey: "earn" },
+  "/referrals": { type: "coming", feature: "Referrals", navKey: "referrals" },
+  "/profile": { type: "coming", feature: "Profile", navKey: "profile" },
+  "/withdraw": { type: "coming", feature: "Withdrawals", navKey: null },
+  "/history": { type: "coming", feature: "Earnings history", navKey: null },
+};
+const AUTH_ROUTES = { "/login": "login", "/signup": "signup", "/reset-password": "reset" };
+
+function matchAppRoute(path) {
+  if (APP_ROUTES[path]) return APP_ROUTES[path];
+  const m = path.match(/^\/tasks\/([a-z0-9-]+)$/);
+  if (m) {
+    const task = TASKS.find((t) => toSlug(t.name) === m[1]);
+    return { type: "coming", feature: task ? task.name : "This task", navKey: "tasks" };
+  }
+  return null;
+}
+
+function navigate(path, opts = {}) {
+  if (location.pathname !== path) {
+    if (opts.replace) history.replaceState({}, "", path);
+    else history.pushState({}, "", path);
+  }
+  renderRoute();
+}
+
 function setActiveNav(key) {
   $$("[data-view]").forEach((el) => el.classList.toggle("active", key !== null && el.dataset.view === key));
 }
-function showHome() {
+function renderHomeUI() {
   $("comingSoonView").hidden = true;
   $("homeView").hidden = false;
   setActiveNav("home");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
-function showComingSoon(feature, navKey) {
+function renderComingSoonUI(feature, navKey) {
   $("comingSoonFeature").textContent = feature;
   $("homeView").hidden = true;
   $("comingSoonView").hidden = false;
   setActiveNav(navKey ?? null);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
+
+function renderRoute() {
+  const path = location.pathname;
+  $("splashScreen").hidden = true;
+  if (currentUser) {
+    $("authScreen").hidden = true;
+    $("dashboardScreen").hidden = false;
+    const match = matchAppRoute(path);
+    if (!match) {
+      history.replaceState({}, "", "/home");
+      renderHomeUI();
+    } else if (match.type === "home") {
+      renderHomeUI();
+    } else {
+      renderComingSoonUI(match.feature, match.navKey);
+    }
+  } else {
+    $("dashboardScreen").hidden = true;
+    $("authScreen").hidden = false;
+    if (AUTH_ROUTES[path]) {
+      showAuthView(AUTH_ROUTES[path]);
+    } else {
+      history.replaceState({}, "", "/signup");
+      showAuthView("signup");
+    }
+  }
+}
+window.addEventListener("popstate", renderRoute);
+
 $$("[data-view]").forEach((el) => {
   el.addEventListener("click", (e) => {
     e.preventDefault();
     haptic();
     closeDrawer();
     const view = el.dataset.view;
-    if (view === "home") showHome();
-    else showComingSoon(el.dataset.feature || "This feature", view);
+    navigate(view === "home" ? "/home" : "/" + view);
   });
 });
-$("backToHomeBtn").addEventListener("click", () => { haptic(); showHome(); });
+$("backToHomeBtn").addEventListener("click", () => { haptic(); navigate("/home"); });
 
 function scrollToPanel(id) {
   const target = $(id);
@@ -1086,12 +1213,12 @@ function scrollToPanel(id) {
 }
 $("qaTasks").addEventListener("click", () => { haptic(); scrollToPanel("tasksPanel"); });
 $("qaReferrals").addEventListener("click", () => { haptic(); scrollToPanel("referralPanel"); });
-$("qaWithdraw").addEventListener("click", () => { haptic(); showComingSoon("Withdrawals", null); });
-$("qaHistory").addEventListener("click", () => { haptic(); showComingSoon("Earnings history", null); });
-$("withdrawBtn").addEventListener("click", () => { haptic(); showComingSoon("Withdrawals", null); });
-$("taskFilterBtn").addEventListener("click", () => { haptic(); showComingSoon("Task filters", null); });
-$("tasksViewAll").addEventListener("click", (e) => { e.preventDefault(); haptic(); showComingSoon("Tasks", null); });
-$("activityViewAll").addEventListener("click", (e) => { e.preventDefault(); haptic(); showComingSoon("Activity history", null); });
+$("qaWithdraw").addEventListener("click", () => { haptic(); navigate("/withdraw"); });
+$("qaHistory").addEventListener("click", () => { haptic(); navigate("/history"); });
+$("withdrawBtn").addEventListener("click", () => { haptic(); navigate("/withdraw"); });
+$("taskFilterBtn").addEventListener("click", () => { haptic(); navigate("/tasks"); });
+$("tasksViewAll").addEventListener("click", (e) => { e.preventDefault(); haptic(); navigate("/tasks"); });
+$("activityViewAll").addEventListener("click", (e) => { e.preventDefault(); haptic(); navigate("/history"); });
 
 /* ---------------- balance visibility ---------------- */
 let balanceHidden = false;
@@ -1167,7 +1294,10 @@ function renderTasks(list) {
   `).join("");
   refreshIcons();
   $$("[data-task]", container).forEach((btn) => {
-    btn.addEventListener("click", () => showComingSoon("This task", null));
+    btn.addEventListener("click", () => {
+      const task = TASKS.find((t) => t.id === btn.dataset.task);
+      navigate(`/tasks/${toSlug(task ? task.name : "task")}`);
+    });
   });
 
   const completed = 0;
@@ -1272,18 +1402,17 @@ onAuthStateChanged(auth, async (user) => {
         // Firestore still unreachable/denied — proceed with in-memory defaults.
       }
     }
-    showHome();
+    currentUser = user;
     renderDashboard(user, profile);
-    $("authScreen").hidden = true;
-    $("dashboardScreen").hidden = false;
+    renderRoute();
     refreshIcons();
   } else {
-    $("dashboardScreen").hidden = true;
-    $("authScreen").hidden = false;
+    currentUser = null;
     $("loginForm").reset();
     $("signupForm").reset();
+    prefillReferralField();
     clearFormErrors(["loginEmail", "loginPassword", "signupName", "signupEmail", "signupPassword", "signupConfirm"]);
-    showAuthView("signup");
+    renderRoute();
     refreshIcons();
   }
 });
