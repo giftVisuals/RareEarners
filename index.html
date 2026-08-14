@@ -288,6 +288,68 @@
   .network-chip.active{background:var(--primary);color:#fff;border-color:var(--primary);}
   .network-chip:active{transform:scale(.94);}
   .activity-amount-inline.debit{color:var(--danger);}
+
+  /* ---------- bank select + picker ---------- */
+  .bank-select-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+    padding:12px 14px;border-radius:12px;border:1px solid var(--border-strong);background:#fff;
+    transition:border-color .15s var(--ease), transform .15s var(--ease);
+  }
+  .bank-select-row:active{transform:scale(.98);}
+  .bank-select-row.has-bank{border-color:var(--primary);}
+  .bank-select-row-left{display:flex;align-items:center;gap:10px;min-width:0;}
+  .bank-select-placeholder{font-size:14px;color:var(--text-muted);}
+  .bank-badge{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;font-size:11px;font-weight:800;letter-spacing:-.02em;}
+  .bank-select-row-left .bank-name{font-size:14px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .bank-verify-pill{
+    display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;
+    background:var(--primary-light);border:1px solid rgba(22,163,74,.25);margin:-4px 0 16px;
+  }
+  .bank-verify-pill svg{width:18px;height:18px;color:var(--primary-dark);flex-shrink:0;margin-top:1px;}
+  .bvp-label{font-size:12.5px;font-weight:700;color:var(--primary-dark);}
+  .bvp-name{font-size:12px;color:var(--text-muted);margin-top:1px;}
+  .field-hint{font-size:11.5px;color:var(--text-muted);margin-top:6px;line-height:1.4;}
+
+  .bank-picker-overlay{
+    position:fixed;inset:0;z-index:120;background:rgba(15,23,42,.45);
+    opacity:0;pointer-events:none;transition:opacity .2s var(--ease);
+  }
+  .bank-picker-overlay.show{opacity:1;pointer-events:auto;}
+  .bank-picker-sheet{
+    position:absolute;left:0;right:0;bottom:0;top:0;background:var(--bg);
+    display:flex;flex-direction:column;transform:translateY(16px);opacity:0;transition:transform .22s var(--ease), opacity .22s var(--ease);
+  }
+  .bank-picker-overlay.show .bank-picker-sheet{transform:translateY(0);opacity:1;}
+  @media (min-width:640px){
+    .bank-picker-sheet{top:5%;bottom:5%;left:50%;right:auto;width:min(440px,92vw);transform:translate(-50%,16px);border-radius:20px;box-shadow:var(--shadow-lg);overflow:hidden;}
+    .bank-picker-overlay.show .bank-picker-sheet{transform:translate(-50%,0);}
+  }
+  .bank-picker-head{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--border);background:#fff;flex-shrink:0;}
+  .bank-picker-head h3{font-size:16px;font-weight:800;flex:1;}
+  .bank-picker-close{width:34px;height:34px;border-radius:10px;background:var(--bg);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s var(--ease);}
+  .bank-picker-close:active{transform:scale(.9);}
+  .bank-picker-close svg{width:16px;height:16px;}
+  .bank-picker-search{padding:12px 16px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .bank-picker-search .input-wrap{margin:0;}
+  .bank-picker-body{flex:1;overflow-y:auto;padding:16px;position:relative;}
+  .bank-section-label{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em;margin:4px 0 10px;}
+  .bank-frequent-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;}
+  .bank-frequent-item{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 6px;border-radius:14px;background:#fff;border:1px solid var(--border);text-align:center;transition:transform .15s var(--ease), border-color .15s;}
+  .bank-frequent-item:active{transform:scale(.95);}
+  .bank-frequent-item .bank-badge{width:38px;height:38px;font-size:12.5px;}
+  .bank-frequent-item span{font-size:11px;font-weight:600;color:var(--text);line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+  .bank-list-item{display:flex;align-items:center;gap:12px;width:100%;padding:10px 4px;text-align:left;border-bottom:1px solid var(--border);}
+  .bank-list-item:active{background:var(--primary-light);}
+  .bank-list-item .bank-name{font-size:13.5px;font-weight:600;color:var(--text);}
+  .bank-letter-group{scroll-margin-top:8px;}
+  .bank-letter-heading{font-size:12px;font-weight:800;color:var(--primary-dark);padding:10px 4px 4px;}
+  .bank-index-sidebar{
+    position:absolute;right:2px;top:16px;bottom:16px;display:flex;flex-direction:column;justify-content:center;
+    gap:1px;padding:4px 3px;
+  }
+  .bank-index-letter{font-size:9px;font-weight:700;color:var(--text-muted);line-height:1.35;padding:0 3px;cursor:pointer;user-select:none;}
+  .bank-index-letter:active{color:var(--primary-dark);}
+  .bank-picker-empty{text-align:center;padding:40px 16px;color:var(--text-muted);font-size:13px;}
   .profile-btn span{font-size:13.5px;font-weight:600;}
   .profile-btn svg{width:15px;height:15px;color:var(--text-muted);}
 
@@ -978,17 +1040,7 @@
         <section class="panel">
           <div class="withdraw-method-header">
             <div class="wm-icon bank"><svg data-lucide="landmark"></svg></div>
-            <h3>Bank Transfer</h3>
-          </div>
-          <div class="field">
-            <label for="withdrawBankAmount">Amount (₦)</label>
-            <div class="input-wrap"><svg data-lucide="wallet"></svg><input type="number" id="withdrawBankAmount" placeholder="Minimum ₦500" min="500"></div>
-            <div class="field-error" id="withdrawBankAmountError"></div>
-          </div>
-          <div class="field">
-            <label for="withdrawBankName">Bank Name</label>
-            <div class="input-wrap"><svg data-lucide="landmark"></svg><input type="text" id="withdrawBankName" placeholder="e.g. GTBank, Access Bank"></div>
-            <div class="field-error" id="withdrawBankNameError"></div>
+            <h3>Transfer to Bank Account</h3>
           </div>
           <div class="field">
             <label for="withdrawBankAccount">Account Number</label>
@@ -996,12 +1048,55 @@
             <div class="field-error" id="withdrawBankAccountError"></div>
           </div>
           <div class="field">
+            <label>Select Bank</label>
+            <button type="button" class="bank-select-row" id="bankSelectTrigger">
+              <span class="bank-select-row-left" id="bankSelectRowLeft"><span class="bank-select-placeholder">Choose your bank</span></span>
+              <svg data-lucide="chevron-right" class="wm-chevron"></svg>
+            </button>
+            <div class="field-error" id="withdrawBankCodeError"></div>
+          </div>
+          <div class="bank-verify-pill" id="bankVerifyPill" hidden>
+            <svg data-lucide="check-circle-2"></svg>
+            <div>
+              <p class="bvp-label">Account number verified</p>
+              <p class="bvp-name" id="bankVerifyText"></p>
+            </div>
+          </div>
+          <div class="field" id="withdrawBankAccountNameField" hidden>
             <label for="withdrawBankAccountName">Account Name</label>
-            <div class="input-wrap"><svg data-lucide="user"></svg><input type="text" id="withdrawBankAccountName" placeholder="Account holder's name"></div>
+            <div class="input-wrap"><svg data-lucide="user"></svg><input type="text" id="withdrawBankAccountName" placeholder="Enter the name on this bank account"></div>
             <div class="field-error" id="withdrawBankAccountNameError"></div>
+            <p class="field-hint">Make sure this matches your bank statement exactly — wrong details can send your money to the wrong account.</p>
+          </div>
+          <div class="field">
+            <label for="withdrawBankAmount">Amount (₦)</label>
+            <div class="input-wrap"><svg data-lucide="wallet"></svg><input type="number" id="withdrawBankAmount" placeholder="Minimum ₦500" min="500"></div>
+            <div class="field-error" id="withdrawBankAmountError"></div>
           </div>
           <button type="button" class="btn btn-primary btn-block" id="withdrawBankSubmit"><span class="btn-label">Request Withdrawal</span></button>
         </section>
+      </div>
+
+      <div class="bank-picker-overlay" id="bankPickerOverlay">
+        <div class="bank-picker-sheet">
+          <div class="bank-picker-head">
+            <h3>Select Bank</h3>
+            <button type="button" class="bank-picker-close" id="bankPickerClose"><svg data-lucide="x"></svg></button>
+          </div>
+          <div class="bank-picker-search">
+            <div class="input-wrap"><svg data-lucide="search"></svg><input type="text" id="bankPickerSearch" placeholder="Search bank name"></div>
+          </div>
+          <div class="bank-picker-body" id="bankPickerBody">
+            <div id="bankFrequentSection">
+              <p class="bank-section-label">Frequently Used Bank</p>
+              <div class="bank-frequent-grid" id="bankFrequentGrid"></div>
+            </div>
+            <p class="bank-section-label">All Banks</p>
+            <div id="bankFullList"></div>
+            <div class="bank-picker-empty" id="bankPickerEmpty" hidden>No bank found matching your search.</div>
+            <div class="bank-index-sidebar" id="bankIndexSidebar"></div>
+          </div>
+        </div>
       </div>
 
       <div id="withdrawAirtimeStep" hidden>
@@ -2034,6 +2129,178 @@ const WITHDRAW_MIN = { bank: 500, airtime: 100 };
 let myWithdrawals = [];
 let selectedAirtimeNetwork = null;
 
+/* ---------------- bank picker + NUBAN check ---------------- */
+const NIGERIA_BANKS = [
+  { name: "Access Bank", code: "044", abbr: "AB", color: "#F58220" },
+  { name: "Carbon", code: "565", abbr: "CB", color: "#1A1A2E" },
+  { name: "Citibank Nigeria", code: "023", abbr: "CI", color: "#003D79" },
+  { name: "Ecobank Nigeria", code: "050", abbr: "EB", color: "#002F6C" },
+  { name: "Fidelity Bank", code: "070", abbr: "FB", color: "#8B1C23" },
+  { name: "First Bank of Nigeria", code: "011", abbr: "FB", color: "#00205B" },
+  { name: "First City Monument Bank", code: "214", abbr: "FC", color: "#593F97" },
+  { name: "Globus Bank", code: "00103", abbr: "GB", color: "#6D2077" },
+  { name: "GTBank (Guaranty Trust Bank)", code: "058", abbr: "GT", color: "#FF6600" },
+  { name: "Heritage Bank", code: "030", abbr: "HB", color: "#6E1E78" },
+  { name: "Jaiz Bank", code: "301", abbr: "JB", color: "#00693E" },
+  { name: "Keystone Bank", code: "082", abbr: "KB", color: "#6E2585" },
+  { name: "Kuda Microfinance Bank", code: "50211", abbr: "KU", color: "#40196D" },
+  { name: "Lotus Bank", code: "303", abbr: "LB", color: "#00A651" },
+  { name: "Moniepoint MFB", code: "50515", abbr: "MP", color: "#103D34" },
+  { name: "OPay (Paycom)", code: "999992", abbr: "OP", color: "#1BC47D" },
+  { name: "PalmPay", code: "999991", abbr: "PP", color: "#7B2FF7" },
+  { name: "Parallex Bank", code: "104", abbr: "PB", color: "#C8102E" },
+  { name: "Polaris Bank", code: "076", abbr: "PL", color: "#8DC63F" },
+  { name: "Premium Trust Bank", code: "105", abbr: "PT", color: "#004C3F" },
+  { name: "Providus Bank", code: "101", abbr: "PR", color: "#6E2C90" },
+  { name: "Rubies MFB", code: "125", abbr: "RB", color: "#C0392B" },
+  { name: "Sparkle Microfinance Bank", code: "51310", abbr: "SP", color: "#F5A623" },
+  { name: "Stanbic IBTC Bank", code: "221", abbr: "SI", color: "#0033A0" },
+  { name: "Standard Chartered Bank", code: "068", abbr: "SC", color: "#005A2B" },
+  { name: "Sterling Bank", code: "232", abbr: "ST", color: "#A6192E" },
+  { name: "Taj Bank", code: "302", abbr: "TJ", color: "#00543C" },
+  { name: "Titan Trust Bank", code: "102", abbr: "TT", color: "#E30613" },
+  { name: "Union Bank of Nigeria", code: "032", abbr: "UB", color: "#005DAA" },
+  { name: "United Bank for Africa (UBA)", code: "033", abbr: "UBA", color: "#E4032E" },
+  { name: "Unity Bank", code: "215", abbr: "UN", color: "#009444" },
+  { name: "VFD Microfinance Bank", code: "566", abbr: "VF", color: "#1B1B4E" },
+  { name: "Wema Bank", code: "035", abbr: "WB", color: "#7B287D" },
+  { name: "Zenith Bank", code: "057", abbr: "ZB", color: "#D71920" },
+];
+const FREQUENT_BANK_NAMES = ["OPay (Paycom)", "Access Bank", "United Bank for Africa (UBA)", "First Bank of Nigeria", "GTBank (Guaranty Trust Bank)", "Zenith Bank"];
+let selectedBank = null;
+
+function nubanCheckDigit(bankCode, serial9) {
+  const weights = [3, 7, 3, 3, 7, 3, 3, 7, 3, 3, 7, 3];
+  const digits = (bankCode.padStart(3, "0").slice(-3) + serial9).split("").map(Number);
+  const sum = digits.reduce((acc, d, i) => acc + d * weights[i], 0);
+  return (10 - (sum % 10)) % 10;
+}
+// Returns true/false when we can run the real CBN checksum, or null when this bank's
+// institution code isn't a classic 3-digit NUBAN code (most fintechs/MFBs) — in that
+// case we only confirm the account number has a valid 10-digit shape.
+function checkNubanValidity(bank, accountNumber) {
+  if (!bank || !/^\d{10}$/.test(accountNumber)) return null;
+  if (bank.code.length !== 3) return null;
+  const serial9 = accountNumber.slice(0, 9);
+  const providedCheck = Number(accountNumber[9]);
+  return nubanCheckDigit(bank.code, serial9) === providedCheck;
+}
+
+function bankBadgeHtml(bank, extraClass = "") {
+  return `<div class="bank-badge ${extraClass}" style="background:${bank.color}">${bank.abbr}</div>`;
+}
+
+function selectBank(bank) {
+  selectedBank = bank;
+  const row = $("bankSelectTrigger");
+  row.classList.add("has-bank");
+  $("bankSelectRowLeft").innerHTML = `${bankBadgeHtml(bank)}<span class="bank-name">${bank.name}</span>`;
+  clearFieldError("withdrawBankCode");
+  closeBankPicker();
+  checkAccountAndBank();
+}
+
+function resetBankStep() {
+  selectedBank = null;
+  const row = $("bankSelectTrigger");
+  row.classList.remove("has-bank");
+  $("bankSelectRowLeft").innerHTML = `<span class="bank-select-placeholder">Choose your bank</span>`;
+  $("withdrawBankAccount").value = "";
+  $("withdrawBankAccountName").value = "";
+  $("withdrawBankAmount").value = "";
+  $("bankVerifyPill").hidden = true;
+  $("withdrawBankAccountNameField").hidden = true;
+  clearFormErrors(["withdrawBankAmount", "withdrawBankAccount", "withdrawBankCode", "withdrawBankAccountName"]);
+}
+
+function checkAccountAndBank() {
+  const accountNumber = $("withdrawBankAccount").value.trim();
+  clearFieldError("withdrawBankAccount");
+  if (!selectedBank || !/^\d{10}$/.test(accountNumber)) {
+    $("bankVerifyPill").hidden = true;
+    $("withdrawBankAccountNameField").hidden = true;
+    return;
+  }
+  const result = checkNubanValidity(selectedBank, accountNumber);
+  if (result === false) {
+    $("bankVerifyPill").hidden = true;
+    $("withdrawBankAccountNameField").hidden = true;
+    showFieldError("withdrawBankAccount", `This account number doesn't look valid for ${selectedBank.name}. Please double-check it.`);
+    return;
+  }
+  $("bankVerifyText").textContent = result === true
+    ? `${accountNumber} · ${selectedBank.name}`
+    : `${accountNumber} · ${selectedBank.name} (format OK)`;
+  $("bankVerifyPill").hidden = false;
+  $("withdrawBankAccountNameField").hidden = false;
+  refreshIcons();
+}
+
+function openBankPicker() {
+  haptic();
+  $("bankPickerSearch").value = "";
+  renderBankFrequent();
+  renderBankList("");
+  $("bankPickerOverlay").classList.add("show");
+}
+function closeBankPicker() {
+  $("bankPickerOverlay").classList.remove("show");
+}
+function renderBankFrequent() {
+  const banks = FREQUENT_BANK_NAMES.map((n) => NIGERIA_BANKS.find((b) => b.name === n)).filter(Boolean);
+  $("bankFrequentGrid").innerHTML = banks.map((b) => `
+    <button type="button" class="bank-frequent-item" data-bank="${b.name}">
+      ${bankBadgeHtml(b)}
+      <span>${b.name.replace(/\s*\(.*\)/, "")}</span>
+    </button>`).join("");
+  $("bankFrequentGrid").querySelectorAll("[data-bank]").forEach((el) => {
+    el.addEventListener("click", () => selectBank(NIGERIA_BANKS.find((b) => b.name === el.dataset.bank)));
+  });
+}
+function renderBankList(query) {
+  const q = query.trim().toLowerCase();
+  const filtered = NIGERIA_BANKS.filter((b) => b.name.toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name));
+  $("bankFrequentSection").hidden = q.length > 0;
+  $("bankPickerEmpty").hidden = filtered.length > 0;
+  if (!filtered.length) {
+    $("bankFullList").innerHTML = "";
+    $("bankIndexSidebar").innerHTML = "";
+    return;
+  }
+  const groups = {};
+  filtered.forEach((b) => {
+    const letter = b.name[0].toUpperCase();
+    (groups[letter] = groups[letter] || []).push(b);
+  });
+  const letters = Object.keys(groups).sort();
+  $("bankFullList").innerHTML = letters.map((letter) => `
+    <div class="bank-letter-group" id="bank-letter-${letter}">
+      <p class="bank-letter-heading">${letter}</p>
+      ${groups[letter].map((b) => `
+        <button type="button" class="bank-list-item" data-bank="${b.name}">
+          ${bankBadgeHtml(b)}
+          <span class="bank-name">${b.name}</span>
+        </button>`).join("")}
+    </div>`).join("");
+  $("bankFullList").querySelectorAll("[data-bank]").forEach((el) => {
+    el.addEventListener("click", () => selectBank(NIGERIA_BANKS.find((b) => b.name === el.dataset.bank)));
+  });
+  $("bankIndexSidebar").innerHTML = q ? "" : letters.map((l) => `<span class="bank-index-letter" data-letter="${l}">${l}</span>`).join("");
+  $("bankIndexSidebar").querySelectorAll("[data-letter]").forEach((el) => {
+    el.addEventListener("click", () => {
+      $(`bank-letter-${el.dataset.letter}`)?.scrollIntoView({ block: "start" });
+    });
+  });
+}
+$("bankSelectTrigger").addEventListener("click", openBankPicker);
+$("bankPickerClose").addEventListener("click", closeBankPicker);
+$("bankPickerOverlay").addEventListener("click", (e) => { if (e.target === $("bankPickerOverlay")) closeBankPicker(); });
+$("bankPickerSearch").addEventListener("input", (e) => renderBankList(e.target.value));
+$("withdrawBankAccount").addEventListener("input", (e) => {
+  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10);
+  checkAccountAndBank();
+});
+
 async function loadWithdrawals() {
   if (!currentUser) { myWithdrawals = []; return; }
   try {
@@ -2088,6 +2355,7 @@ $$(".withdraw-method[data-method]").forEach((btn) => {
   btn.addEventListener("click", () => {
     haptic();
     const method = btn.dataset.method;
+    if (method === "bank") resetBankStep();
     showWithdrawStep(method === "bank" ? "withdrawBankStep" : "withdrawAirtimeStep");
   });
 });
@@ -2145,18 +2413,18 @@ async function submitWithdrawal(method, amount, details, btn) {
 }
 
 $("withdrawBankSubmit").addEventListener("click", async () => {
-  clearFormErrors(["withdrawBankAmount", "withdrawBankName", "withdrawBankAccount", "withdrawBankAccountName"]);
+  clearFormErrors(["withdrawBankAmount", "withdrawBankAccount", "withdrawBankCode", "withdrawBankAccountName"]);
   const amount = Number($("withdrawBankAmount").value);
-  const bankName = $("withdrawBankName").value.trim();
   const accountNumber = $("withdrawBankAccount").value.trim();
   const accountName = $("withdrawBankAccountName").value.trim();
   let valid = true;
   if (!amount || amount < WITHDRAW_MIN.bank) { showFieldError("withdrawBankAmount", `Minimum withdrawal is ₦${WITHDRAW_MIN.bank}.`); valid = false; }
-  if (!bankName) { showFieldError("withdrawBankName", "Please enter your bank name."); valid = false; }
   if (!/^\d{10}$/.test(accountNumber)) { showFieldError("withdrawBankAccount", "Enter a valid 10-digit account number."); valid = false; }
+  if (!selectedBank) { showFieldError("withdrawBankCode", "Please select your bank."); valid = false; }
+  else if (checkNubanValidity(selectedBank, accountNumber) === false) { showFieldError("withdrawBankAccount", `This account number doesn't look valid for ${selectedBank.name}.`); valid = false; }
   if (!accountName) { showFieldError("withdrawBankAccountName", "Please enter the account holder's name."); valid = false; }
   if (!valid) return;
-  await submitWithdrawal("bank", amount, { bankName, accountNumber, accountName }, $("withdrawBankSubmit"));
+  await submitWithdrawal("bank", amount, { bankCode: selectedBank.code, bankName: selectedBank.name, accountNumber, accountName }, $("withdrawBankSubmit"));
 });
 
 $("withdrawAirtimeSubmit").addEventListener("click", async () => {
