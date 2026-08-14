@@ -1,1 +1,1055 @@
-Claude will work on it 🥷, I trust him!
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rare Earners — Complete tasks, earn rewards</title>
+<meta name="description" content="Rare Earners — complete simple tasks, invite friends, and earn real rewards.">
+<link rel="icon" href="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+<style>
+  :root{
+    --primary:#16A34A;
+    --primary-dark:#166534;
+    --primary-light:#DCFCE7;
+    --bg:#F8FAFC;
+    --text:#0F172A;
+    --text-muted:#64748B;
+    --white:#FFFFFF;
+    --border:rgba(15,23,42,.08);
+    --border-strong:rgba(15,23,42,.14);
+    --glass-bg:rgba(255,255,255,.66);
+    --glass-border:rgba(255,255,255,.55);
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06);
+    --shadow-md:0 8px 24px rgba(15,23,42,.08);
+    --shadow-lg:0 20px 48px rgba(15,23,42,.12);
+    --danger:#DC2626;
+    --radius:16px;
+    --radius-sm:10px;
+    --ease:cubic-bezier(.22,.8,.28,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  img{max-width:100%;display:block;}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+  input{font-family:inherit;}
+  a{color:inherit;text-decoration:none;}
+  [hidden]{display:none !important;}
+  ::selection{background:var(--primary-light);color:var(--primary-dark);}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms !important;transition-duration:.001ms !important;}
+  }
+
+  /* ---------- shared ---------- */
+  .glass{
+    background:var(--glass-bg);
+    -webkit-backdrop-filter:blur(20px) saturate(160%);
+    backdrop-filter:blur(20px) saturate(160%);
+    border:1px solid var(--glass-border);
+    box-shadow:var(--shadow-md);
+  }
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:12px 20px;border-radius:12px;font-size:15px;font-weight:600;
+    transition:transform .15s var(--ease), box-shadow .15s var(--ease), background .15s var(--ease), opacity .15s;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+  }
+  .btn:active{transform:translateY(1px) scale(.97);}
+  .btn-primary{
+    background:linear-gradient(180deg,var(--primary),var(--primary-dark));
+    color:#fff;
+    box-shadow:0 1px 0 rgba(255,255,255,.25) inset, 0 6px 16px rgba(22,163,74,.28);
+  }
+  .btn-primary:hover{box-shadow:0 1px 0 rgba(255,255,255,.25) inset, 0 8px 20px rgba(22,163,74,.36);}
+  .btn-primary:active{box-shadow:0 1px 0 rgba(255,255,255,.15) inset, 0 3px 8px rgba(22,163,74,.3);}
+  .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+  .btn-ghost{
+    background:#fff;color:var(--text);border:1px solid var(--border-strong);
+  }
+  .btn-ghost:hover{background:#F8FAFC;}
+  .btn-sm{padding:8px 14px;font-size:13px;border-radius:10px;}
+  .btn-block{width:100%;}
+  .spinner{
+    width:16px;height:16px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.5);border-top-color:#fff;
+    animation:spin .7s linear infinite;
+  }
+  .btn-ghost .spinner{border-color:rgba(15,23,42,.2);border-top-color:var(--text);}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .field{margin-bottom:16px;text-align:left;}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;}
+  .input-wrap{position:relative;display:flex;align-items:center;}
+  .input-wrap svg{position:absolute;left:14px;width:18px;height:18px;color:var(--text-muted);pointer-events:none;}
+  .field input{
+    width:100%;padding:12px 14px 12px 42px;border-radius:12px;
+    border:1.5px solid var(--border-strong);background:#fff;
+    font-size:15px;color:var(--text);
+    transition:border-color .15s var(--ease), box-shadow .15s var(--ease);
+  }
+  .field input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-light);}
+  .field input.error{border-color:var(--danger);}
+  .field input.error:focus{box-shadow:0 0 0 4px rgba(220,38,38,.12);}
+  .toggle-pw{position:absolute;right:10px;padding:6px;border-radius:8px;color:var(--text-muted);}
+  .toggle-pw:hover{background:#F1F5F9;}
+  .field-error{display:none;font-size:12.5px;color:var(--danger);margin-top:6px;}
+  .field-error.show{display:block;}
+
+  /* ---------- toasts ---------- */
+  #toastRoot{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;width:min(380px,92vw);}
+  .toast{
+    display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;
+    background:var(--text);color:#fff;font-size:13.5px;font-weight:500;
+    box-shadow:var(--shadow-lg);
+    animation:toastIn .25s var(--ease);
+  }
+  .toast.success{background:var(--primary-dark);}
+  .toast.error{background:var(--danger);}
+  .toast svg{width:18px;height:18px;flex-shrink:0;}
+  @keyframes toastIn{from{opacity:0;transform:translateY(-10px) scale(.96);}to{opacity:1;transform:none;}}
+
+  /* ================= AUTH ================= */
+  #authScreen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:24px;position:relative;
+    background:
+      radial-gradient(1000px 500px at 15% -5%, var(--primary-light) 0%, transparent 60%),
+      radial-gradient(800px 500px at 105% 15%, #EFFDF4 0%, transparent 55%),
+      var(--bg);
+  }
+  .auth-card{
+    width:100%;max-width:420px;border-radius:24px;padding:36px 32px;position:relative;
+  }
+  .auth-brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:22px;}
+  .auth-brand img{width:36px;height:36px;object-fit:contain;}
+  .auth-brand span{font-weight:800;font-size:19px;letter-spacing:-.02em;}
+  .auth-heading{text-align:center;margin-bottom:26px;}
+  .auth-heading h1{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px;}
+  .auth-heading p{font-size:14px;color:var(--text-muted);}
+  .auth-switch{text-align:center;margin-top:18px;font-size:14px;color:var(--text-muted);}
+  .auth-switch button{color:var(--primary-dark);font-weight:700;}
+  .auth-switch button:hover{text-decoration:underline;}
+  .forgot-link{display:block;text-align:right;font-size:13px;color:var(--primary-dark);font-weight:600;margin:-8px 0 16px;}
+  .forgot-link:hover{text-decoration:underline;}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;color:var(--text-muted);font-weight:600;margin-bottom:18px;}
+  .back-link:hover{color:var(--text);}
+  .back-link svg{width:16px;height:16px;}
+
+  /* ================= DASHBOARD ================= */
+  #dashboardScreen{min-height:100vh;display:flex;}
+  .sidebar{
+    display:none;width:250px;flex-direction:column;padding:24px 18px;
+    position:sticky;top:0;height:100vh;border-right:1px solid var(--border);
+    background:rgba(255,255,255,.7);
+  }
+  .sidebar-brand{display:flex;align-items:center;gap:10px;padding:6px 8px 26px;}
+  .sidebar-brand img{width:30px;height:30px;}
+  .sidebar-brand span{font-weight:800;font-size:15px;letter-spacing:.02em;}
+  .nav-list{display:flex;flex-direction:column;gap:2px;flex:1;}
+  .nav-item{
+    display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;
+    font-size:14.5px;font-weight:600;color:var(--text-muted);
+    transition:background .15s var(--ease), color .15s var(--ease), transform .15s var(--ease);
+  }
+  .nav-item svg{width:19px;height:19px;}
+  .nav-item:hover{background:#F1F5F9;color:var(--text);}
+  .nav-item:active{transform:scale(.97);}
+  .nav-item.active{background:var(--primary-light);color:var(--primary-dark);}
+  .invite-card{
+    margin-top:14px;padding:18px;border-radius:16px;text-align:left;
+    background:linear-gradient(165deg,#fff,var(--primary-light));
+    border:1px solid var(--border);
+  }
+  .invite-card svg{width:26px;height:26px;color:var(--primary-dark);margin-bottom:10px;}
+  .invite-card h4{font-size:14px;font-weight:700;margin-bottom:4px;}
+  .invite-card p{font-size:12.5px;color:var(--text-muted);line-height:1.5;margin-bottom:12px;}
+  .sidebar-footer{font-size:11.5px;color:var(--text-muted);padding:14px 8px 4px;}
+
+  .main-content{flex:1;min-width:0;padding:20px 16px 100px;max-width:1200px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+  .topbar h1{font-size:21px;font-weight:800;letter-spacing:-.02em;margin-bottom:3px;}
+  .topbar p{font-size:13.5px;color:var(--text-muted);}
+  .topbar-actions{display:flex;align-items:center;gap:10px;}
+  .icon-btn{
+    width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:#fff;border:1px solid var(--border-strong);position:relative;
+    transition:transform .15s var(--ease), background .15s;
+  }
+  .icon-btn:hover{background:#F8FAFC;}
+  .icon-btn:active{transform:scale(.94);}
+  .icon-btn svg{width:19px;height:19px;}
+  .profile-btn{
+    display:flex;align-items:center;gap:9px;padding:6px 10px 6px 6px;border-radius:14px;
+    background:#fff;border:1px solid var(--border-strong);
+    transition:transform .15s var(--ease), background .15s;
+  }
+  .profile-btn:hover{background:#F8FAFC;}
+  .profile-btn:active{transform:scale(.96);}
+  .avatar{
+    width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(160deg,var(--primary),var(--primary-dark));color:#fff;font-weight:700;font-size:13px;flex-shrink:0;
+  }
+  .profile-btn span{font-size:13.5px;font-weight:600;}
+  .profile-btn svg{width:15px;height:15px;color:var(--text-muted);}
+
+  .popover{
+    position:absolute;top:calc(100% + 8px);right:0;width:230px;border-radius:14px;padding:8px;z-index:60;
+    background:#fff;border:1px solid var(--border-strong);box-shadow:var(--shadow-lg);
+    animation:popIn .16s var(--ease);
+  }
+  @keyframes popIn{from{opacity:0;transform:translateY(-6px) scale(.97);}to{opacity:1;transform:none;}}
+  .popover-user{padding:10px 10px 12px;border-bottom:1px solid var(--border);margin-bottom:6px;}
+  .popover-user .name{font-size:13.5px;font-weight:700;}
+  .popover-user .email{font-size:12px;color:var(--text-muted);word-break:break-all;}
+  .popover-item{
+    display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;width:100%;font-size:13.5px;font-weight:600;
+    transition:background .15s;
+  }
+  .popover-item svg{width:16px;height:16px;}
+  .popover-item:hover{background:#F1F5F9;}
+  .popover-item.danger{color:var(--danger);}
+  .popover-empty{padding:16px 10px;text-align:center;font-size:13px;color:var(--text-muted);}
+  .dropdown-wrap{position:relative;}
+
+  .balance-card{
+    position:relative;overflow:hidden;border-radius:22px;padding:26px 24px;margin-bottom:16px;color:#fff;
+    background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);
+    box-shadow:0 16px 40px rgba(22,101,52,.28);
+  }
+  .balance-card::after{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(420px 220px at 88% -10%, rgba(255,255,255,.16), transparent 60%);
+    pointer-events:none;
+  }
+  .balance-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;position:relative;z-index:1;}
+  .balance-label{font-size:13.5px;opacity:.85;font-weight:600;margin-bottom:6px;}
+  .balance-amount{font-size:34px;font-weight:800;letter-spacing:-.02em;margin-bottom:14px;}
+  .balance-card .btn-ghost{background:#fff;color:var(--primary-dark);border:none;}
+  .balance-stats{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;position:relative;z-index:1;}
+  .stat-pill{
+    flex:1;min-width:140px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);
+    border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  }
+  .stat-pill .label{font-size:12px;opacity:.85;margin-bottom:4px;}
+  .stat-pill .value{font-size:17px;font-weight:700;}
+  .stat-pill .stat-icon{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .stat-pill svg{width:16px;height:16px;}
+
+  .quick-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;}
+  .qa-card{
+    background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;
+    display:flex;align-items:center;gap:12px;text-align:left;
+    transition:transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s;
+  }
+  .qa-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:transparent;}
+  .qa-card:active{transform:translateY(0) scale(.98);}
+  .qa-icon{width:42px;height:42px;border-radius:12px;background:var(--primary-light);color:var(--primary-dark);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .qa-icon svg{width:20px;height:20px;}
+  .qa-card h4{font-size:14px;font-weight:700;margin-bottom:2px;}
+  .qa-card p{font-size:12px;color:var(--text-muted);line-height:1.3;}
+
+  .content-grid{display:grid;grid-template-columns:1fr;gap:16px;}
+  .panel{background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px;}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;}
+  .panel-head h3{font-size:15.5px;font-weight:800;}
+  .link-more{font-size:13px;font-weight:700;color:var(--primary-dark);}
+  .link-more:hover{text-decoration:underline;}
+
+  .task-toolbar{display:flex;gap:10px;margin-bottom:14px;}
+  .search-wrap{position:relative;flex:1;}
+  .search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-muted);}
+  .search-wrap input{
+    width:100%;padding:10px 12px 10px 36px;border-radius:11px;border:1.5px solid var(--border-strong);font-size:13.5px;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .search-wrap input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-light);}
+  .filter-btn{
+    display:flex;align-items:center;gap:6px;padding:0 14px;border-radius:11px;border:1.5px solid var(--border-strong);
+    font-size:13px;font-weight:600;color:var(--text);background:#fff;flex-shrink:0;
+  }
+  .filter-btn svg{width:15px;height:15px;}
+  .filter-btn:active{transform:scale(.96);}
+
+  .task-list{display:flex;flex-direction:column;gap:10px;}
+  .task-row{
+    display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;border:1px solid var(--border);
+    transition:transform .16s var(--ease), box-shadow .16s var(--ease), border-color .16s;
+  }
+  .task-row:hover{border-color:transparent;box-shadow:var(--shadow-sm);transform:translateY(-1px);}
+  .task-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;}
+  .task-icon svg{width:19px;height:19px;}
+  .task-info{flex:1;min-width:0;}
+  .task-info h4{font-size:14px;font-weight:700;margin-bottom:2px;}
+  .task-info p{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .task-meta{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);margin-top:3px;}
+  .task-meta .dot{width:3px;height:3px;border-radius:50%;background:var(--text-muted);}
+  .task-reward{text-align:right;flex-shrink:0;margin-right:2px;}
+  .task-reward .amount{font-size:14px;font-weight:800;color:var(--primary-dark);}
+  .task-reward .label{font-size:10.5px;color:var(--text-muted);}
+  .empty-state{text-align:center;padding:32px 14px;color:var(--text-muted);}
+  .empty-state svg{width:34px;height:34px;margin-bottom:10px;opacity:.5;}
+  .empty-state p{font-size:13.5px;}
+
+  .progress-bar{height:8px;border-radius:6px;background:#F1F5F9;overflow:hidden;margin-top:10px;}
+  .progress-bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--primary),var(--primary-dark));transition:width .5s var(--ease);}
+  .progress-row{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;}
+  .progress-row .pct{font-weight:800;color:var(--primary-dark);}
+
+  .referral-box{background:var(--primary-light);border-radius:14px;padding:14px;margin-top:4px;}
+  .referral-box p{font-size:12.5px;color:var(--primary-dark);line-height:1.5;margin-bottom:10px;}
+  .referral-input-row{display:flex;gap:8px;margin-bottom:10px;}
+  .referral-input-row input{
+    flex:1;min-width:0;padding:9px 10px;border-radius:10px;border:1px solid rgba(22,101,52,.2);
+    font-size:12.5px;background:#fff;color:var(--text-muted);
+  }
+  .copy-btn{width:38px;height:38px;border-radius:10px;background:#fff;border:1px solid rgba(22,101,52,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .copy-btn svg{width:16px;height:16px;color:var(--primary-dark);}
+  .copy-btn:active{transform:scale(.92);}
+
+  .activity-list{display:flex;flex-direction:column;gap:2px;}
+  .activity-row{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--border);}
+  .activity-row:last-child{border-bottom:none;}
+  .activity-icon{width:36px;height:36px;border-radius:10px;background:var(--primary-light);color:var(--primary-dark);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .activity-icon svg{width:16px;height:16px;}
+  .activity-info{flex:1;min-width:0;}
+  .activity-info h5{font-size:13px;font-weight:700;}
+  .activity-info p{font-size:11.5px;color:var(--text-muted);}
+  .activity-amount{font-size:13px;font-weight:800;}
+
+  .bottom-nav{
+    position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:50;
+    display:flex;gap:2px;padding:8px;border-radius:20px;width:min(420px,92vw);
+    background:rgba(255,255,255,.75);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);
+    border:1px solid var(--glass-border);box-shadow:var(--shadow-lg);
+  }
+  .bn-item{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:14px;
+    color:var(--text-muted);transition:background .15s var(--ease), color .15s var(--ease), transform .15s var(--ease);
+  }
+  .bn-item svg{width:20px;height:20px;}
+  .bn-item span{font-size:10px;font-weight:700;}
+  .bn-item.active{color:var(--primary-dark);background:var(--primary-light);}
+  .bn-item:active{transform:scale(.92);}
+
+  @media (min-width:1024px){
+    .sidebar{display:flex;}
+    .bottom-nav{display:none;}
+    .main-content{padding:28px 32px 40px;}
+    .quick-actions{grid-template-columns:repeat(4,1fr);}
+    .content-grid{grid-template-columns:1.6fr 1fr;align-items:start;}
+    .balance-amount{font-size:40px;}
+  }
+  @media (max-width:1023px){
+    .main-content{padding-bottom:110px;}
+  }
+  @media (min-width:640px) and (max-width:1023px){
+    .quick-actions{grid-template-columns:repeat(4,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<div id="toastRoot"></div>
+
+<!-- ================= AUTH SCREEN ================= -->
+<div id="authScreen">
+  <div class="auth-card glass">
+
+    <div class="auth-brand">
+      <img src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="Rare Earners">
+      <span>RARE EARNERS</span>
+    </div>
+
+    <!-- LOGIN VIEW -->
+    <div id="loginView">
+      <div class="auth-heading">
+        <h1>Welcome back</h1>
+        <p>Log in to continue earning</p>
+      </div>
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <div class="input-wrap">
+            <svg data-lucide="mail"></svg>
+            <input type="email" id="loginEmail" autocomplete="email" placeholder="you@example.com">
+          </div>
+          <div class="field-error" id="loginEmailError"></div>
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <div class="input-wrap">
+            <svg data-lucide="lock"></svg>
+            <input type="password" id="loginPassword" autocomplete="current-password" placeholder="Enter your password">
+            <button type="button" class="toggle-pw" data-toggle="loginPassword"><svg data-lucide="eye"></svg></button>
+          </div>
+          <div class="field-error" id="loginPasswordError"></div>
+        </div>
+        <a href="#" class="forgot-link" id="forgotLink">Forgot password?</a>
+        <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">
+          <span class="btn-label">Log in</span>
+        </button>
+      </form>
+      <p class="auth-switch">Don't have an account? <button type="button" id="goSignup">Sign up</button></p>
+    </div>
+
+    <!-- SIGNUP VIEW -->
+    <div id="signupView" hidden>
+      <div class="auth-heading">
+        <h1>Create your account</h1>
+        <p>Start completing tasks and earning today</p>
+      </div>
+      <form id="signupForm" novalidate>
+        <div class="field">
+          <label for="signupName">Full name</label>
+          <div class="input-wrap">
+            <svg data-lucide="user"></svg>
+            <input type="text" id="signupName" autocomplete="name" placeholder="Your full name">
+          </div>
+          <div class="field-error" id="signupNameError"></div>
+        </div>
+        <div class="field">
+          <label for="signupEmail">Email</label>
+          <div class="input-wrap">
+            <svg data-lucide="mail"></svg>
+            <input type="email" id="signupEmail" autocomplete="email" placeholder="you@example.com">
+          </div>
+          <div class="field-error" id="signupEmailError"></div>
+        </div>
+        <div class="field">
+          <label for="signupPassword">Password</label>
+          <div class="input-wrap">
+            <svg data-lucide="lock"></svg>
+            <input type="password" id="signupPassword" autocomplete="new-password" placeholder="At least 6 characters">
+            <button type="button" class="toggle-pw" data-toggle="signupPassword"><svg data-lucide="eye"></svg></button>
+          </div>
+          <div class="field-error" id="signupPasswordError"></div>
+        </div>
+        <div class="field">
+          <label for="signupConfirm">Confirm password</label>
+          <div class="input-wrap">
+            <svg data-lucide="lock"></svg>
+            <input type="password" id="signupConfirm" autocomplete="new-password" placeholder="Re-enter your password">
+            <button type="button" class="toggle-pw" data-toggle="signupConfirm"><svg data-lucide="eye"></svg></button>
+          </div>
+          <div class="field-error" id="signupConfirmError"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="signupSubmitBtn">
+          <span class="btn-label">Create account</span>
+        </button>
+      </form>
+      <p class="auth-switch">Already have an account? <button type="button" id="goLogin">Log in</button></p>
+    </div>
+
+    <!-- RESET PASSWORD VIEW -->
+    <div id="resetView" hidden>
+      <button type="button" class="back-link" id="backToLogin"><svg data-lucide="arrow-left"></svg>Back to login</button>
+      <div class="auth-heading">
+        <h1>Reset password</h1>
+        <p>Enter your email and we'll send you a reset link</p>
+      </div>
+      <form id="resetForm" novalidate>
+        <div class="field">
+          <label for="resetEmail">Email</label>
+          <div class="input-wrap">
+            <svg data-lucide="mail"></svg>
+            <input type="email" id="resetEmail" autocomplete="email" placeholder="you@example.com">
+          </div>
+          <div class="field-error" id="resetEmailError"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="resetSubmitBtn">
+          <span class="btn-label">Send reset link</span>
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= DASHBOARD SCREEN ================= -->
+<div id="dashboardScreen" hidden>
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="Rare Earners">
+      <span>RARE EARNERS</span>
+    </div>
+    <nav class="nav-list">
+      <a href="#top" class="nav-item active" data-section="top"><svg data-lucide="home"></svg>Home</a>
+      <a href="#tasksPanel" class="nav-item" data-section="tasksPanel"><svg data-lucide="list-checks"></svg>Tasks</a>
+      <a href="#tasksPanel" class="nav-item" data-section="tasksPanel"><svg data-lucide="zap"></svg>Earn</a>
+      <a href="#referralPanel" class="nav-item" data-section="referralPanel"><svg data-lucide="users"></svg>Referrals</a>
+      <button type="button" class="nav-item" id="sidebarProfileBtn"><svg data-lucide="user-round"></svg>Profile</button>
+    </nav>
+    <div class="invite-card">
+      <svg data-lucide="gift"></svg>
+      <h4>Invite friends</h4>
+      <p>Earn more when your friends join and complete tasks.</p>
+      <button type="button" class="btn btn-primary btn-sm btn-block" id="inviteBtnSidebar"><svg data-lucide="user-plus" style="width:15px;height:15px"></svg>Invite Friends</button>
+    </div>
+    <div class="sidebar-footer">© 2026 Rare Earners<br>All rights reserved.</div>
+  </aside>
+
+  <main class="main-content" id="top">
+    <div class="topbar">
+      <div>
+        <h1 id="greeting">Good evening</h1>
+        <p>Complete tasks, earn rewards, and achieve your goals.</p>
+      </div>
+      <div class="topbar-actions">
+        <div class="dropdown-wrap">
+          <button type="button" class="icon-btn" id="bellBtn"><svg data-lucide="bell"></svg></button>
+          <div class="popover" id="bellPopover" hidden>
+            <div class="popover-empty">No new notifications</div>
+          </div>
+        </div>
+        <div class="dropdown-wrap">
+          <button type="button" class="profile-btn" id="profileBtn">
+            <span class="avatar" id="avatarInitials">?</span>
+            <span id="profileName">Loading…</span>
+            <svg data-lucide="chevron-down"></svg>
+          </button>
+          <div class="popover" id="profilePopover" hidden>
+            <div class="popover-user">
+              <div class="name" id="popoverName">—</div>
+              <div class="email" id="popoverEmail">—</div>
+            </div>
+            <button type="button" class="popover-item"><svg data-lucide="user-round"></svg>Profile</button>
+            <button type="button" class="popover-item danger" id="logoutBtn"><svg data-lucide="log-out"></svg>Log out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="balance-card">
+      <div class="balance-top">
+        <div>
+          <div class="balance-label">Available Balance</div>
+          <div class="balance-amount">₦<span id="balanceValue">0.00</span></div>
+          <button type="button" class="btn btn-ghost btn-sm" id="withdrawBtn">Withdraw <svg data-lucide="arrow-right" style="width:15px;height:15px"></svg></button>
+        </div>
+      </div>
+      <div class="balance-stats">
+        <div class="stat-pill">
+          <div>
+            <div class="label">Today's Earnings</div>
+            <div class="value">₦<span id="todayEarnings">0.00</span></div>
+          </div>
+          <div class="stat-icon"><svg data-lucide="trending-up"></svg></div>
+        </div>
+        <div class="stat-pill">
+          <div>
+            <div class="label">Total Earned</div>
+            <div class="value">₦<span id="totalEarned">0.00</span></div>
+          </div>
+          <div class="stat-icon"><svg data-lucide="wallet"></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="quick-actions">
+      <button type="button" class="qa-card" data-scroll="tasksPanel">
+        <div class="qa-icon"><svg data-lucide="clipboard-check"></svg></div>
+        <div><h4>Tasks</h4><p>Browse and complete tasks</p></div>
+      </button>
+      <button type="button" class="qa-card" id="qaWithdraw">
+        <div class="qa-icon"><svg data-lucide="landmark"></svg></div>
+        <div><h4>Withdraw</h4><p>Withdraw your earnings</p></div>
+      </button>
+      <button type="button" class="qa-card" data-scroll="referralPanel">
+        <div class="qa-icon"><svg data-lucide="user-plus"></svg></div>
+        <div><h4>Referrals</h4><p>Invite friends and earn more</p></div>
+      </button>
+      <button type="button" class="qa-card" id="qaHistory">
+        <div class="qa-icon"><svg data-lucide="history"></svg></div>
+        <div><h4>History</h4><p>View your earnings history</p></div>
+      </button>
+    </div>
+
+    <div class="content-grid">
+      <section class="panel" id="tasksPanel">
+        <div class="panel-head">
+          <h3>Available Tasks</h3>
+          <a href="#" class="link-more">View all</a>
+        </div>
+        <div class="task-toolbar">
+          <div class="search-wrap">
+            <svg data-lucide="search"></svg>
+            <input type="text" id="taskSearch" placeholder="Search tasks...">
+          </div>
+          <button type="button" class="filter-btn" id="taskFilterBtn"><svg data-lucide="sliders-horizontal"></svg>Filter</button>
+        </div>
+        <div class="task-list" id="taskList"></div>
+      </section>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <section class="panel">
+          <div class="panel-head"><h3>Today's Progress</h3></div>
+          <div class="progress-row">
+            <span id="progressLabel">0 of 0 tasks completed</span>
+            <span class="pct" id="progressPct">0%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+        </section>
+
+        <section class="panel" id="referralPanel">
+          <div class="panel-head"><h3>Earn more with referrals</h3></div>
+          <div class="referral-box">
+            <p>Invite friends and earn rewards when they join and complete eligible activities.</p>
+            <div class="referral-input-row">
+              <input type="text" id="referralLink" readonly>
+              <button type="button" class="copy-btn" id="copyReferralBtn"><svg data-lucide="copy"></svg></button>
+            </div>
+            <button type="button" class="btn btn-primary btn-block btn-sm" id="inviteBtnMain"><svg data-lucide="user-plus" style="width:15px;height:15px"></svg>Invite Friends</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h3>Recent Activity</h3>
+            <a href="#" class="link-more">View all</a>
+          </div>
+          <div class="activity-list" id="activityList">
+            <div class="empty-state">
+              <svg data-lucide="inbox"></svg>
+              <p>No activity yet. Complete your first task to see it here.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="#top" class="bn-item active" data-section="top"><svg data-lucide="home"></svg><span>Home</span></a>
+    <a href="#tasksPanel" class="bn-item" data-section="tasksPanel"><svg data-lucide="list-checks"></svg><span>Tasks</span></a>
+    <a href="#tasksPanel" class="bn-item" data-section="tasksPanel"><svg data-lucide="zap"></svg><span>Earn</span></a>
+    <a href="#referralPanel" class="bn-item" data-section="referralPanel"><svg data-lucide="users"></svg><span>Referrals</span></a>
+    <button type="button" class="bn-item" id="bnProfileBtn"><svg data-lucide="user-round"></svg><span>Profile</span></button>
+  </nav>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+import {
+  getAuth, setPersistence, browserLocalPersistence,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  onAuthStateChanged, signOut, sendPasswordResetEmail, updateProfile
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCx3IdRjDUPN9B-MFjvdZo5XJoptseFq3Q",
+  authDomain: "rareearners.firebaseapp.com",
+  projectId: "rareearners",
+  storageBucket: "rareearners.firebasestorage.app",
+  messagingSenderId: "141222061047",
+  appId: "1:141222061047:web:9c044716391c58d09dc4f2"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* ---------------- helpers ---------------- */
+const $ = (id) => document.getElementById(id);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+function haptic(ms = 10) {
+  try { if ("vibrate" in navigator) navigator.vibrate(ms); } catch (e) {}
+}
+
+function refreshIcons() {
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function toast(message, type = "default") {
+  const root = $("toastRoot");
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  const iconName = type === "success" ? "check-circle" : type === "error" ? "alert-circle" : "info";
+  el.innerHTML = `<svg data-lucide="${iconName}"></svg><span>${message}</span>`;
+  root.appendChild(el);
+  refreshIcons();
+  setTimeout(() => {
+    el.style.transition = "opacity .25s, transform .25s";
+    el.style.opacity = "0";
+    el.style.transform = "translateY(-8px)";
+    setTimeout(() => el.remove(), 250);
+  }, 3200);
+}
+
+function setLoading(btn, loading) {
+  if (!btn) return;
+  btn.disabled = loading;
+  const label = btn.querySelector(".btn-label");
+  if (loading) {
+    btn.dataset.originalHtml = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner"></span><span>${label ? label.textContent : "Please wait…"}</span>`;
+  } else if (btn.dataset.originalHtml) {
+    btn.innerHTML = btn.dataset.originalHtml;
+  }
+}
+
+function showFieldError(inputId, message) {
+  const input = $(inputId);
+  const err = $(inputId + "Error");
+  if (input) input.classList.add("error");
+  if (err) { err.textContent = message; err.classList.add("show"); }
+}
+function clearFieldError(inputId) {
+  const input = $(inputId);
+  const err = $(inputId + "Error");
+  if (input) input.classList.remove("error");
+  if (err) { err.textContent = ""; err.classList.remove("show"); }
+}
+function clearFormErrors(ids) { ids.forEach(clearFieldError); }
+
+function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+const AUTH_ERROR_MESSAGES = {
+  "auth/email-already-in-use": "This email is already registered. Try logging in instead.",
+  "auth/invalid-email": "Please enter a valid email address.",
+  "auth/weak-password": "Password should be at least 6 characters.",
+  "auth/user-not-found": "Incorrect email or password.",
+  "auth/wrong-password": "Incorrect email or password.",
+  "auth/invalid-credential": "Incorrect email or password.",
+  "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.",
+  "auth/network-request-failed": "Network error. Check your connection and try again.",
+};
+function mapAuthError(err) {
+  return AUTH_ERROR_MESSAGES[err?.code] || "Something went wrong. Please try again.";
+}
+
+/* ---------------- password visibility ---------------- */
+$$(".toggle-pw").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const input = $(btn.dataset.toggle);
+    const isPw = input.type === "password";
+    input.type = isPw ? "text" : "password";
+    btn.innerHTML = `<svg data-lucide="${isPw ? "eye-off" : "eye"}"></svg>`;
+    refreshIcons();
+  });
+});
+
+/* ---------------- auth view switching ---------------- */
+function showAuthView(view) {
+  $("loginView").hidden = view !== "login";
+  $("signupView").hidden = view !== "signup";
+  $("resetView").hidden = view !== "reset";
+}
+$("goSignup").addEventListener("click", () => { haptic(); showAuthView("signup"); });
+$("goLogin").addEventListener("click", () => { haptic(); showAuthView("login"); });
+$("forgotLink").addEventListener("click", (e) => { e.preventDefault(); haptic(); showAuthView("reset"); });
+$("backToLogin").addEventListener("click", () => { haptic(); showAuthView("login"); });
+
+/* ---------------- referral capture ---------------- */
+(function captureReferral() {
+  const params = new URLSearchParams(location.search);
+  const ref = params.get("ref");
+  if (ref) localStorage.setItem("pendingReferral", ref);
+})();
+
+/* ---------------- signup ---------------- */
+$("signupForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearFormErrors(["signupName", "signupEmail", "signupPassword", "signupConfirm"]);
+
+  const name = $("signupName").value.trim();
+  const email = $("signupEmail").value.trim();
+  const password = $("signupPassword").value;
+  const confirm = $("signupConfirm").value;
+  let valid = true;
+
+  if (name.length < 2) { showFieldError("signupName", "Please enter your full name."); valid = false; }
+  if (!isValidEmail(email)) { showFieldError("signupEmail", "Please enter a valid email address."); valid = false; }
+  if (password.length < 6) { showFieldError("signupPassword", "Password must be at least 6 characters."); valid = false; }
+  if (confirm !== password || !confirm) { showFieldError("signupConfirm", "Passwords do not match."); valid = false; }
+  if (!valid) return;
+
+  const btn = $("signupSubmitBtn");
+  setLoading(btn, true);
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(cred.user, { displayName: name });
+
+    const referralCode = cred.user.uid.slice(0, 8).toUpperCase();
+    const referredBy = localStorage.getItem("pendingReferral") || null;
+
+    try {
+      await setDoc(doc(db, "users", cred.user.uid), {
+        name,
+        email,
+        balance: 0,
+        todayEarnings: 0,
+        totalEarned: 0,
+        referralCode,
+        referredBy,
+        createdAt: serverTimestamp(),
+      });
+      localStorage.removeItem("pendingReferral");
+    } catch (profileErr) {
+      // Auth account exists even if this write failed; onAuthStateChanged will retry.
+      toast("Account created, but saving your profile failed. We'll retry automatically.", "error");
+    }
+
+    haptic(15);
+    toast("Account created. Welcome to Rare Earners!", "success");
+  } catch (err) {
+    haptic([10, 30, 10]);
+    toast(mapAuthError(err), "error");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+/* ---------------- login ---------------- */
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearFormErrors(["loginEmail", "loginPassword"]);
+
+  const email = $("loginEmail").value.trim();
+  const password = $("loginPassword").value;
+  let valid = true;
+  if (!isValidEmail(email)) { showFieldError("loginEmail", "Please enter a valid email address."); valid = false; }
+  if (!password) { showFieldError("loginPassword", "Please enter your password."); valid = false; }
+  if (!valid) return;
+
+  const btn = $("loginSubmitBtn");
+  setLoading(btn, true);
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    await signInWithEmailAndPassword(auth, email, password);
+    haptic(15);
+  } catch (err) {
+    haptic([10, 30, 10]);
+    toast(mapAuthError(err), "error");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+/* ---------------- reset password ---------------- */
+$("resetForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearFormErrors(["resetEmail"]);
+  const email = $("resetEmail").value.trim();
+  if (!isValidEmail(email)) { showFieldError("resetEmail", "Please enter a valid email address."); return; }
+
+  const btn = $("resetSubmitBtn");
+  setLoading(btn, true);
+  try {
+    await sendPasswordResetEmail(auth, email);
+    haptic(15);
+    toast("Reset link sent. Check your inbox.", "success");
+    showAuthView("login");
+  } catch (err) {
+    toast(mapAuthError(err), "error");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+/* ---------------- logout ---------------- */
+$("logoutBtn").addEventListener("click", async () => {
+  haptic();
+  try { await signOut(auth); toast("Logged out.", "default"); }
+  catch (err) { toast("Could not log out. Try again.", "error"); }
+});
+
+/* ---------------- popovers ---------------- */
+function toggleId(id) { const el = $(id); el.hidden = !el.hidden; }
+function closeAllPopovers(except) {
+  ["bellPopover", "profilePopover"].forEach((id) => { if (id !== except) $(id).hidden = true; });
+}
+$("bellBtn").addEventListener("click", (e) => { e.stopPropagation(); haptic(); closeAllPopovers("bellPopover"); toggleId("bellPopover"); });
+$("profileBtn").addEventListener("click", (e) => { e.stopPropagation(); haptic(); closeAllPopovers("profilePopover"); toggleId("profilePopover"); });
+["sidebarProfileBtn", "bnProfileBtn"].forEach((id) => {
+  $(id).addEventListener("click", (e) => { e.stopPropagation(); haptic(); closeAllPopovers("profilePopover"); toggleId("profilePopover"); });
+});
+document.addEventListener("click", () => closeAllPopovers());
+
+/* ---------------- nav scroll + active state ---------------- */
+function setActiveSection(sectionId) {
+  $$(".nav-item[data-section]").forEach((el) => el.classList.toggle("active", el.dataset.section === sectionId));
+  $$(".bn-item[data-section]").forEach((el) => el.classList.toggle("active", el.dataset.section === sectionId));
+}
+$$("[data-section], [data-scroll]").forEach((el) => {
+  el.addEventListener("click", (e) => {
+    const targetId = el.dataset.section || el.dataset.scroll;
+    if (!targetId) return;
+    e.preventDefault();
+    haptic();
+    const target = $(targetId);
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (el.dataset.section) setActiveSection(targetId);
+  });
+});
+
+/* ---------------- withdraw / history / invite stubs ---------------- */
+function comingSoon(feature) { haptic(); toast(`${feature} is coming soon.`); }
+$("withdrawBtn").addEventListener("click", () => comingSoon("Withdrawals"));
+$("qaWithdraw").addEventListener("click", () => comingSoon("Withdrawals"));
+$("qaHistory").addEventListener("click", () => comingSoon("Earnings history"));
+["inviteBtnMain", "inviteBtnSidebar"].forEach((id) => {
+  $(id).addEventListener("click", () => {
+    haptic();
+    $("tasksPanel").previousElementSibling; // no-op guard
+    $("referralPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+});
+
+/* ---------------- copy referral link ---------------- */
+$("copyReferralBtn").addEventListener("click", async () => {
+  haptic();
+  const input = $("referralLink");
+  try {
+    await navigator.clipboard.writeText(input.value);
+    toast("Referral link copied.", "success");
+  } catch (e) {
+    input.select();
+    document.execCommand("copy");
+    toast("Referral link copied.", "success");
+  }
+});
+
+/* ---------------- tasks ---------------- */
+const TASKS = [
+  { id: "t1", name: "Follow on X", desc: "Follow our X account and stay updated.", reward: 20, time: "1 min", difficulty: "Easy", icon: "at-sign", color: "#000000" },
+  { id: "t2", name: "Join Telegram Group", desc: "Join our Telegram group.", reward: 25, time: "2 min", difficulty: "Easy", icon: "send", color: "#229ED9" },
+  { id: "t3", name: "Subscribe on YouTube", desc: "Subscribe to our YouTube channel.", reward: 30, time: "2 min", difficulty: "Easy", icon: "play", color: "#FF0000" },
+  { id: "t4", name: "Follow on Instagram", desc: "Follow our Instagram account.", reward: 20, time: "1 min", difficulty: "Easy", icon: "camera", color: "#C13584" },
+];
+
+function renderTasks(list) {
+  const container = $("taskList");
+  if (!list.length) {
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="search-x"></svg><p>No tasks match your search.</p></div>`;
+    refreshIcons();
+    return;
+  }
+  container.innerHTML = list.map((t) => `
+    <div class="task-row">
+      <div class="task-icon" style="background:${t.color}"><svg data-lucide="${t.icon}"></svg></div>
+      <div class="task-info">
+        <h4>${t.name}</h4>
+        <p>${t.desc}</p>
+        <div class="task-meta"><span>${t.time}</span><span class="dot"></span><span>${t.difficulty}</span></div>
+      </div>
+      <div class="task-reward"><div class="amount">₦${t.reward}</div><div class="label">Reward</div></div>
+      <button type="button" class="btn btn-ghost btn-sm" data-task="${t.id}">Start Task</button>
+    </div>
+  `).join("");
+  refreshIcons();
+  $$("[data-task]", container).forEach((btn) => {
+    btn.addEventListener("click", () => comingSoon("This task"));
+  });
+
+  const completed = 0;
+  const total = TASKS.length;
+  const pct = total ? Math.round((completed / total) * 100) : 0;
+  $("progressLabel").textContent = `${completed} of ${total} tasks completed`;
+  $("progressPct").textContent = `${pct}%`;
+  $("progressFill").style.width = `${pct}%`;
+}
+renderTasks(TASKS);
+
+$("taskSearch").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  renderTasks(TASKS.filter((t) => t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)));
+});
+$("taskFilterBtn").addEventListener("click", () => comingSoon("Task filters"));
+
+/* ---------------- dashboard render ---------------- */
+function initials(name, email) {
+  const source = (name || email || "?").trim();
+  const parts = source.split(" ").filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return source.slice(0, 2).toUpperCase();
+}
+function greetingForHour() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+function formatMoney(n) {
+  return Number(n || 0).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function renderDashboard(user, profile) {
+  const name = profile?.name || user.displayName || "there";
+  const email = user.email || "";
+  $("greeting").textContent = `${greetingForHour()}, ${name.split(" ")[0]}`;
+  $("profileName").textContent = name.split(" ")[0];
+  $("popoverName").textContent = name;
+  $("popoverEmail").textContent = email;
+  $("avatarInitials").textContent = initials(name, email);
+
+  $("balanceValue").textContent = formatMoney(profile?.balance);
+  $("todayEarnings").textContent = formatMoney(profile?.todayEarnings);
+  $("totalEarned").textContent = formatMoney(profile?.totalEarned);
+
+  const code = profile?.referralCode || user.uid.slice(0, 8).toUpperCase();
+  $("referralLink").value = `${location.origin}${location.pathname}?ref=${code}`;
+}
+
+/* ---------------- auth state ---------------- */
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    let profile = null;
+    try {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      profile = snap.exists() ? snap.data() : null;
+    } catch (e) {
+      toast("Could not load your profile. Some data may be missing.", "error");
+    }
+    if (!profile) {
+      profile = {
+        name: user.displayName || "",
+        email: user.email || "",
+        balance: 0,
+        todayEarnings: 0,
+        totalEarned: 0,
+        referralCode: user.uid.slice(0, 8).toUpperCase(),
+        referredBy: localStorage.getItem("pendingReferral") || null,
+        createdAt: serverTimestamp(),
+      };
+      try {
+        await setDoc(doc(db, "users", user.uid), profile, { merge: true });
+        localStorage.removeItem("pendingReferral");
+      } catch (e) {
+        // Firestore still unreachable/denied — proceed with in-memory defaults.
+      }
+    }
+    renderDashboard(user, profile);
+    $("authScreen").hidden = true;
+    $("dashboardScreen").hidden = false;
+    refreshIcons();
+  } else {
+    $("dashboardScreen").hidden = true;
+    $("authScreen").hidden = false;
+    $("loginForm").reset();
+    $("signupForm").reset();
+    clearFormErrors(["loginEmail", "loginPassword", "signupName", "signupEmail", "signupPassword", "signupConfirm"]);
+    showAuthView("login");
+    refreshIcons();
+  }
+});
+
+refreshIcons();
+</script>
+</body>
+</html>
