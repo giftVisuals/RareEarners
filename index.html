@@ -326,12 +326,6 @@
     transition:border-color .15s, box-shadow .15s;
   }
   .search-wrap input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-light);}
-  .filter-btn{
-    display:flex;align-items:center;gap:6px;padding:0 14px;border-radius:11px;border:1.5px solid var(--border-strong);
-    font-size:13px;font-weight:600;color:var(--text);background:#fff;flex-shrink:0;
-  }
-  .filter-btn svg{width:15px;height:15px;}
-  .filter-btn:active{transform:scale(.96);}
 
   .task-list{display:flex;flex-direction:column;gap:10px;}
   .task-row{
@@ -352,6 +346,63 @@
   .empty-state{text-align:center;padding:32px 14px;color:var(--text-muted);}
   .empty-state svg{width:34px;height:34px;margin-bottom:10px;opacity:.5;}
   .empty-state p{font-size:13.5px;}
+
+  /* ---------- dedicated tasks page ---------- */
+  .tasks-hero{
+    position:relative;overflow:hidden;border-radius:22px;padding:26px 24px;margin-bottom:16px;color:#fff;
+    background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);
+    box-shadow:0 16px 40px rgba(22,101,52,.28);
+  }
+  .tasks-hero::after{content:"";position:absolute;inset:0;background:radial-gradient(420px 220px at 88% -10%, rgba(255,255,255,.16), transparent 60%);pointer-events:none;}
+  .tasks-hero h2{font-size:22px;font-weight:800;margin-bottom:6px;position:relative;z-index:1;}
+  .tasks-hero p{font-size:13.5px;opacity:.9;margin-bottom:18px;position:relative;z-index:1;max-width:420px;}
+  .tasks-hero-progress{display:flex;align-items:center;gap:12px;position:relative;z-index:1;}
+  .tasks-hero-pill{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.28);font-weight:700;font-size:13.5px;flex-shrink:0;}
+  .tasks-hero-pill svg{width:15px;height:15px;}
+  .tasks-hero-bar{flex:1;height:8px;border-radius:6px;background:rgba(255,255,255,.22);overflow:hidden;}
+  .tasks-hero-bar-fill{height:100%;border-radius:6px;background:#fff;transition:width .6s var(--ease);}
+
+  .task-card-list{display:flex;flex-direction:column;gap:14px;}
+  .task-card{
+    background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px;
+    transition:box-shadow .2s var(--ease), transform .2s var(--ease);
+  }
+  .task-card:hover{box-shadow:var(--shadow-md);}
+  .task-card-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;}
+  .task-card-icon{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;}
+  .task-card-icon svg{width:21px;height:21px;}
+  .task-card-title{flex:1;min-width:0;}
+  .task-card-title h4{font-size:15px;font-weight:800;margin-bottom:2px;}
+  .task-card-meta-row{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-muted);}
+  .task-card-reward{font-size:16px;font-weight:800;color:var(--primary-dark);flex-shrink:0;white-space:nowrap;}
+
+  .task-card-desc{font-size:13px;color:var(--text-muted);line-height:1.55;margin-bottom:4px;}
+  .task-card-desc.clamped{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .read-more-btn{font-size:12.5px;font-weight:700;color:var(--primary-dark);margin-bottom:12px;}
+  .read-more-btn:hover{text-decoration:underline;}
+
+  .task-card-status{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;background:var(--primary-light);color:var(--primary-dark);font-size:12.5px;font-weight:700;}
+  .task-card-status svg{width:14px;height:14px;}
+
+  .task-expand{
+    margin-top:14px;padding-top:14px;border-top:1px solid var(--border);
+    animation:expandIn .25s var(--ease);
+  }
+  @keyframes expandIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+  .task-instructions{
+    display:flex;gap:10px;padding:12px;border-radius:12px;background:#FFF7ED;border:1px solid #FED7AA;
+    font-size:12.5px;color:#9A3412;line-height:1.5;margin-bottom:14px;
+  }
+  .task-instructions svg{width:17px;height:17px;flex-shrink:0;margin-top:1px;color:#C2410C;}
+  .file-drop{
+    display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:12px;
+    border:1.5px dashed var(--border-strong);background:#F8FAFC;cursor:pointer;margin-bottom:12px;
+    transition:border-color .15s var(--ease), background .15s var(--ease), transform .15s var(--ease);
+  }
+  .file-drop:hover{border-color:var(--primary);background:var(--primary-light);}
+  .file-drop:active{transform:scale(.99);}
+  .file-drop svg{width:18px;height:18px;color:var(--text-muted);flex-shrink:0;}
+  .file-drop span{font-size:13px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   .progress-row-flex{display:flex;align-items:center;justify-content:space-between;gap:14px;}
   .progress-title{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:800;margin-bottom:6px;}
@@ -745,13 +796,6 @@
             <h3>Available Tasks</h3>
             <a href="#" class="link-more" id="tasksViewAll">View all</a>
           </div>
-          <div class="task-toolbar">
-            <div class="search-wrap">
-              <svg data-lucide="search"></svg>
-              <input type="text" id="taskSearch" placeholder="Search tasks...">
-            </div>
-            <button type="button" class="filter-btn" id="taskFilterBtn"><svg data-lucide="sliders-horizontal"></svg>Filter</button>
-          </div>
           <div class="task-list" id="taskList"></div>
         </section>
 
@@ -795,6 +839,25 @@
       </div>
     </div>
 
+    <!-- TASKS VIEW -->
+    <div id="tasksView" hidden>
+      <div class="tasks-hero">
+        <h2>Tasks that pay</h2>
+        <p>Complete simple actions and earn straight into your balance.</p>
+        <div class="tasks-hero-progress">
+          <span class="tasks-hero-pill"><svg data-lucide="check"></svg><span id="tasksHeroCount">0/0</span></span>
+          <div class="tasks-hero-bar"><div class="tasks-hero-bar-fill" id="tasksHeroBarFill" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="task-toolbar">
+        <div class="search-wrap">
+          <svg data-lucide="search"></svg>
+          <input type="text" id="tasksPageSearch" placeholder="Search tasks...">
+        </div>
+      </div>
+      <div class="task-card-list" id="tasksPageList"></div>
+    </div>
+
     <!-- COMING SOON VIEW -->
     <div id="comingSoonView" hidden>
       <div class="coming-soon-wrap">
@@ -826,7 +889,7 @@ import {
   GoogleAuthProvider, signInWithPopup
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs
+  getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, addDoc, query, where
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1124,7 +1187,7 @@ let currentUser = null;
 
 const APP_ROUTES = {
   "/home": { type: "home" },
-  "/tasks": { type: "home", navKey: "tasks", scrollTo: "tasksPanel" },
+  "/tasks": { type: "tasks", navKey: "tasks", focusSlug: null },
   "/earn": { type: "coming", feature: "Earn", navKey: "earn" },
   "/referrals": { type: "coming", feature: "Referrals", navKey: "referrals" },
   "/profile": { type: "coming", feature: "Profile", navKey: "profile" },
@@ -1136,9 +1199,7 @@ const AUTH_ROUTES = { "/login": "login", "/signup": "signup", "/reset-password":
 function matchAppRoute(path) {
   if (APP_ROUTES[path]) return APP_ROUTES[path];
   const m = path.match(/^\/tasks\/([a-z0-9-]+)$/);
-  if (m) {
-    return { type: "home", navKey: "tasks", scrollTo: "tasksPanel" };
-  }
+  if (m) return { type: "tasks", navKey: "tasks", focusSlug: m[1] };
   return null;
 }
 
@@ -1153,17 +1214,26 @@ function navigate(path, opts = {}) {
 function setActiveNav(key) {
   $$("[data-view]").forEach((el) => el.classList.toggle("active", key !== null && el.dataset.view === key));
 }
-function renderHomeUI(navKey, scrollToId) {
+function renderHomeUI() {
   $("comingSoonView").hidden = true;
+  $("tasksView").hidden = true;
   $("homeView").hidden = false;
-  setActiveNav(navKey || "home");
-  const target = scrollToId ? $(scrollToId) : null;
-  if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
-  else window.scrollTo({ top: 0, behavior: "smooth" });
+  setActiveNav("home");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function renderTasksUI(focusSlug) {
+  $("comingSoonView").hidden = true;
+  $("homeView").hidden = true;
+  $("tasksView").hidden = false;
+  setActiveNav("tasks");
+  expandedTaskSlug = focusSlug;
+  renderTasksPage();
+  if (!focusSlug) window.scrollTo({ top: 0, behavior: "smooth" });
 }
 function renderComingSoonUI(feature, navKey) {
   $("comingSoonFeature").textContent = feature;
   $("homeView").hidden = true;
+  $("tasksView").hidden = true;
   $("comingSoonView").hidden = false;
   setActiveNav(navKey ?? null);
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1180,7 +1250,9 @@ function renderRoute() {
       history.replaceState({}, "", "/home");
       renderHomeUI();
     } else if (match.type === "home") {
-      renderHomeUI(match.navKey, match.scrollTo);
+      renderHomeUI();
+    } else if (match.type === "tasks") {
+      renderTasksUI(match.focusSlug);
     } else {
       renderComingSoonUI(match.feature, match.navKey);
     }
@@ -1212,12 +1284,11 @@ function scrollToPanel(id) {
   const target = $(id);
   if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
 }
-$("qaTasks").addEventListener("click", () => { haptic(); scrollToPanel("tasksPanel"); });
+$("qaTasks").addEventListener("click", () => { haptic(); navigate("/tasks"); });
 $("qaReferrals").addEventListener("click", () => { haptic(); scrollToPanel("referralPanel"); });
 $("qaWithdraw").addEventListener("click", () => { haptic(); navigate("/withdraw"); });
 $("qaHistory").addEventListener("click", () => { haptic(); navigate("/history"); });
 $("withdrawBtn").addEventListener("click", () => { haptic(); navigate("/withdraw"); });
-$("taskFilterBtn").addEventListener("click", () => { haptic(); navigate("/tasks"); });
 $("tasksViewAll").addEventListener("click", (e) => { e.preventDefault(); haptic(); navigate("/tasks"); });
 $("activityViewAll").addEventListener("click", (e) => { e.preventDefault(); haptic(); navigate("/history"); });
 
@@ -1264,40 +1335,90 @@ async function shareReferral() {
 });
 
 /* ---------------- tasks ---------------- */
+// TEMP: one hardcoded task so the submit-proof flow can be tested before the
+// admin panel exists to create real ones. Delete once the admin panel is live —
+// it only shows up when Firestore's "tasks" collection is empty.
+const TEMP_TEST_TASKS = [
+  {
+    id: "temp-crediplex-x",
+    name: "Follow Crediplex on X",
+    desc: "Follow Crediplex X account, like and comment positive things (e.g. cool, good, very good).",
+    reward: 50,
+    time: "2 min",
+    difficulty: "Easy",
+    icon: "at-sign",
+    color: "#000000",
+    link: "https://x.com/crediplexhq",
+  },
+];
+
 let TASKS = [];
 let tasksLoaded = false;
+let mySubmissions = {};
+let expandedTaskSlug = null;
+let tasksPageSearchQuery = "";
 const RING_CIRCUMFERENCE = 2 * Math.PI * 26;
 $("ringFill").style.strokeDasharray = `${RING_CIRCUMFERENCE}`;
 $("ringFill").style.strokeDashoffset = `${RING_CIRCUMFERENCE}`;
 
-async function loadTasks() {
+async function loadTasksData() {
   try {
     const snap = await getDocs(collection(db, "tasks"));
-    TASKS = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    TASKS = snap.docs.length ? snap.docs.map((d) => ({ id: d.id, ...d.data() })) : TEMP_TEST_TASKS;
   } catch (e) {
-    TASKS = [];
+    TASKS = TEMP_TEST_TASKS;
   }
+}
+async function loadMySubmissions() {
+  if (!currentUser) { mySubmissions = {}; return; }
+  try {
+    const q = query(collection(db, "taskSubmissions"), where("userId", "==", currentUser.uid));
+    const snap = await getDocs(q);
+    mySubmissions = {};
+    snap.forEach((d) => { const data = d.data(); mySubmissions[data.taskId] = data.status; });
+  } catch (e) {
+    mySubmissions = {};
+  }
+}
+async function loadTasks() {
+  await Promise.all([loadTasksData(), loadMySubmissions()]);
   tasksLoaded = true;
-  renderTasks(TASKS);
+  renderHomeTaskPreview();
+  renderTasksPage();
 }
 
-function renderTasks(list) {
+function completedTaskCount() {
+  return Object.values(mySubmissions).filter((s) => s === "approved").length;
+}
+function updateProgressWidgets() {
+  const completed = completedTaskCount();
+  const total = TASKS.length;
+  const pct = total ? Math.round((completed / total) * 100) : 0;
+  $("progressLabel").textContent = `${completed} of ${total} tasks completed`;
+  $("progressPct").textContent = `${pct}%`;
+  $("ringFill").style.strokeDashoffset = `${RING_CIRCUMFERENCE - (pct / 100) * RING_CIRCUMFERENCE}`;
+  $("tasksHeroCount").textContent = `${completed}/${total}`;
+  $("tasksHeroBarFill").style.width = `${pct}%`;
+}
+
+function renderHomeTaskPreview() {
   const container = $("taskList");
+  const list = TASKS.slice(0, 5);
   if (!list.length) {
-    const noneAvailable = TASKS.length === 0;
-    const msg = !tasksLoaded ? "Loading tasks…" : noneAvailable ? "No tasks available yet. Check back soon!" : "No tasks match your search.";
-    const icon = !tasksLoaded ? "loader-2" : noneAvailable ? "inbox" : "search-x";
+    const msg = !tasksLoaded ? "Loading tasks…" : "No tasks available yet. Check back soon!";
+    const icon = !tasksLoaded ? "loader-2" : "inbox";
     container.innerHTML = `<div class="empty-state"><svg data-lucide="${icon}"></svg><p>${msg}</p></div>`;
     refreshIcons();
+    updateProgressWidgets();
     return;
   }
   container.innerHTML = list.map((t) => `
     <div class="task-row">
-      <div class="task-icon" style="background:${t.color}"><svg data-lucide="${t.icon}"></svg></div>
+      <div class="task-icon" style="background:${t.color || '#111'}"><svg data-lucide="${t.icon || 'star'}"></svg></div>
       <div class="task-info">
         <h4>${t.name}</h4>
-        <p>${t.desc}</p>
-        <div class="task-meta"><span>${t.time}</span><span class="dot"></span><span>${t.difficulty}</span></div>
+        <p>${t.desc || ""}</p>
+        <div class="task-meta"><span>${t.time || ""}</span><span class="dot"></span><span>${t.difficulty || "Easy"}</span></div>
       </div>
       <div class="task-reward"><div class="amount">₦${t.reward}</div><div class="label">Reward</div></div>
       <button type="button" class="btn btn-ghost btn-sm" data-task="${t.id}">Start Task</button>
@@ -1310,19 +1431,172 @@ function renderTasks(list) {
       navigate(`/tasks/${toSlug(task ? task.name : "task")}`);
     });
   });
-
-  const completed = 0;
-  const total = TASKS.length;
-  const pct = total ? Math.round((completed / total) * 100) : 0;
-  $("progressLabel").textContent = `${completed} of ${total} tasks completed`;
-  $("progressPct").textContent = `${pct}%`;
-  $("ringFill").style.strokeDashoffset = `${RING_CIRCUMFERENCE - (pct / 100) * RING_CIRCUMFERENCE}`;
+  updateProgressWidgets();
 }
-renderTasks([]);
 
-$("taskSearch").addEventListener("input", (e) => {
-  const q = e.target.value.trim().toLowerCase();
-  renderTasks(TASKS.filter((t) => t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)));
+function renderTasksPage() {
+  const container = $("tasksPageList");
+  const q = tasksPageSearchQuery;
+  const list = TASKS.filter((t) => !q || t.name.toLowerCase().includes(q) || (t.desc || "").toLowerCase().includes(q));
+
+  if (!list.length) {
+    const msg = !tasksLoaded ? "Loading tasks…" : TASKS.length === 0 ? "No tasks available yet. Check back soon!" : "No tasks match your search.";
+    const icon = !tasksLoaded ? "loader-2" : TASKS.length === 0 ? "inbox" : "search-x";
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="${icon}"></svg><p>${msg}</p></div>`;
+    refreshIcons();
+    updateProgressWidgets();
+    return;
+  }
+
+  container.innerHTML = list.map((t) => {
+    const slug = toSlug(t.name);
+    const status = mySubmissions[t.id];
+    const isExpanded = expandedTaskSlug === slug && !status;
+    const statusMeta = status === "approved"
+      ? { icon: "check-circle", label: "Approved" }
+      : status === "rejected"
+      ? { icon: "x-circle", label: "Not approved — try again" }
+      : { icon: "clock", label: "Pending review" };
+    return `
+    <div class="task-card" data-task-id="${t.id}" data-slug="${slug}">
+      <div class="task-card-head">
+        <div class="task-card-icon" style="background:${t.color || '#111'}"><svg data-lucide="${t.icon || 'star'}"></svg></div>
+        <div class="task-card-title">
+          <h4>${t.name}</h4>
+          <div class="task-card-meta-row"><span>${t.time || ""}</span><span class="dot"></span><span>${t.difficulty || "Easy"}</span></div>
+        </div>
+        <div class="task-card-reward">₦${t.reward}</div>
+      </div>
+      <p class="task-card-desc clamped" data-desc>${t.desc || ""}</p>
+      <button type="button" class="read-more-btn" data-readmore>Read more</button><br>
+      ${status && status !== "rejected"
+        ? `<div class="task-card-status"><svg data-lucide="${statusMeta.icon}"></svg>${statusMeta.label}</div>`
+        : `<button type="button" class="btn btn-primary btn-sm" data-start>${status === "rejected" ? "Try Again" : "Start Task"}</button>`}
+      <div class="task-expand" data-expand ${isExpanded ? "" : "hidden"}>
+        <div class="task-instructions"><svg data-lucide="alert-triangle"></svg><span>Complete the task fully, then take a clear screenshot as proof and submit it below. Submitting a fake or fraudulent screenshot can lead to a permanent ban.</span></div>
+        <label class="file-drop">
+          <input type="file" accept="image/*" hidden data-file-input>
+          <svg data-lucide="upload"></svg>
+          <span data-file-label>Choose a screenshot</span>
+        </label>
+        <button type="button" class="btn btn-primary btn-block" data-submit><svg data-lucide="send" style="width:15px;height:15px"></svg>Submit Proof</button>
+      </div>
+    </div>`;
+  }).join("");
+  refreshIcons();
+  wireTaskCardEvents(container);
+  updateProgressWidgets();
+
+  if (expandedTaskSlug) {
+    requestAnimationFrame(() => {
+      const el = container.querySelector(`.task-card[data-slug="${expandedTaskSlug}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+}
+
+function wireTaskCardEvents(container) {
+  $$(".task-card", container).forEach((card) => {
+    const taskId = card.dataset.taskId;
+    const task = TASKS.find((t) => t.id === taskId);
+    const descEl = card.querySelector("[data-desc]");
+    const readMoreBtn = card.querySelector("[data-readmore]");
+    if (readMoreBtn && descEl) {
+      readMoreBtn.addEventListener("click", () => {
+        haptic();
+        const clamped = descEl.classList.toggle("clamped");
+        readMoreBtn.textContent = clamped ? "Read more" : "Show less";
+      });
+      requestAnimationFrame(() => {
+        if (descEl.scrollHeight <= descEl.clientHeight + 2) readMoreBtn.hidden = true;
+      });
+    }
+    const startBtn = card.querySelector("[data-start]");
+    if (startBtn) {
+      startBtn.addEventListener("click", () => {
+        haptic();
+        if (task && task.link) window.open(task.link, "_blank", "noopener");
+        navigate(`/tasks/${toSlug(task ? task.name : taskId)}`);
+      });
+    }
+    const fileInput = card.querySelector("[data-file-input]");
+    const fileLabel = card.querySelector("[data-file-label]");
+    if (fileInput) {
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (fileLabel) fileLabel.textContent = file ? file.name : "Choose a screenshot";
+      });
+    }
+    const submitBtn = card.querySelector("[data-submit]");
+    if (submitBtn) {
+      submitBtn.addEventListener("click", () => handleSubmitProof(taskId, fileInput, submitBtn));
+    }
+  });
+}
+
+function compressImageToDataUrl(file, { maxWidth = 1280, quality = 0.7 } = {}) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read file."));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Could not read image."));
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleSubmitProof(taskId, fileInput, submitBtn) {
+  const file = fileInput?.files?.[0];
+  if (!file) { toast("Please choose a screenshot first.", "error"); return; }
+  if (!file.type.startsWith("image/")) { toast("Please upload an image file.", "error"); return; }
+
+  setLoading(submitBtn, true);
+  try {
+    const dataUrl = await compressImageToDataUrl(file);
+    if (dataUrl.length > 700000) {
+      toast("That screenshot is too large. Try a smaller image.", "error");
+      return;
+    }
+    const task = TASKS.find((t) => t.id === taskId);
+    await addDoc(collection(db, "taskSubmissions"), {
+      taskId,
+      taskName: task ? task.name : "",
+      reward: task ? task.reward : 0,
+      userId: currentUser.uid,
+      userName: currentUser.displayName || currentUser.email || "",
+      screenshot: dataUrl,
+      status: "pending",
+      submittedAt: serverTimestamp(),
+    });
+    mySubmissions[taskId] = "pending";
+    haptic(15);
+    toast("Proof submitted! We'll review it shortly.", "success");
+    renderTasksPage();
+  } catch (e) {
+    haptic([10, 30, 10]);
+    toast("Could not submit proof. Please try again.", "error");
+  } finally {
+    setLoading(submitBtn, false);
+  }
+}
+
+renderHomeTaskPreview();
+renderTasksPage();
+
+$("tasksPageSearch").addEventListener("input", (e) => {
+  tasksPageSearchQuery = e.target.value.trim().toLowerCase();
+  renderTasksPage();
 });
 
 /* ---------------- dashboard render ---------------- */
