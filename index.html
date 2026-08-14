@@ -76,6 +76,9 @@
     background:#fff;color:var(--text);border:1px solid var(--border-strong);
   }
   .btn-ghost:hover{background:#F8FAFC;}
+  .btn-google{background:#fff;color:var(--text);border:1.5px solid var(--border-strong);}
+  .btn-google:hover{background:#F8FAFC;}
+  .btn-google svg{flex-shrink:0;}
   .btn-sm{padding:8px 14px;font-size:13px;border-radius:10px;}
   .btn-block{width:100%;}
   .spinner{
@@ -83,8 +86,11 @@
     border:2px solid rgba(255,255,255,.5);border-top-color:#fff;
     animation:spin .7s linear infinite;
   }
-  .btn-ghost .spinner{border-color:rgba(15,23,42,.2);border-top-color:var(--text);}
+  .btn-ghost .spinner,.btn-google .spinner{border-color:rgba(15,23,42,.2);border-top-color:var(--text);}
   @keyframes spin{to{transform:rotate(360deg);}}
+
+  .auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0;font-size:12px;color:var(--text-muted);}
+  .auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:var(--border-strong);}
 
   .field{margin-bottom:16px;text-align:left;}
   .field label{display:block;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;}
@@ -129,10 +135,10 @@
   .auth-card{
     width:100%;max-width:420px;border-radius:24px;padding:36px 32px;position:relative;
   }
-  .auth-brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:22px;}
-  .auth-brand img{width:36px;height:36px;object-fit:contain;}
-  .auth-brand span{font-weight:800;font-size:19px;letter-spacing:-.02em;}
-  .auth-heading{text-align:center;margin-bottom:26px;}
+  .auth-brand{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:24px;}
+  .auth-brand img{width:52px;height:52px;object-fit:contain;}
+  .auth-brand span{font-weight:900;font-size:23px;letter-spacing:-.01em;}
+  .auth-heading{text-align:center;margin-bottom:22px;}
   .auth-heading h1{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px;}
   .auth-heading p{font-size:14px;color:var(--text-muted);}
   .auth-switch{text-align:center;margin-top:18px;font-size:14px;color:var(--text-muted);}
@@ -146,14 +152,16 @@
 
   /* ================= DASHBOARD ================= */
   #dashboardScreen{min-height:100vh;display:flex;}
+
+  /* desktop sidebar */
   .sidebar{
     display:none;width:250px;flex-direction:column;padding:24px 18px;
     position:sticky;top:0;height:100vh;border-right:1px solid var(--border);
     background:rgba(255,255,255,.7);
   }
   .sidebar-brand{display:flex;align-items:center;gap:10px;padding:6px 8px 26px;}
-  .sidebar-brand img{width:30px;height:30px;}
-  .sidebar-brand span{font-weight:800;font-size:15px;letter-spacing:.02em;}
+  .sidebar-brand img{width:40px;height:40px;}
+  .sidebar-brand span{font-weight:900;font-size:16.5px;letter-spacing:.01em;}
   .nav-list{display:flex;flex-direction:column;gap:2px;flex:1;}
   .nav-item{
     display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;
@@ -174,14 +182,42 @@
   .invite-card p{font-size:12.5px;color:var(--text-muted);line-height:1.5;margin-bottom:12px;}
   .sidebar-footer{font-size:11.5px;color:var(--text-muted);padding:14px 8px 4px;}
 
-  .main-content{flex:1;min-width:0;padding:20px 16px 100px;max-width:1200px;}
-  .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
-  .topbar h1{font-size:21px;font-weight:800;letter-spacing:-.02em;margin-bottom:3px;}
-  .topbar p{font-size:13.5px;color:var(--text-muted);}
-  .topbar-actions{display:flex;align-items:center;gap:10px;}
+  /* mobile drawer */
+  .drawer-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:90;opacity:0;pointer-events:none;transition:opacity .25s var(--ease);}
+  .drawer-overlay.show{opacity:1;pointer-events:auto;}
+  .mobile-drawer{
+    position:fixed;top:0;left:0;bottom:0;width:280px;max-width:82vw;z-index:95;
+    display:flex;flex-direction:column;padding:22px 16px;
+    background:rgba(255,255,255,.85);-webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border-right:1px solid var(--glass-border);box-shadow:var(--shadow-lg);
+    transform:translateX(-100%);transition:transform .28s var(--ease);
+  }
+  .mobile-drawer.open{transform:translateX(0);}
+  .drawer-close{position:absolute;top:18px;right:16px;width:34px;height:34px;border-radius:10px;background:#fff;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;transition:transform .15s var(--ease);}
+  .drawer-close:active{transform:scale(.9);}
+  .drawer-close svg{width:16px;height:16px;}
+  @media (min-width:1024px){
+    .menu-btn,.mobile-drawer,.drawer-overlay{display:none !important;}
+  }
+
+  .main-content{flex:1;min-width:0;padding:20px 16px 110px;max-width:1200px;}
+  .topbar-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .topbar-left{display:flex;align-items:center;gap:10px;min-width:0;}
+  .topbar-brand{display:flex;align-items:center;gap:9px;min-width:0;}
+  .topbar-brand img{width:36px;height:36px;object-fit:contain;flex-shrink:0;}
+  .topbar-brand span{font-size:12.5px;font-weight:900;line-height:1.2;letter-spacing:.01em;white-space:nowrap;}
+  .topbar-greet{margin-top:18px;margin-bottom:20px;}
+  .topbar-greet h1{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:3px;}
+  .topbar-greet p{font-size:13.5px;color:var(--text-muted);}
+  .topbar-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  @media (min-width:1024px){
+    .topbar-brand{display:none;}
+    .topbar-greet{margin-top:0;}
+  }
+
   .icon-btn{
     width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;
-    background:#fff;border:1px solid var(--border-strong);position:relative;
+    background:#fff;border:1px solid var(--border-strong);position:relative;flex-shrink:0;
     transition:transform .15s var(--ease), background .15s;
   }
   .icon-btn:hover{background:#F8FAFC;}
@@ -195,14 +231,15 @@
   .profile-btn:hover{background:#F8FAFC;}
   .profile-btn:active{transform:scale(.96);}
   .avatar{
-    width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;
     background:linear-gradient(160deg,var(--primary),var(--primary-dark));color:#fff;font-weight:700;font-size:13px;flex-shrink:0;
   }
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block;}
   .profile-btn span{font-size:13.5px;font-weight:600;}
   .profile-btn svg{width:15px;height:15px;color:var(--text-muted);}
 
   .popover{
-    position:absolute;top:calc(100% + 8px);right:0;width:230px;border-radius:14px;padding:8px;z-index:60;
+    position:absolute;top:calc(100% + 8px);right:0;width:230px;max-width:calc(100vw - 32px);border-radius:14px;padding:8px;z-index:60;
     background:#fff;border:1px solid var(--border-strong);box-shadow:var(--shadow-lg);
     animation:popIn .16s var(--ease);
   }
@@ -230,9 +267,12 @@
     background:radial-gradient(420px 220px at 88% -10%, rgba(255,255,255,.16), transparent 60%);
     pointer-events:none;
   }
-  .balance-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;position:relative;z-index:1;}
-  .balance-label{font-size:13.5px;opacity:.85;font-weight:600;margin-bottom:6px;}
-  .balance-amount{font-size:34px;font-weight:800;letter-spacing:-.02em;margin-bottom:14px;}
+  .balance-top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;position:relative;z-index:1;}
+  .balance-label{display:flex;align-items:center;gap:6px;font-size:13.5px;opacity:.85;font-weight:600;margin-bottom:6px;}
+  .eye-toggle{width:22px;height:22px;display:flex;align-items:center;justify-content:center;opacity:.85;color:#fff;transition:transform .15s var(--ease);}
+  .eye-toggle:active{transform:scale(.88);}
+  .eye-toggle svg{width:15px;height:15px;}
+  .balance-amount{font-size:34px;font-weight:800;letter-spacing:-.02em;}
   .balance-card .btn-ghost{background:#fff;color:var(--primary-dark);border:none;}
   .balance-stats{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;position:relative;z-index:1;}
   .stat-pill{
@@ -300,21 +340,24 @@
   .empty-state svg{width:34px;height:34px;margin-bottom:10px;opacity:.5;}
   .empty-state p{font-size:13.5px;}
 
-  .progress-bar{height:8px;border-radius:6px;background:#F1F5F9;overflow:hidden;margin-top:10px;}
-  .progress-bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--primary),var(--primary-dark));transition:width .5s var(--ease);}
-  .progress-row{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;}
-  .progress-row .pct{font-weight:800;color:var(--primary-dark);}
+  .progress-row-flex{display:flex;align-items:center;justify-content:space-between;gap:14px;}
+  .progress-title{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:800;margin-bottom:6px;}
+  .progress-title svg{width:17px;height:17px;color:var(--primary-dark);}
+  .progress-sub{font-size:12.5px;color:var(--text-muted);}
+  .progress-ring-wrap{position:relative;width:60px;height:60px;flex-shrink:0;}
+  .progress-ring{width:60px;height:60px;transform:rotate(-90deg);}
+  .ring-track{fill:none;stroke:#F1F5F9;stroke-width:6;}
+  .ring-fill{fill:none;stroke:var(--primary);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .6s var(--ease);}
+  .ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;color:var(--primary-dark);}
 
-  .referral-box{background:var(--primary-light);border-radius:14px;padding:14px;margin-top:4px;}
-  .referral-box p{font-size:12.5px;color:var(--primary-dark);line-height:1.5;margin-bottom:10px;}
-  .referral-input-row{display:flex;gap:8px;margin-bottom:10px;}
-  .referral-input-row input{
-    flex:1;min-width:0;padding:9px 10px;border-radius:10px;border:1px solid rgba(22,101,52,.2);
-    font-size:12.5px;background:#fff;color:var(--text-muted);
-  }
-  .copy-btn{width:38px;height:38px;border-radius:10px;background:#fff;border:1px solid rgba(22,101,52,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .copy-btn svg{width:16px;height:16px;color:var(--primary-dark);}
-  .copy-btn:active{transform:scale(.92);}
+  .referral-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .referral-icon{width:44px;height:44px;border-radius:12px;background:var(--primary-light);color:var(--primary-dark);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .referral-icon svg{width:20px;height:20px;}
+  .referral-text{flex:1;min-width:180px;}
+  .referral-text h4{font-size:14px;font-weight:800;margin-bottom:3px;}
+  .referral-text p{font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:6px;}
+  .referral-link-preview{display:block;font-size:11.5px;color:var(--primary-dark);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+  .referral-row .btn{flex-shrink:0;}
 
   .activity-list{display:flex;flex-direction:column;gap:2px;}
   .activity-row{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--border);}
@@ -324,11 +367,19 @@
   .activity-info{flex:1;min-width:0;}
   .activity-info h5{font-size:13px;font-weight:700;}
   .activity-info p{font-size:11.5px;color:var(--text-muted);}
-  .activity-amount{font-size:13px;font-weight:800;}
+  .activity-time{font-size:11px;font-weight:600;color:var(--text-muted);flex-shrink:0;}
+
+  /* coming soon */
+  .coming-soon-wrap{display:flex;align-items:center;justify-content:center;min-height:50vh;padding:20px 0;}
+  .coming-soon-card{width:100%;max-width:380px;text-align:center;background:#fff;border:1px solid var(--border);border-radius:22px;padding:40px 28px;}
+  .coming-soon-icon{width:60px;height:60px;border-radius:50%;background:var(--primary-light);color:var(--primary-dark);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+  .coming-soon-icon svg{width:26px;height:26px;}
+  .coming-soon-card h2{font-size:19px;font-weight:800;margin-bottom:8px;letter-spacing:-.01em;}
+  .coming-soon-card p{font-size:13.5px;color:var(--text-muted);line-height:1.5;margin-bottom:22px;}
 
   .bottom-nav{
     position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:50;
-    display:flex;gap:2px;padding:8px;border-radius:20px;width:min(420px,92vw);
+    display:flex;align-items:flex-end;gap:2px;padding:8px;border-radius:20px;width:min(420px,92vw);
     background:rgba(255,255,255,.75);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);
     border:1px solid var(--glass-border);box-shadow:var(--shadow-lg);
   }
@@ -340,6 +391,15 @@
   .bn-item span{font-size:10px;font-weight:700;}
   .bn-item.active{color:var(--primary-dark);background:var(--primary-light);}
   .bn-item:active{transform:scale(.92);}
+  .bn-fab{padding-top:0;}
+  .bn-fab-circle{
+    width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(160deg,var(--primary),var(--primary-dark));color:#fff;
+    transform:translateY(-14px);box-shadow:0 8px 20px rgba(22,163,74,.4);border:3px solid var(--bg);
+    transition:transform .15s var(--ease);
+  }
+  .bn-fab-circle svg{width:20px;height:20px;}
+  .bn-fab:active .bn-fab-circle{transform:translateY(-14px) scale(.9);}
 
   @media (min-width:1024px){
     .sidebar{display:flex;}
@@ -350,7 +410,7 @@
     .balance-amount{font-size:40px;}
   }
   @media (max-width:1023px){
-    .main-content{padding-bottom:110px;}
+    .main-content{padding-bottom:120px;}
   }
   @media (min-width:640px) and (max-width:1023px){
     .quick-actions{grid-template-columns:repeat(4,1fr);}
@@ -371,11 +431,21 @@
     </div>
 
     <!-- LOGIN VIEW -->
-    <div id="loginView">
+    <div id="loginView" hidden>
       <div class="auth-heading">
         <h1>Welcome back</h1>
         <p>Log in to continue earning</p>
       </div>
+      <button type="button" class="btn btn-google btn-block" id="googleBtnLogin">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
+          <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
+          <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
+          <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+        </svg>
+        <span class="btn-label">Continue with Google</span>
+      </button>
+      <div class="auth-divider">or continue with email</div>
       <form id="loginForm" novalidate>
         <div class="field">
           <label for="loginEmail">Email</label>
@@ -403,11 +473,21 @@
     </div>
 
     <!-- SIGNUP VIEW -->
-    <div id="signupView" hidden>
+    <div id="signupView">
       <div class="auth-heading">
         <h1>Create your account</h1>
         <p>Start completing tasks and earning today</p>
       </div>
+      <button type="button" class="btn btn-google btn-block" id="googleBtnSignup">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
+          <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
+          <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
+          <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+        </svg>
+        <span class="btn-label">Continue with Google</span>
+      </button>
+      <div class="auth-divider">or continue with email</div>
       <form id="signupForm" novalidate>
         <div class="field">
           <label for="signupName">Full name</label>
@@ -478,17 +558,40 @@
 <!-- ================= DASHBOARD SCREEN ================= -->
 <div id="dashboardScreen" hidden>
 
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="mobile-drawer" id="mobileDrawer">
+    <button type="button" class="drawer-close" id="drawerCloseBtn"><svg data-lucide="x"></svg></button>
+    <div class="sidebar-brand">
+      <img src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="Rare Earners">
+      <span>RARE EARNERS</span>
+    </div>
+    <nav class="nav-list">
+      <a href="#" class="nav-item active" data-view="home"><svg data-lucide="home"></svg>Home</a>
+      <a href="#" class="nav-item" data-view="tasks" data-feature="Tasks"><svg data-lucide="list-checks"></svg>Tasks</a>
+      <a href="#" class="nav-item" data-view="earn" data-feature="Earn"><svg data-lucide="zap"></svg>Earn</a>
+      <a href="#" class="nav-item" data-view="referrals" data-feature="Referrals"><svg data-lucide="users"></svg>Referrals</a>
+      <a href="#" class="nav-item" data-view="profile" data-feature="Profile"><svg data-lucide="user-round"></svg>Profile</a>
+    </nav>
+    <div class="invite-card">
+      <svg data-lucide="gift"></svg>
+      <h4>Invite friends</h4>
+      <p>Earn more when your friends join and complete tasks.</p>
+      <button type="button" class="btn btn-primary btn-sm btn-block" id="inviteBtnDrawer"><svg data-lucide="user-plus" style="width:15px;height:15px"></svg>Invite Friends</button>
+    </div>
+    <div class="sidebar-footer">© 2026 Rare Earners<br>All rights reserved.</div>
+  </aside>
+
   <aside class="sidebar">
     <div class="sidebar-brand">
       <img src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="Rare Earners">
       <span>RARE EARNERS</span>
     </div>
     <nav class="nav-list">
-      <a href="#top" class="nav-item active" data-section="top"><svg data-lucide="home"></svg>Home</a>
-      <a href="#tasksPanel" class="nav-item" data-section="tasksPanel"><svg data-lucide="list-checks"></svg>Tasks</a>
-      <a href="#tasksPanel" class="nav-item" data-section="tasksPanel"><svg data-lucide="zap"></svg>Earn</a>
-      <a href="#referralPanel" class="nav-item" data-section="referralPanel"><svg data-lucide="users"></svg>Referrals</a>
-      <button type="button" class="nav-item" id="sidebarProfileBtn"><svg data-lucide="user-round"></svg>Profile</button>
+      <a href="#" class="nav-item active" data-view="home"><svg data-lucide="home"></svg>Home</a>
+      <a href="#" class="nav-item" data-view="tasks" data-feature="Tasks"><svg data-lucide="list-checks"></svg>Tasks</a>
+      <a href="#" class="nav-item" data-view="earn" data-feature="Earn"><svg data-lucide="zap"></svg>Earn</a>
+      <a href="#" class="nav-item" data-view="referrals" data-feature="Referrals"><svg data-lucide="users"></svg>Referrals</a>
+      <a href="#" class="nav-item" data-view="profile" data-feature="Profile"><svg data-lucide="user-round"></svg>Profile</a>
     </nav>
     <div class="invite-card">
       <svg data-lucide="gift"></svg>
@@ -499,11 +602,14 @@
     <div class="sidebar-footer">© 2026 Rare Earners<br>All rights reserved.</div>
   </aside>
 
-  <main class="main-content" id="top">
-    <div class="topbar">
-      <div>
-        <h1 id="greeting">Good evening</h1>
-        <p>Complete tasks, earn rewards, and achieve your goals.</p>
+  <main class="main-content">
+    <div class="topbar-row">
+      <div class="topbar-left">
+        <button type="button" class="icon-btn menu-btn" id="menuBtn"><svg data-lucide="menu"></svg></button>
+        <div class="topbar-brand">
+          <img src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="Rare Earners">
+          <span>RARE<br>EARNERS</span>
+        </div>
       </div>
       <div class="topbar-actions">
         <div class="dropdown-wrap">
@@ -514,7 +620,7 @@
         </div>
         <div class="dropdown-wrap">
           <button type="button" class="profile-btn" id="profileBtn">
-            <span class="avatar" id="avatarInitials">?</span>
+            <span class="avatar" id="avatarBox">?</span>
             <span id="profileName">Loading…</span>
             <svg data-lucide="chevron-down"></svg>
           </button>
@@ -523,118 +629,141 @@
               <div class="name" id="popoverName">—</div>
               <div class="email" id="popoverEmail">—</div>
             </div>
-            <button type="button" class="popover-item"><svg data-lucide="user-round"></svg>Profile</button>
             <button type="button" class="popover-item danger" id="logoutBtn"><svg data-lucide="log-out"></svg>Log out</button>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="balance-card">
-      <div class="balance-top">
-        <div>
-          <div class="balance-label">Available Balance</div>
-          <div class="balance-amount">₦<span id="balanceValue">0.00</span></div>
-          <button type="button" class="btn btn-ghost btn-sm" id="withdrawBtn">Withdraw <svg data-lucide="arrow-right" style="width:15px;height:15px"></svg></button>
-        </div>
-      </div>
-      <div class="balance-stats">
-        <div class="stat-pill">
-          <div>
-            <div class="label">Today's Earnings</div>
-            <div class="value">₦<span id="todayEarnings">0.00</span></div>
-          </div>
-          <div class="stat-icon"><svg data-lucide="trending-up"></svg></div>
-        </div>
-        <div class="stat-pill">
-          <div>
-            <div class="label">Total Earned</div>
-            <div class="value">₦<span id="totalEarned">0.00</span></div>
-          </div>
-          <div class="stat-icon"><svg data-lucide="wallet"></svg></div>
-        </div>
-      </div>
+    <div class="topbar-greet">
+      <h1 id="greeting">Good evening</h1>
+      <p>Complete tasks, earn rewards, and achieve your goals.</p>
     </div>
 
-    <div class="quick-actions">
-      <button type="button" class="qa-card" data-scroll="tasksPanel">
-        <div class="qa-icon"><svg data-lucide="clipboard-check"></svg></div>
-        <div><h4>Tasks</h4><p>Browse and complete tasks</p></div>
-      </button>
-      <button type="button" class="qa-card" id="qaWithdraw">
-        <div class="qa-icon"><svg data-lucide="landmark"></svg></div>
-        <div><h4>Withdraw</h4><p>Withdraw your earnings</p></div>
-      </button>
-      <button type="button" class="qa-card" data-scroll="referralPanel">
-        <div class="qa-icon"><svg data-lucide="user-plus"></svg></div>
-        <div><h4>Referrals</h4><p>Invite friends and earn more</p></div>
-      </button>
-      <button type="button" class="qa-card" id="qaHistory">
-        <div class="qa-icon"><svg data-lucide="history"></svg></div>
-        <div><h4>History</h4><p>View your earnings history</p></div>
-      </button>
-    </div>
-
-    <div class="content-grid">
-      <section class="panel" id="tasksPanel">
-        <div class="panel-head">
-          <h3>Available Tasks</h3>
-          <a href="#" class="link-more">View all</a>
-        </div>
-        <div class="task-toolbar">
-          <div class="search-wrap">
-            <svg data-lucide="search"></svg>
-            <input type="text" id="taskSearch" placeholder="Search tasks...">
-          </div>
-          <button type="button" class="filter-btn" id="taskFilterBtn"><svg data-lucide="sliders-horizontal"></svg>Filter</button>
-        </div>
-        <div class="task-list" id="taskList"></div>
-      </section>
-
-      <div style="display:flex;flex-direction:column;gap:16px;">
-        <section class="panel">
-          <div class="panel-head"><h3>Today's Progress</h3></div>
-          <div class="progress-row">
-            <span id="progressLabel">0 of 0 tasks completed</span>
-            <span class="pct" id="progressPct">0%</span>
-          </div>
-          <div class="progress-bar"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
-        </section>
-
-        <section class="panel" id="referralPanel">
-          <div class="panel-head"><h3>Earn more with referrals</h3></div>
-          <div class="referral-box">
-            <p>Invite friends and earn rewards when they join and complete eligible activities.</p>
-            <div class="referral-input-row">
-              <input type="text" id="referralLink" readonly>
-              <button type="button" class="copy-btn" id="copyReferralBtn"><svg data-lucide="copy"></svg></button>
+    <!-- HOME VIEW -->
+    <div id="homeView">
+      <div class="balance-card">
+        <div class="balance-top">
+          <div>
+            <div class="balance-label">Available Balance
+              <button type="button" class="eye-toggle" id="balanceEyeBtn"><svg data-lucide="eye"></svg></button>
             </div>
-            <button type="button" class="btn btn-primary btn-block btn-sm" id="inviteBtnMain"><svg data-lucide="user-plus" style="width:15px;height:15px"></svg>Invite Friends</button>
+            <div class="balance-amount">₦<span id="balanceValue">0.00</span></div>
           </div>
-        </section>
+          <button type="button" class="btn btn-ghost btn-sm" id="withdrawBtn"><svg data-lucide="wallet" style="width:15px;height:15px"></svg>Withdraw</button>
+        </div>
+        <div class="balance-stats">
+          <div class="stat-pill">
+            <div>
+              <div class="label">Today's Earnings</div>
+              <div class="value">₦<span id="todayEarnings">0.00</span></div>
+            </div>
+            <div class="stat-icon"><svg data-lucide="trending-up"></svg></div>
+          </div>
+          <div class="stat-pill">
+            <div>
+              <div class="label">Total Earned</div>
+              <div class="value">₦<span id="totalEarned">0.00</span></div>
+            </div>
+            <div class="stat-icon"><svg data-lucide="layers"></svg></div>
+          </div>
+        </div>
+      </div>
 
-        <section class="panel">
+      <div class="quick-actions">
+        <button type="button" class="qa-card" id="qaTasks">
+          <div class="qa-icon"><svg data-lucide="clipboard-check"></svg></div>
+          <div><h4>Tasks</h4><p>Browse and complete tasks</p></div>
+        </button>
+        <button type="button" class="qa-card" id="qaWithdraw">
+          <div class="qa-icon"><svg data-lucide="landmark"></svg></div>
+          <div><h4>Withdraw</h4><p>Withdraw your earnings</p></div>
+        </button>
+        <button type="button" class="qa-card" id="qaReferrals">
+          <div class="qa-icon"><svg data-lucide="user-plus"></svg></div>
+          <div><h4>Referrals</h4><p>Invite friends and earn more</p></div>
+        </button>
+        <button type="button" class="qa-card" id="qaHistory">
+          <div class="qa-icon"><svg data-lucide="history"></svg></div>
+          <div><h4>History</h4><p>View your earnings history</p></div>
+        </button>
+      </div>
+
+      <div class="content-grid">
+        <section class="panel" id="tasksPanel">
           <div class="panel-head">
-            <h3>Recent Activity</h3>
-            <a href="#" class="link-more">View all</a>
+            <h3>Available Tasks</h3>
+            <a href="#" class="link-more" id="tasksViewAll">View all</a>
           </div>
-          <div class="activity-list" id="activityList">
-            <div class="empty-state">
-              <svg data-lucide="inbox"></svg>
-              <p>No activity yet. Complete your first task to see it here.</p>
+          <div class="task-toolbar">
+            <div class="search-wrap">
+              <svg data-lucide="search"></svg>
+              <input type="text" id="taskSearch" placeholder="Search tasks...">
             </div>
+            <button type="button" class="filter-btn" id="taskFilterBtn"><svg data-lucide="sliders-horizontal"></svg>Filter</button>
           </div>
+          <div class="task-list" id="taskList"></div>
         </section>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <section class="panel">
+            <div class="progress-row-flex">
+              <div>
+                <div class="progress-title"><svg data-lucide="bar-chart-3"></svg>Today's Progress</div>
+                <div class="progress-sub" id="progressLabel">0 of 0 tasks completed</div>
+              </div>
+              <div class="progress-ring-wrap">
+                <svg class="progress-ring" viewBox="0 0 60 60">
+                  <circle class="ring-track" cx="30" cy="30" r="26"></circle>
+                  <circle class="ring-fill" id="ringFill" cx="30" cy="30" r="26"></circle>
+                </svg>
+                <span class="ring-pct" id="progressPct">0%</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" id="referralPanel">
+            <div class="referral-row">
+              <div class="referral-icon"><svg data-lucide="gift"></svg></div>
+              <div class="referral-text">
+                <h4>Earn more with referrals</h4>
+                <p>Invite friends and earn rewards when they join and complete eligible activities.</p>
+                <span class="referral-link-preview" id="referralLinkPreview"></span>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" id="inviteBtnMain">Invite <svg data-lucide="chevron-right" style="width:15px;height:15px"></svg></button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h3>Recent Activity</h3>
+              <a href="#" class="link-more" id="activityViewAll">View all</a>
+            </div>
+            <div class="activity-list" id="activityList"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMING SOON VIEW -->
+    <div id="comingSoonView" hidden>
+      <div class="coming-soon-wrap">
+        <div class="coming-soon-card">
+          <div class="coming-soon-icon"><svg data-lucide="sparkles"></svg></div>
+          <h2><span id="comingSoonFeature">This</span> — Coming Soon</h2>
+          <p>We're building this now. Check back soon — your homepage has everything that's ready today.</p>
+          <button type="button" class="btn btn-primary" id="backToHomeBtn"><svg data-lucide="arrow-left" style="width:15px;height:15px"></svg>Back to Home</button>
+        </div>
       </div>
     </div>
   </main>
 
   <nav class="bottom-nav">
-    <a href="#top" class="bn-item active" data-section="top"><svg data-lucide="home"></svg><span>Home</span></a>
-    <a href="#tasksPanel" class="bn-item" data-section="tasksPanel"><svg data-lucide="list-checks"></svg><span>Tasks</span></a>
-    <a href="#tasksPanel" class="bn-item" data-section="tasksPanel"><svg data-lucide="zap"></svg><span>Earn</span></a>
-    <a href="#referralPanel" class="bn-item" data-section="referralPanel"><svg data-lucide="users"></svg><span>Referrals</span></a>
-    <button type="button" class="bn-item" id="bnProfileBtn"><svg data-lucide="user-round"></svg><span>Profile</span></button>
+    <a href="#" class="bn-item active" data-view="home"><svg data-lucide="home"></svg><span>Home</span></a>
+    <a href="#" class="bn-item" data-view="tasks" data-feature="Tasks"><svg data-lucide="list-checks"></svg><span>Tasks</span></a>
+    <a href="#" class="bn-item bn-fab" data-view="earn" data-feature="Earn"><span class="bn-fab-circle"><svg data-lucide="zap"></svg></span></a>
+    <a href="#" class="bn-item" data-view="referrals" data-feature="Referrals"><svg data-lucide="users"></svg><span>Referrals</span></a>
+    <a href="#" class="bn-item" data-view="profile" data-feature="Profile"><svg data-lucide="user-round"></svg><span>Profile</span></a>
   </nav>
 </div>
 
@@ -643,7 +772,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/fireba
 import {
   getAuth, setPersistence, browserLocalPersistence,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  onAuthStateChanged, signOut, sendPasswordResetEmail, updateProfile
+  onAuthStateChanged, signOut, sendPasswordResetEmail, updateProfile,
+  GoogleAuthProvider, signInWithPopup
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, serverTimestamp
@@ -661,6 +791,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
 
 /* ---------------- helpers ---------------- */
 const $ = (id) => document.getElementById(id);
@@ -718,6 +849,16 @@ function clearFormErrors(ids) { ids.forEach(clearFieldError); }
 
 function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
+function slugify(str) {
+  return (str || "")
+    .toString()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .slice(0, 16);
+}
+
 const AUTH_ERROR_MESSAGES = {
   "auth/email-already-in-use": "This email is already registered. Try logging in instead.",
   "auth/invalid-email": "Please enter a valid email address.",
@@ -727,6 +868,8 @@ const AUTH_ERROR_MESSAGES = {
   "auth/invalid-credential": "Incorrect email or password.",
   "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.",
   "auth/network-request-failed": "Network error. Check your connection and try again.",
+  "auth/popup-blocked": "Popup blocked. Please allow popups and try again.",
+  "auth/account-exists-with-different-credential": "An account already exists with this email using a different sign-in method.",
 };
 function mapAuthError(err) {
   return AUTH_ERROR_MESSAGES[err?.code] || "Something went wrong. Please try again.";
@@ -761,6 +904,23 @@ $("backToLogin").addEventListener("click", () => { haptic(); showAuthView("login
   if (ref) localStorage.setItem("pendingReferral", ref);
 })();
 
+function buildDefaultProfile(user, nameOverride) {
+  const fallbackName = user.email ? user.email.split("@")[0] : "User";
+  const name = nameOverride || user.displayName || fallbackName;
+  const username = slugify(name) || slugify(fallbackName) || user.uid.slice(0, 6);
+  return {
+    name,
+    email: user.email || "",
+    photoURL: user.photoURL || null,
+    balance: 0,
+    todayEarnings: 0,
+    totalEarned: 0,
+    referralCode: username,
+    referredBy: localStorage.getItem("pendingReferral") || null,
+    createdAt: serverTimestamp(),
+  };
+}
+
 /* ---------------- signup ---------------- */
 $("signupForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -785,23 +945,10 @@ $("signupForm").addEventListener("submit", async (e) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: name });
 
-    const referralCode = cred.user.uid.slice(0, 8).toUpperCase();
-    const referredBy = localStorage.getItem("pendingReferral") || null;
-
     try {
-      await setDoc(doc(db, "users", cred.user.uid), {
-        name,
-        email,
-        balance: 0,
-        todayEarnings: 0,
-        totalEarned: 0,
-        referralCode,
-        referredBy,
-        createdAt: serverTimestamp(),
-      });
+      await setDoc(doc(db, "users", cred.user.uid), buildDefaultProfile(cred.user, name));
       localStorage.removeItem("pendingReferral");
     } catch (profileErr) {
-      // Auth account exists even if this write failed; onAuthStateChanged will retry.
       toast("Account created, but saving your profile failed. We'll retry automatically.", "error");
     }
 
@@ -841,6 +988,25 @@ $("loginForm").addEventListener("submit", async (e) => {
   }
 });
 
+/* ---------------- google auth ---------------- */
+async function handleGoogleAuth(btn) {
+  setLoading(btn, true);
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    await signInWithPopup(auth, googleProvider);
+    haptic(15);
+  } catch (err) {
+    if (err?.code !== "auth/popup-closed-by-user" && err?.code !== "auth/cancelled-popup-request") {
+      haptic([10, 30, 10]);
+      toast(mapAuthError(err), "error");
+    }
+  } finally {
+    setLoading(btn, false);
+  }
+}
+$("googleBtnLogin").addEventListener("click", () => handleGoogleAuth($("googleBtnLogin")));
+$("googleBtnSignup").addEventListener("click", () => handleGoogleAuth($("googleBtnSignup")));
+
 /* ---------------- reset password ---------------- */
 $("resetForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -876,53 +1042,97 @@ function closeAllPopovers(except) {
 }
 $("bellBtn").addEventListener("click", (e) => { e.stopPropagation(); haptic(); closeAllPopovers("bellPopover"); toggleId("bellPopover"); });
 $("profileBtn").addEventListener("click", (e) => { e.stopPropagation(); haptic(); closeAllPopovers("profilePopover"); toggleId("profilePopover"); });
-["sidebarProfileBtn", "bnProfileBtn"].forEach((id) => {
-  $(id).addEventListener("click", (e) => { e.stopPropagation(); haptic(); closeAllPopovers("profilePopover"); toggleId("profilePopover"); });
-});
 document.addEventListener("click", () => closeAllPopovers());
 
-/* ---------------- nav scroll + active state ---------------- */
-function setActiveSection(sectionId) {
-  $$(".nav-item[data-section]").forEach((el) => el.classList.toggle("active", el.dataset.section === sectionId));
-  $$(".bn-item[data-section]").forEach((el) => el.classList.toggle("active", el.dataset.section === sectionId));
+/* ---------------- mobile drawer ---------------- */
+function openDrawer() { $("mobileDrawer").classList.add("open"); $("drawerOverlay").classList.add("show"); document.body.style.overflow = "hidden"; }
+function closeDrawer() { $("mobileDrawer").classList.remove("open"); $("drawerOverlay").classList.remove("show"); document.body.style.overflow = ""; }
+$("menuBtn").addEventListener("click", () => { haptic(); openDrawer(); });
+$("drawerCloseBtn").addEventListener("click", () => { haptic(); closeDrawer(); });
+$("drawerOverlay").addEventListener("click", closeDrawer);
+
+/* ---------------- home / coming-soon navigation ---------------- */
+function setActiveNav(key) {
+  $$("[data-view]").forEach((el) => el.classList.toggle("active", key !== null && el.dataset.view === key));
 }
-$$("[data-section], [data-scroll]").forEach((el) => {
+function showHome() {
+  $("comingSoonView").hidden = true;
+  $("homeView").hidden = false;
+  setActiveNav("home");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function showComingSoon(feature, navKey) {
+  $("comingSoonFeature").textContent = feature;
+  $("homeView").hidden = true;
+  $("comingSoonView").hidden = false;
+  setActiveNav(navKey ?? null);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+$$("[data-view]").forEach((el) => {
   el.addEventListener("click", (e) => {
-    const targetId = el.dataset.section || el.dataset.scroll;
-    if (!targetId) return;
     e.preventDefault();
     haptic();
-    const target = $(targetId);
-    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
-    if (el.dataset.section) setActiveSection(targetId);
+    closeDrawer();
+    const view = el.dataset.view;
+    if (view === "home") showHome();
+    else showComingSoon(el.dataset.feature || "This feature", view);
   });
 });
+$("backToHomeBtn").addEventListener("click", () => { haptic(); showHome(); });
 
-/* ---------------- withdraw / history / invite stubs ---------------- */
-function comingSoon(feature) { haptic(); toast(`${feature} is coming soon.`); }
-$("withdrawBtn").addEventListener("click", () => comingSoon("Withdrawals"));
-$("qaWithdraw").addEventListener("click", () => comingSoon("Withdrawals"));
-$("qaHistory").addEventListener("click", () => comingSoon("Earnings history"));
-["inviteBtnMain", "inviteBtnSidebar"].forEach((id) => {
-  $(id).addEventListener("click", () => {
-    haptic();
-    $("tasksPanel").previousElementSibling; // no-op guard
-    $("referralPanel").scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-});
+function scrollToPanel(id) {
+  const target = $(id);
+  if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+$("qaTasks").addEventListener("click", () => { haptic(); scrollToPanel("tasksPanel"); });
+$("qaReferrals").addEventListener("click", () => { haptic(); scrollToPanel("referralPanel"); });
+$("qaWithdraw").addEventListener("click", () => { haptic(); showComingSoon("Withdrawals", null); });
+$("qaHistory").addEventListener("click", () => { haptic(); showComingSoon("Earnings history", null); });
+$("withdrawBtn").addEventListener("click", () => { haptic(); showComingSoon("Withdrawals", null); });
+$("taskFilterBtn").addEventListener("click", () => { haptic(); showComingSoon("Task filters", null); });
+$("tasksViewAll").addEventListener("click", (e) => { e.preventDefault(); haptic(); showComingSoon("Tasks", null); });
+$("activityViewAll").addEventListener("click", (e) => { e.preventDefault(); haptic(); showComingSoon("Activity history", null); });
 
-/* ---------------- copy referral link ---------------- */
-$("copyReferralBtn").addEventListener("click", async () => {
+/* ---------------- balance visibility ---------------- */
+let balanceHidden = false;
+let lastBalance = { balance: 0, today: 0, total: 0 };
+function applyBalanceVisibility() {
+  const mask = "••••••";
+  $("balanceValue").textContent = balanceHidden ? mask : formatMoney(lastBalance.balance);
+  $("todayEarnings").textContent = balanceHidden ? mask : formatMoney(lastBalance.today);
+  $("totalEarned").textContent = balanceHidden ? mask : formatMoney(lastBalance.total);
+}
+$("balanceEyeBtn").addEventListener("click", () => {
   haptic();
-  const input = $("referralLink");
+  balanceHidden = !balanceHidden;
+  $("balanceEyeBtn").innerHTML = `<svg data-lucide="${balanceHidden ? "eye-off" : "eye"}"></svg>`;
+  refreshIcons();
+  applyBalanceVisibility();
+});
+
+/* ---------------- referral share/copy ---------------- */
+let currentReferralLink = "";
+async function shareReferral() {
+  haptic();
+  if (!currentReferralLink) return;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Rare Earners", text: "Join me on Rare Earners and start earning!", url: currentReferralLink });
+      return;
+    } catch (e) {
+      return;
+    }
+  }
   try {
-    await navigator.clipboard.writeText(input.value);
+    await navigator.clipboard.writeText(currentReferralLink);
     toast("Referral link copied.", "success");
   } catch (e) {
-    input.select();
-    document.execCommand("copy");
-    toast("Referral link copied.", "success");
+    toast("Could not copy link.", "error");
   }
+}
+["inviteBtnMain", "inviteBtnSidebar", "inviteBtnDrawer"].forEach((id) => {
+  const el = $(id);
+  if (el) el.addEventListener("click", () => { closeDrawer(); shareReferral(); });
 });
 
 /* ---------------- tasks ---------------- */
@@ -932,6 +1142,9 @@ const TASKS = [
   { id: "t3", name: "Subscribe on YouTube", desc: "Subscribe to our YouTube channel.", reward: 30, time: "2 min", difficulty: "Easy", icon: "play", color: "#FF0000" },
   { id: "t4", name: "Follow on Instagram", desc: "Follow our Instagram account.", reward: 20, time: "1 min", difficulty: "Easy", icon: "camera", color: "#C13584" },
 ];
+const RING_CIRCUMFERENCE = 2 * Math.PI * 26;
+$("ringFill").style.strokeDasharray = `${RING_CIRCUMFERENCE}`;
+$("ringFill").style.strokeDashoffset = `${RING_CIRCUMFERENCE}`;
 
 function renderTasks(list) {
   const container = $("taskList");
@@ -954,7 +1167,7 @@ function renderTasks(list) {
   `).join("");
   refreshIcons();
   $$("[data-task]", container).forEach((btn) => {
-    btn.addEventListener("click", () => comingSoon("This task"));
+    btn.addEventListener("click", () => showComingSoon("This task", null));
   });
 
   const completed = 0;
@@ -962,7 +1175,7 @@ function renderTasks(list) {
   const pct = total ? Math.round((completed / total) * 100) : 0;
   $("progressLabel").textContent = `${completed} of ${total} tasks completed`;
   $("progressPct").textContent = `${pct}%`;
-  $("progressFill").style.width = `${pct}%`;
+  $("ringFill").style.strokeDashoffset = `${RING_CIRCUMFERENCE - (pct / 100) * RING_CIRCUMFERENCE}`;
 }
 renderTasks(TASKS);
 
@@ -970,7 +1183,6 @@ $("taskSearch").addEventListener("input", (e) => {
   const q = e.target.value.trim().toLowerCase();
   renderTasks(TASKS.filter((t) => t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)));
 });
-$("taskFilterBtn").addEventListener("click", () => comingSoon("Task filters"));
 
 /* ---------------- dashboard render ---------------- */
 function initials(name, email) {
@@ -978,6 +1190,14 @@ function initials(name, email) {
   const parts = source.split(" ").filter(Boolean);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return source.slice(0, 2).toUpperCase();
+}
+function renderAvatar(name, email, photoURL) {
+  const box = $("avatarBox");
+  if (photoURL) {
+    box.innerHTML = `<img src="${photoURL}" alt="" referrerpolicy="no-referrer">`;
+  } else {
+    box.textContent = initials(name, email);
+  }
 }
 function greetingForHour() {
   const h = new Date().getHours();
@@ -988,22 +1208,49 @@ function greetingForHour() {
 function formatMoney(n) {
   return Number(n || 0).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+function timeAgo(date) {
+  if (!date) return "Recently";
+  const min = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (min < 1) return "Just now";
+  if (min < 60) return `${min} min${min > 1 ? "s" : ""} ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} hour${hr > 1 ? "s" : ""} ago`;
+  const day = Math.floor(hr / 24);
+  return `${day} day${day > 1 ? "s" : ""} ago`;
+}
+function renderActivity(createdDate) {
+  $("activityList").innerHTML = `
+    <div class="activity-row">
+      <div class="activity-icon"><svg data-lucide="check-circle"></svg></div>
+      <div class="activity-info">
+        <h5>Welcome to Rare Earners!</h5>
+        <p>Account created successfully</p>
+      </div>
+      <span class="activity-time">${timeAgo(createdDate)}</span>
+    </div>`;
+  refreshIcons();
+}
 
 function renderDashboard(user, profile) {
   const name = profile?.name || user.displayName || "there";
   const email = user.email || "";
+  const photoURL = profile?.photoURL || user.photoURL || null;
+
   $("greeting").textContent = `${greetingForHour()}, ${name.split(" ")[0]}`;
   $("profileName").textContent = name.split(" ")[0];
   $("popoverName").textContent = name;
   $("popoverEmail").textContent = email;
-  $("avatarInitials").textContent = initials(name, email);
+  renderAvatar(name, email, photoURL);
 
-  $("balanceValue").textContent = formatMoney(profile?.balance);
-  $("todayEarnings").textContent = formatMoney(profile?.todayEarnings);
-  $("totalEarned").textContent = formatMoney(profile?.totalEarned);
+  lastBalance = { balance: profile?.balance || 0, today: profile?.todayEarnings || 0, total: profile?.totalEarned || 0 };
+  applyBalanceVisibility();
 
-  const code = profile?.referralCode || user.uid.slice(0, 8).toUpperCase();
-  $("referralLink").value = `${location.origin}${location.pathname}?ref=${code}`;
+  const username = profile?.referralCode || slugify(name) || user.uid.slice(0, 6);
+  currentReferralLink = `${location.origin}${location.pathname}?ref=${username}`;
+  $("referralLinkPreview").textContent = currentReferralLink;
+
+  const createdDate = profile?.createdAt?.toDate ? profile.createdAt.toDate() : new Date();
+  renderActivity(createdDate);
 }
 
 /* ---------------- auth state ---------------- */
@@ -1017,16 +1264,7 @@ onAuthStateChanged(auth, async (user) => {
       toast("Could not load your profile. Some data may be missing.", "error");
     }
     if (!profile) {
-      profile = {
-        name: user.displayName || "",
-        email: user.email || "",
-        balance: 0,
-        todayEarnings: 0,
-        totalEarned: 0,
-        referralCode: user.uid.slice(0, 8).toUpperCase(),
-        referredBy: localStorage.getItem("pendingReferral") || null,
-        createdAt: serverTimestamp(),
-      };
+      profile = buildDefaultProfile(user);
       try {
         await setDoc(doc(db, "users", user.uid), profile, { merge: true });
         localStorage.removeItem("pendingReferral");
@@ -1034,6 +1272,7 @@ onAuthStateChanged(auth, async (user) => {
         // Firestore still unreachable/denied — proceed with in-memory defaults.
       }
     }
+    showHome();
     renderDashboard(user, profile);
     $("authScreen").hidden = true;
     $("dashboardScreen").hidden = false;
@@ -1044,7 +1283,7 @@ onAuthStateChanged(auth, async (user) => {
     $("loginForm").reset();
     $("signupForm").reset();
     clearFormErrors(["loginEmail", "loginPassword", "signupName", "signupEmail", "signupPassword", "signupConfirm"]);
-    showAuthView("login");
+    showAuthView("signup");
     refreshIcons();
   }
 });
