@@ -1124,7 +1124,7 @@ let currentUser = null;
 
 const APP_ROUTES = {
   "/home": { type: "home" },
-  "/tasks": { type: "coming", feature: "Tasks", navKey: "tasks" },
+  "/tasks": { type: "home", navKey: "tasks", scrollTo: "tasksPanel" },
   "/earn": { type: "coming", feature: "Earn", navKey: "earn" },
   "/referrals": { type: "coming", feature: "Referrals", navKey: "referrals" },
   "/profile": { type: "coming", feature: "Profile", navKey: "profile" },
@@ -1137,8 +1137,7 @@ function matchAppRoute(path) {
   if (APP_ROUTES[path]) return APP_ROUTES[path];
   const m = path.match(/^\/tasks\/([a-z0-9-]+)$/);
   if (m) {
-    const task = TASKS.find((t) => toSlug(t.name) === m[1]);
-    return { type: "coming", feature: task ? task.name : "This task", navKey: "tasks" };
+    return { type: "home", navKey: "tasks", scrollTo: "tasksPanel" };
   }
   return null;
 }
@@ -1154,11 +1153,13 @@ function navigate(path, opts = {}) {
 function setActiveNav(key) {
   $$("[data-view]").forEach((el) => el.classList.toggle("active", key !== null && el.dataset.view === key));
 }
-function renderHomeUI() {
+function renderHomeUI(navKey, scrollToId) {
   $("comingSoonView").hidden = true;
   $("homeView").hidden = false;
-  setActiveNav("home");
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  setActiveNav(navKey || "home");
+  const target = scrollToId ? $(scrollToId) : null;
+  if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  else window.scrollTo({ top: 0, behavior: "smooth" });
 }
 function renderComingSoonUI(feature, navKey) {
   $("comingSoonFeature").textContent = feature;
@@ -1179,7 +1180,7 @@ function renderRoute() {
       history.replaceState({}, "", "/home");
       renderHomeUI();
     } else if (match.type === "home") {
-      renderHomeUI();
+      renderHomeUI(match.navKey, match.scrollTo);
     } else {
       renderComingSoonUI(match.feature, match.navKey);
     }
