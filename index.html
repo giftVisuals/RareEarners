@@ -311,7 +311,6 @@
   }
   .bank-verify-pill svg{width:18px;height:18px;color:var(--primary-dark);flex-shrink:0;}
   .bvp-name{font-size:14px;font-weight:700;color:var(--primary-dark);}
-  .bank-name-edit-link{font-size:12px;font-weight:700;color:var(--text-muted);margin-left:auto;flex-shrink:0;}
 
   .bank-picker-overlay{
     position:fixed;inset:0;z-index:120;background:rgba(15,23,42,.45);
@@ -1061,7 +1060,6 @@
           <div class="bank-verify-pill" id="bankVerifyPill" hidden>
             <svg data-lucide="check-circle-2"></svg>
             <p class="bvp-name" id="bankVerifyText"></p>
-            <button type="button" class="bank-name-edit-link" id="bankVerifyEditBtn">Not you?</button>
           </div>
           <div class="field" id="withdrawBankAccountNameField" hidden>
             <label for="withdrawBankAccountName">Account Name</label>
@@ -2308,14 +2306,6 @@ function showVerifiedNamePill(name) {
   $("withdrawBankAccountNameField").hidden = true;
   refreshIcons();
 }
-$("bankVerifyEditBtn").addEventListener("click", () => {
-  haptic();
-  $("bankVerifyPill").hidden = true;
-  $("withdrawBankAccountNameField").hidden = false;
-  const input = $("withdrawBankAccountName");
-  input.readOnly = false;
-  input.focus();
-});
 
 let accountCheckToken = 0;
 async function checkAccountAndBank() {
