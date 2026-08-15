@@ -2245,6 +2245,7 @@ function selectBank(bank) {
 }
 
 function resetBankStep() {
+  accountCheckToken++;
   selectedBank = null;
   const row = $("bankSelectTrigger");
   row.classList.remove("has-bank");
@@ -2252,6 +2253,8 @@ function resetBankStep() {
   $("withdrawBankAccount").value = "";
   $("withdrawBankAccountName").value = "";
   $("withdrawBankAccountName").readOnly = false;
+  $("withdrawBankAccountName").disabled = false;
+  $("withdrawBankAccountName").placeholder = "Enter the name on this bank account";
   $("withdrawBankAmount").value = "";
   $("bankVerifyPill").hidden = true;
   $("withdrawBankAccountNameField").hidden = true;
@@ -2289,10 +2292,14 @@ async function resolveAccountName(bank, accountNumber) {
     const timer = setTimeout(() => controller.abort(), 6000);
     const res = await fetch(`${RESOLVE_ACCOUNT_API}/api/resolve-account?account_number=${accountNumber}&bank_code=${bankCode}`, { signal: controller.signal });
     clearTimeout(timer);
-    if (!res.ok) return null;
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      console.warn("resolveAccountName failed:", bank.name, bankCode, res.status, data.error || data);
+      return null;
+    }
     return data.account_name || null;
   } catch (e) {
+    console.warn("resolveAccountName network error:", bank.name, bankCode, e.message);
     return null;
   }
 }
@@ -2323,13 +2330,26 @@ async function checkAccountAndBank() {
     return;
   }
   $("withdrawBankAccountNameField").hidden = false;
-  $("withdrawBankAccountName").readOnly = false;
-  $("withdrawBankAccountName").value = "";
+  const nameInput = $("withdrawBankAccountName");
+  nameInput.readOnly = false;
+  nameInput.value = "";
+
+  if (!RESOLVE_ACCOUNT_API) {
+    nameInput.placeholder = "Enter the name on this bank account";
+    return;
+  }
 
   const token = ++accountCheckToken;
+  nameInput.disabled = true;
+  nameInput.placeholder = "Verifying account name…";
   const name = await resolveAccountName(selectedBank, accountNumber);
   if (token !== accountCheckToken) return; // a newer check superseded this one
-  if (name) showVerifiedNamePill(name);
+  nameInput.disabled = false;
+  if (name) {
+    showVerifiedNamePill(name);
+  } else {
+    nameInput.placeholder = "Couldn't auto-verify — enter the name manually";
+  }
 }
 
 function openBankPicker() {
