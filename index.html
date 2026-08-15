@@ -2169,10 +2169,9 @@ const NIGERIA_BANKS = [
 const FREQUENT_BANK_NAMES = ["OPay (Paycom)", "Access Bank", "United Bank for Africa (UBA)", "First Bank of Nigeria", "GTBank (Guaranty Trust Bank)", "Zenith Bank"];
 let selectedBank = null;
 
-// Set this to your deployed Railway backend URL (e.g. "https://rare-earners-server-production.up.railway.app")
-// once /server is live with a PAYSTACK_SECRET_KEY set, to turn on real account-name auto-verification.
-// Left blank, the app just falls back to manual name entry — no auto-verify is attempted.
-const RESOLVE_ACCOUNT_API = "";
+// Railway backend (server/) — proxies Paystack's bank list + account-resolve endpoints
+// so PAYSTACK_SECRET_KEY never has to live in client code.
+const RESOLVE_ACCOUNT_API = "https://rareearners-production.up.railway.app";
 
 function nubanCheckDigit(bankCode, serial9) {
   const weights = [3, 7, 3, 3, 7, 3, 3, 7, 3, 3, 7, 3];
@@ -2261,12 +2260,36 @@ function resetBankStep() {
   clearFormErrors(["withdrawBankAmount", "withdrawBankAccount", "withdrawBankCode", "withdrawBankAccountName"]);
 }
 
-async function resolveAccountName(bank, accountNumber) {
-  if (!RESOLVE_ACCOUNT_API) return null;
+// Paystack's own bank codes (fetched from our Railway backend) are what its resolve
+// endpoint actually expects — usually identical to the standard CBN code we hardcoded
+// above, but we prefer Paystack's copy when we have it so a mismatch never breaks lookups.
+let paystackBankCodes = {};
+let paystackBankCodesLoaded = false;
+async function loadPaystackBankCodes() {
+  if (paystackBankCodesLoaded || !RESOLVE_ACCOUNT_API) return;
+  paystackBankCodesLoaded = true;
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 6000);
-    const res = await fetch(`${RESOLVE_ACCOUNT_API}/api/resolve-account?account_number=${accountNumber}&bank_code=${bank.code}`, { signal: controller.signal });
+    const res = await fetch(`${RESOLVE_ACCOUNT_API}/api/banks`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) return;
+    const data = await res.json();
+    (data.banks || []).forEach((b) => {
+      if (b.name && b.code) paystackBankCodes[normalizeBankName(b.name)] = b.code;
+    });
+  } catch (e) {
+    // Best effort — resolveAccountName() falls back to our hardcoded bank code.
+  }
+}
+
+async function resolveAccountName(bank, accountNumber) {
+  if (!RESOLVE_ACCOUNT_API) return null;
+  const bankCode = paystackBankCodes[normalizeBankName(bank.name)] || bank.code;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(`${RESOLVE_ACCOUNT_API}/api/resolve-account?account_number=${accountNumber}&bank_code=${bankCode}`, { signal: controller.signal });
     clearTimeout(timer);
     if (!res.ok) return null;
     const data = await res.json();
@@ -2326,6 +2349,7 @@ function openBankPicker() {
   renderBankList("");
   $("bankPickerOverlay").classList.add("show");
   loadBankLogos();
+  loadPaystackBankCodes();
 }
 function closeBankPicker() {
   $("bankPickerOverlay").classList.remove("show");
