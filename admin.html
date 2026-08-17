@@ -260,30 +260,24 @@
   </div>
 </div>
 
-<!-- NOT AUTHORIZED -->
-<div id="deniedScreen" class="center-screen" hidden>
-  <div class="auth-card" style="text-align:center;">
-    <div class="confirm-icon"><svg data-lucide="shield-alert"></svg></div>
-    <h1 style="font-size:19px;font-weight:800;margin-bottom:8px;">Not authorized</h1>
-    <p style="font-size:13.5px;color:var(--text-muted);line-height:1.55;margin-bottom:18px;">This account isn't allowed to access the admin panel.</p>
-    <button type="button" class="btn btn-ghost btn-block" id="deniedLogoutBtn">Log out</button>
-  </div>
-</div>
-
-<!-- FIRST-TIME SETUP (admin email confirmed, but no admins/{uid} doc yet) -->
+<!-- FIRST-TIME SETUP (login works, but no admins/{uid} doc for this account yet) -->
 <div id="setupScreen" class="center-screen" hidden>
   <div class="auth-card">
     <div class="auth-heading">
-      <h1>One more step</h1>
-      <p>Your login works, but Firestore doesn't know this account is an admin yet.</p>
+      <h1>Not an admin yet</h1>
+      <p>Your login works, but this account isn't registered as an admin.</p>
     </div>
-    <p style="font-size:13px;color:var(--text-muted);">Your UID:</p>
+    <p style="font-size:13px;color:var(--text-muted);">This account's UID:</p>
     <div class="setup-uid" id="setupUid">—</div>
     <p class="setup-steps">
-      1. Open Firebase Console → Firestore Database<br>
-      2. Create a collection named <b>admins</b><br>
-      3. Add a document with the ID above (paste your UID as the Document ID)<br>
-      4. Give it one field: <b>email</b> (string) = your admin email<br>
+      Ask an existing admin to grant you access from <b>Settings → Admin Access</b> in this panel using your email (<span id="setupEmail">—</span>).
+      <br><br>
+      If you're the very first admin, no one can do that yet — add yourself directly instead:
+      <br>
+      1. Firebase Console → Firestore Database<br>
+      2. Create (or open) a collection named <b>admins</b><br>
+      3. Add a document with the UID above as its Document ID<br>
+      4. Give it one field: <b>email</b> (string) = your email<br>
       5. Come back here and tap Retry
     </p>
     <div style="display:flex;gap:10px;">
@@ -308,6 +302,7 @@
       <a href="#" class="nav-item" data-tab="withdrawals"><svg data-lucide="wallet"></svg>Withdrawals</a>
       <a href="#" class="nav-item" data-tab="settings"><svg data-lucide="settings"></svg>Settings</a>
     </nav>
+    <a href="/" class="nav-item" style="margin-bottom:2px;"><svg data-lucide="external-link"></svg>View User Site</a>
     <button type="button" class="sidebar-logout" id="sidebarLogoutBtn"><svg data-lucide="log-out"></svg>Log out</button>
   </aside>
 
@@ -317,7 +312,10 @@
         <img src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="">
         <div><span>RARE EARNERS</span><small>Admin</small></div>
       </div>
-      <button type="button" class="icon-btn" id="topbarLogoutBtn" title="Log out"><svg data-lucide="log-out"></svg></button>
+      <div style="display:flex;gap:8px;">
+        <a href="/" class="icon-btn" title="View user site"><svg data-lucide="external-link"></svg></a>
+        <button type="button" class="icon-btn" id="topbarLogoutBtn" title="Log out"><svg data-lucide="log-out"></svg></button>
+      </div>
     </div>
 
     <!-- OVERVIEW -->
@@ -394,6 +392,18 @@
           <div class="input-wrap no-icon"><textarea id="setAnnouncement" placeholder="Leave blank to hide the banner"></textarea></div>
         </div>
         <button type="button" class="btn btn-primary btn-block" id="saveSettingsBtn"><span class="btn-label">Save Settings</span></button>
+      </section>
+
+      <section class="panel" style="margin-top:16px;">
+        <div class="page-head" style="margin:0 0 12px;"><h2 style="font-size:15px;">Admin Access</h2></div>
+        <div class="field">
+          <label for="grantAdminEmail">Grant admin access by email</label>
+          <div class="input-wrap no-icon"><input type="email" id="grantAdminEmail" placeholder="someone@example.com"></div>
+          <p class="field-hint">They must already have a Rare Earners account. They'll be able to log into this panel next time, using their existing password.</p>
+          <div class="field-error" id="grantAdminEmailError"></div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-block" id="grantAdminBtn"><span class="btn-label">Grant Admin Access</span></button>
+        <div id="adminsList" style="margin-top:16px;"><div class="empty-state"><svg data-lucide="loader-2"></svg><p>Loading…</p></div></div>
       </section>
     </div>
   </div>
@@ -569,10 +579,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Client-side allowlist gate. Real enforcement lives in Firestore rules via the
-// `admins/{uid}` collection (see isAdmin() in firestore.rules) — this is just UX.
-const ADMIN_EMAILS = ["admin@rare-earners.com.ng"];
-
 const $ = (id) => document.getElementById(id);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
@@ -698,30 +704,30 @@ $("loginForm").addEventListener("submit", async (e) => {
 });
 
 function showOnly(id) {
-  ["loginScreen", "deniedScreen", "setupScreen", "adminScreen"].forEach((s) => { $(s).hidden = s !== id; });
+  ["loginScreen", "setupScreen", "adminScreen"].forEach((s) => { $(s).hidden = s !== id; });
 }
 
-[["deniedLogoutBtn"], ["setupLogoutBtn"], ["sidebarLogoutBtn"], ["topbarLogoutBtn"]].forEach(([id]) => {
+[["setupLogoutBtn"], ["sidebarLogoutBtn"], ["topbarLogoutBtn"]].forEach(([id]) => {
   $(id).addEventListener("click", async () => { try { await signOut(auth); } catch (e) {} });
 });
 $("setupRetryBtn").addEventListener("click", () => checkAdminAccess(auth.currentUser));
 
+// Access is decided purely by the admins/{uid} Firestore collection (isAdmin() in
+// firestore.rules) — anyone with a matching doc can log in, however they were granted it
+// (first admin via Firebase Console, everyone after via Settings → Admin Access).
 async function checkAdminAccess(user) {
   if (!user) { showOnly("loginScreen"); return; }
-  const email = (user.email || "").toLowerCase();
-  if (!ADMIN_EMAILS.includes(email)) {
-    showOnly("deniedScreen");
-    return;
-  }
   try {
     const snap = await getDoc(doc(db, "admins", user.uid));
     if (!snap.exists()) {
       $("setupUid").textContent = user.uid;
+      $("setupEmail").textContent = user.email || "";
       showOnly("setupScreen");
       return;
     }
   } catch (e) {
     $("setupUid").textContent = user.uid;
+    $("setupEmail").textContent = user.email || "";
     showOnly("setupScreen");
     return;
   }
@@ -1340,6 +1346,77 @@ async function loadSettingsAdmin() {
   } catch (e) {
     toast("Could not load settings.", "error");
   }
+  await loadAdminsAdmin();
+}
+
+/* ---------------- admin access management ---------------- */
+async function loadAdminsAdmin() {
+  const container = $("adminsList");
+  try {
+    const snap = await getDocs(collection(db, "admins"));
+    const admins = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
+    if (!admins.length) {
+      container.innerHTML = `<div class="empty-state"><svg data-lucide="shield"></svg><p>No admins found.</p></div>`;
+    } else {
+      container.innerHTML = admins.map((a) => `
+        <div class="row-card">
+          <div class="row-icon" style="background:var(--primary-dark);">${(a.email || "?").slice(0, 1).toUpperCase()}</div>
+          <div class="row-info">
+            <h4>${a.email || a.uid}${a.uid === currentAdmin?.uid ? ' <span class="badge muted">You</span>' : ""}</h4>
+            <p>Admin since ${formatDate(a.addedAt)}</p>
+          </div>
+          ${a.uid === currentAdmin?.uid ? "" : `<button type="button" class="btn btn-ghost btn-xs" data-revoke-admin="${a.uid}" data-revoke-email="${a.email || ""}">Remove</button>`}
+        </div>`).join("");
+    }
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="alert-circle"></svg><p>Could not load admins.</p></div>`;
+  }
+  refreshIcons();
+  $$("[data-revoke-admin]").forEach((el) => el.addEventListener("click", () => revokeAdminFlow(el.dataset.revokeAdmin, el.dataset.revokeEmail)));
+}
+
+$("grantAdminBtn").addEventListener("click", async () => {
+  clearFieldError("grantAdminEmail");
+  const email = $("grantAdminEmail").value.trim().toLowerCase();
+  if (!isValidEmail(email)) { showFieldError("grantAdminEmail", "Enter a valid email address."); return; }
+
+  const btn = $("grantAdminBtn");
+  setLoading(btn, true);
+  try {
+    const snap = await getDocs(query(collection(db, "users"), where("email", "==", email)));
+    if (snap.empty) {
+      showFieldError("grantAdminEmail", "No Rare Earners account found with that email.");
+      return;
+    }
+    const targetUid = snap.docs[0].id;
+    await setDoc(doc(db, "admins", targetUid), { email, addedAt: serverTimestamp(), addedBy: currentAdmin?.email || "" });
+    await logAdminAction("admin_granted", { targetType: "admin", targetId: targetUid, targetEmail: email });
+    toast(`${email} can now log into the admin panel.`, "success");
+    $("grantAdminEmail").value = "";
+    await loadAdminsAdmin();
+  } catch (e) {
+    toast("Could not grant admin access.", "error");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+async function revokeAdminFlow(uid, email) {
+  if (uid === currentAdmin?.uid) { toast("You can't remove your own admin access from here.", "error"); return; }
+  const ok = await openConfirm({
+    title: "Remove admin access?",
+    message: `${email || "This account"} will no longer be able to log into the admin panel.`,
+    okLabel: "Remove",
+  });
+  if (!ok) return;
+  try {
+    await deleteDoc(doc(db, "admins", uid));
+    await logAdminAction("admin_revoked", { targetType: "admin", targetId: uid, targetEmail: email || "" });
+    toast("Admin access removed.", "success");
+    await loadAdminsAdmin();
+  } catch (e) {
+    toast("Could not remove admin access.", "error");
+  }
 }
 
 $("saveSettingsBtn").addEventListener("click", async () => {
@@ -1424,6 +1501,8 @@ function describeLog(l) {
     submission_approved: `Approved a task submission — credited ₦${formatMoney(l.amount)} to ${l.targetEmail || ""}`,
     submission_rejected: `Rejected a task submission from ${l.targetEmail || ""}`,
     settings_updated: `Updated site settings`,
+    admin_granted: `Granted admin access to ${l.targetEmail || ""}`,
+    admin_revoked: `Removed admin access from ${l.targetEmail || ""}`,
   };
   return map[l.action] || l.action || "Admin action";
 }
