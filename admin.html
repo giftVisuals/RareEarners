@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rare Earners — Admin</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+<style>
+  :root{
+    --primary:#16A34A;
+    --primary-dark:#166534;
+    --primary-light:#DCFCE7;
+    --bg:#F8FAFC;
+    --text:#0F172A;
+    --text-muted:#64748B;
+    --white:#FFFFFF;
+    --border:rgba(15,23,42,.08);
+    --border-strong:rgba(15,23,42,.14);
+    --glass-bg:rgba(255,255,255,.66);
+    --glass-border:rgba(255,255,255,.55);
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06);
+    --shadow-md:0 8px 24px rgba(15,23,42,.08);
+    --shadow-lg:0 20px 48px rgba(15,23,42,.12);
+    --danger:#DC2626;
+    --danger-light:#FEE2E2;
+    --warn:#D97706;
+    --warn-light:#FEF3C7;
+    --radius:16px;
+    --radius-sm:10px;
+    --ease:cubic-bezier(.22,.8,.28,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  img{max-width:100%;display:block;}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+  input,textarea,select{font-family:inherit;}
+  a{color:inherit;text-decoration:none;}
+  [hidden]{display:none !important;}
+  ::selection{background:var(--primary-light);color:var(--primary-dark);}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:12px 20px;border-radius:12px;font-size:15px;font-weight:600;
+    transition:transform .15s var(--ease), box-shadow .15s var(--ease), background .15s var(--ease), opacity .15s;
+    -webkit-tap-highlight-color:transparent;user-select:none;white-space:nowrap;
+  }
+  .btn:active{transform:translateY(1px) scale(.97);}
+  .btn-primary{background:linear-gradient(180deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.25) inset, 0 6px 16px rgba(22,163,74,.28);}
+  .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+  .btn-ghost{background:#fff;color:var(--text);border:1px solid var(--border-strong);}
+  .btn-ghost:hover{background:#F8FAFC;}
+  .btn-danger{background:linear-gradient(180deg,#EF4444,#B91C1C);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.2) inset, 0 6px 16px rgba(220,38,38,.28);}
+  .btn-danger:disabled{opacity:.6;cursor:not-allowed;}
+  .btn-sm{padding:8px 14px;font-size:13px;border-radius:10px;}
+  .btn-xs{padding:6px 10px;font-size:12px;border-radius:8px;}
+  .btn-block{width:100%;}
+  .btn svg{width:16px;height:16px;flex-shrink:0;}
+  .spinner{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;animation:spin .7s linear infinite;}
+  .btn-ghost .spinner{border-color:rgba(15,23,42,.2);border-top-color:var(--text);}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .field{margin-bottom:16px;text-align:left;}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;}
+  .field-hint{font-size:11.5px;color:var(--text-muted);margin-top:6px;line-height:1.4;}
+  .input-wrap{position:relative;display:flex;align-items:center;}
+  .input-wrap svg{position:absolute;left:14px;width:18px;height:18px;color:var(--text-muted);pointer-events:none;}
+  .field input,.field textarea,.field select{
+    width:100%;padding:12px 14px 12px 42px;border-radius:12px;
+    border:1.5px solid var(--border-strong);background:#fff;font-size:15px;color:var(--text);
+    transition:border-color .15s var(--ease), box-shadow .15s var(--ease);
+  }
+  .field.no-icon input,.field.no-icon textarea,.field.no-icon select{padding-left:14px;}
+  .field textarea{resize:vertical;min-height:80px;}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-light);}
+  .field input.error{border-color:var(--danger);}
+  .field-error{display:none;font-size:12.5px;color:var(--danger);margin-top:6px;}
+  .field-error.show{display:block;}
+  .switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;}
+  .switch-row .switch-label{font-size:14px;font-weight:600;}
+  .switch-row .switch-sub{font-size:12px;color:var(--text-muted);margin-top:2px;}
+  .switch{position:relative;width:46px;height:26px;flex-shrink:0;}
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;}
+  .switch-track{position:absolute;inset:0;background:var(--border-strong);border-radius:20px;transition:background .15s var(--ease);}
+  .switch input:checked + .switch-track{background:var(--primary);}
+  .switch-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:var(--shadow-sm);transition:transform .15s var(--ease);}
+  .switch input:checked ~ .switch-thumb{transform:translateX(20px);}
+
+  #toastRoot{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;width:min(380px,92vw);}
+  .toast{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:var(--text);color:#fff;font-size:13.5px;font-weight:500;box-shadow:var(--shadow-lg);animation:toastIn .25s var(--ease);}
+  .toast.success{background:var(--primary-dark);}
+  .toast.error{background:var(--danger);}
+  .toast svg{width:18px;height:18px;flex-shrink:0;}
+  @keyframes toastIn{from{opacity:0;transform:translateY(-10px) scale(.96);}to{opacity:1;transform:none;}}
+
+  .center-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+    background:radial-gradient(1000px 500px at 15% -5%, var(--primary-light) 0%, transparent 60%), radial-gradient(800px 500px at 105% 15%, #EFFDF4 0%, transparent 55%), var(--bg);}
+  .auth-card{width:100%;max-width:420px;border-radius:24px;padding:36px 32px;background:#fff;border:1px solid var(--border);box-shadow:var(--shadow-md);}
+  .auth-brand{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:20px;}
+  .auth-brand img{width:44px;height:44px;object-fit:contain;}
+  .auth-brand span{font-weight:900;font-size:19px;letter-spacing:-.01em;}
+  .auth-heading{text-align:center;margin-bottom:22px;}
+  .auth-heading h1{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px;}
+  .auth-heading p{font-size:13.5px;color:var(--text-muted);}
+  .setup-uid{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;word-break:break-all;margin:14px 0;user-select:all;}
+  .setup-steps{font-size:13.5px;color:var(--text-muted);line-height:1.7;margin:14px 0;padding-left:18px;}
+  .setup-code{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.6;margin:10px 0;white-space:pre-wrap;word-break:break-all;}
+
+  #adminScreen{min-height:100vh;display:flex;}
+  .sidebar{display:none;width:230px;flex-direction:column;padding:22px 16px;position:sticky;top:0;height:100vh;border-right:1px solid var(--border);background:rgba(255,255,255,.7);flex-shrink:0;}
+  .sidebar-brand{display:flex;align-items:center;gap:10px;padding:6px 8px 24px;}
+  .sidebar-brand img{width:36px;height:36px;}
+  .sidebar-brand span{font-weight:900;font-size:15px;}
+  .sidebar-brand small{display:block;font-size:10.5px;color:var(--text-muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
+  .nav-list{display:flex;flex-direction:column;gap:2px;flex:1;}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;font-size:14px;font-weight:600;color:var(--text-muted);transition:background .15s var(--ease), color .15s var(--ease);}
+  .nav-item svg{width:18px;height:18px;}
+  .nav-item:hover{background:#F1F5F9;color:var(--text);}
+  .nav-item.active{background:var(--primary-light);color:var(--primary-dark);}
+  .sidebar-logout{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;font-size:14px;font-weight:600;color:var(--danger);}
+  .sidebar-logout:hover{background:var(--danger-light);}
+  .sidebar-logout svg{width:18px;height:18px;}
+
+  .main-content{flex:1;min-width:0;padding:18px 16px 100px;max-width:1100px;}
+  .topbar-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;}
+  .topbar-brand{display:flex;align-items:center;gap:9px;}
+  .topbar-brand img{width:32px;height:32px;object-fit:contain;}
+  .topbar-brand span{font-size:13px;font-weight:900;}
+  .topbar-brand small{display:block;font-size:9.5px;color:var(--text-muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
+  .icon-btn{width:36px;height:36px;border-radius:10px;background:#fff;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;transition:transform .15s var(--ease);}
+  .icon-btn:active{transform:scale(.9);}
+  .icon-btn svg{width:16px;height:16px;}
+  .page-head{margin:18px 0 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .page-head h2{font-size:19px;font-weight:800;letter-spacing:-.01em;}
+  .page-head p{font-size:12.5px;color:var(--text-muted);margin-top:2px;}
+
+  .panel{background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px;}
+  .empty-state{text-align:center;padding:32px 14px;color:var(--text-muted);}
+  .empty-state svg{width:32px;height:32px;margin-bottom:10px;opacity:.5;}
+  .empty-state p{font-size:13.5px;}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;}
+  .stat-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;}
+  .stat-card .icon{width:34px;height:34px;border-radius:10px;background:var(--primary-light);color:var(--primary-dark);display:flex;align-items:center;justify-content:center;margin-bottom:10px;}
+  .stat-card .icon svg{width:17px;height:17px;}
+  .stat-card .value{font-size:22px;font-weight:800;letter-spacing:-.02em;}
+  .stat-card .label{font-size:12px;color:var(--text-muted);margin-top:2px;}
+  @media (min-width:640px){.stat-grid{grid-template-columns:repeat(4,1fr);}}
+
+  .row-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid var(--border);background:#fff;margin-bottom:10px;}
+  .row-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;}
+  .row-icon svg{width:18px;height:18px;}
+  .row-info{flex:1;min-width:0;}
+  .row-info h4{font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .row-info p{font-size:12px;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .row-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:var(--primary-light);color:var(--primary-dark);white-space:nowrap;}
+  .badge.warn{background:var(--warn-light);color:#92400E;}
+  .badge.danger{background:var(--danger-light);color:#991B1B;}
+  .badge.muted{background:#F1F5F9;color:var(--text-muted);}
+
+  .search-wrap{position:relative;margin-bottom:16px;}
+  .search-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text-muted);}
+  .search-wrap input{width:100%;padding:12px 14px 12px 42px;border-radius:12px;border:1.5px solid var(--border-strong);background:#fff;font-size:14.5px;}
+  .search-wrap input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-light);}
+
+  /* full-screen sheet/modal (reused for add/edit/confirm/detail) */
+  .sheet-overlay{position:fixed;inset:0;z-index:200;background:rgba(15,23,42,.5);opacity:0;pointer-events:none;transition:opacity .2s var(--ease);}
+  .sheet-overlay.show{opacity:1;pointer-events:auto;}
+  .sheet{position:absolute;left:0;right:0;bottom:0;top:0;background:var(--bg);display:flex;flex-direction:column;transform:translateY(16px);opacity:0;transition:transform .22s var(--ease), opacity .22s var(--ease);}
+  .sheet-overlay.show .sheet{transform:translateY(0);opacity:1;}
+  @media (min-width:640px){
+    .sheet{top:4%;bottom:4%;left:50%;right:auto;width:min(480px,92vw);transform:translate(-50%,16px);border-radius:20px;box-shadow:var(--shadow-lg);overflow:hidden;}
+    .sheet-overlay.show .sheet{transform:translate(-50%,0);}
+  }
+  .sheet-head{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--border);background:#fff;flex-shrink:0;}
+  .sheet-head h3{font-size:16px;font-weight:800;flex:1;}
+  .sheet-close{width:34px;height:34px;border-radius:10px;background:var(--bg);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .sheet-close svg{width:16px;height:16px;}
+  .sheet-body{flex:1;overflow-y:auto;padding:18px 16px;}
+  .sheet-foot{padding:14px 16px;border-top:1px solid var(--border);background:#fff;flex-shrink:0;display:flex;gap:10px;}
+  .sheet-foot .btn{flex:1;}
+
+  .confirm-icon{width:52px;height:52px;border-radius:50%;background:var(--danger-light);color:var(--danger);display:flex;align-items:center;justify-content:center;margin:6px auto 16px;}
+  .confirm-icon svg{width:24px;height:24px;}
+  .confirm-body{text-align:center;}
+  .confirm-body h4{font-size:16px;font-weight:800;margin-bottom:8px;}
+  .confirm-body p{font-size:13.5px;color:var(--text-muted);line-height:1.55;}
+
+  .detail-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 18px;}
+  .detail-stat{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 6px;text-align:center;}
+  .detail-stat .value{font-size:14.5px;font-weight:800;color:var(--primary-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .detail-stat .label{font-size:10px;color:var(--text-muted);margin-top:2px;}
+  .detail-actions{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+
+  .amount-btns{display:flex;gap:8px;margin-bottom:14px;}
+  .amount-toggle{flex:1;padding:11px;border-radius:11px;border:1.5px solid var(--border-strong);font-size:13.5px;font-weight:700;background:#fff;transition:all .15s var(--ease);}
+  .amount-toggle.active.credit{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .amount-toggle.active.debit{background:var(--danger);color:#fff;border-color:var(--danger);}
+
+  .bottom-nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:2px;padding:8px;border-radius:20px;width:min(420px,92vw);background:rgba(255,255,255,.85);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);border:1px solid var(--glass-border);box-shadow:var(--shadow-lg);}
+  .bn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:14px;color:var(--text-muted);transition:background .15s var(--ease), color .15s var(--ease), transform .15s var(--ease);}
+  .bn-item svg{width:19px;height:19px;}
+  .bn-item span{font-size:9.5px;font-weight:700;}
+  .bn-item.active{color:var(--primary-dark);background:var(--primary-light);}
+  .bn-item:active{transform:scale(.92);}
+
+  @media (min-width:1024px){
+    .sidebar{display:flex;}
+    .bottom-nav{display:none;}
+    .main-content{padding:26px 32px 40px;}
+    .topbar-brand{display:none;}
+  }
+  @media (max-width:480px){.panel{padding:16px;}.stat-card .value{font-size:19px;}}
+</style>
+</head>
+<body>
+
+<div id="toastRoot"></div>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="center-screen">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <img src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="Rare Earners">
+      <span>Rare Earners</span>
+    </div>
+    <div class="auth-heading">
+      <h1>Admin Login</h1>
+      <p>Sign in with your admin account to continue.</p>
+    </div>
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <div class="input-wrap"><svg data-lucide="mail"></svg><input type="email" id="loginEmail" autocomplete="username" placeholder="admin@rare-earners.com.ng"></div>
+        <div class="field-error" id="loginEmailError"></div>
+      </div>
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <div class="input-wrap"><svg data-lucide="lock"></svg><input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••"></div>
+        <div class="field-error" id="loginPasswordError"></div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn"><span class="btn-label">Log in</span></button>
+    </form>
+  </div>
+</div>
+
+<!-- NOT AUTHORIZED -->
+<div id="deniedScreen" class="center-screen" hidden>
+  <div class="auth-card" style="text-align:center;">
+    <div class="confirm-icon"><svg data-lucide="shield-alert"></svg></div>
+    <h1 style="font-size:19px;font-weight:800;margin-bottom:8px;">Not authorized</h1>
+    <p style="font-size:13.5px;color:var(--text-muted);line-height:1.55;margin-bottom:18px;">This account isn't allowed to access the admin panel.</p>
+    <button type="button" class="btn btn-ghost btn-block" id="deniedLogoutBtn">Log out</button>
+  </div>
+</div>
+
+<!-- FIRST-TIME SETUP (admin email confirmed, but no admins/{uid} doc yet) -->
+<div id="setupScreen" class="center-screen" hidden>
+  <div class="auth-card">
+    <div class="auth-heading">
+      <h1>One more step</h1>
+      <p>Your login works, but Firestore doesn't know this account is an admin yet.</p>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);">Your UID:</p>
+    <div class="setup-uid" id="setupUid">—</div>
+    <p class="setup-steps">
+      1. Open Firebase Console → Firestore Database<br>
+      2. Create a collection named <b>admins</b><br>
+      3. Add a document with the ID above (paste your UID as the Document ID)<br>
+      4. Give it one field: <b>email</b> (string) = your admin email<br>
+      5. Come back here and tap Retry
+    </p>
+    <div style="display:flex;gap:10px;">
+      <button type="button" class="btn btn-ghost" style="flex:1;" id="setupLogoutBtn">Log out</button>
+      <button type="button" class="btn btn-primary" style="flex:1;" id="setupRetryBtn"><span class="btn-label">Retry</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN SHELL -->
+<div id="adminScreen" hidden>
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="">
+      <div><span>Rare Earners</span><small>Admin</small></div>
+    </div>
+    <nav class="nav-list">
+      <a href="#" class="nav-item" data-tab="overview"><svg data-lucide="layout-dashboard"></svg>Overview</a>
+      <a href="#" class="nav-item" data-tab="tasks"><svg data-lucide="list-checks"></svg>Tasks</a>
+      <a href="#" class="nav-item" data-tab="users"><svg data-lucide="users"></svg>Users</a>
+      <a href="#" class="nav-item" data-tab="withdrawals"><svg data-lucide="wallet"></svg>Withdrawals</a>
+      <a href="#" class="nav-item" data-tab="settings"><svg data-lucide="settings"></svg>Settings</a>
+    </nav>
+    <button type="button" class="sidebar-logout" id="sidebarLogoutBtn"><svg data-lucide="log-out"></svg>Log out</button>
+  </aside>
+
+  <div class="main-content">
+    <div class="topbar-row">
+      <div class="topbar-brand">
+        <img src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="">
+        <div><span>RARE EARNERS</span><small>Admin</small></div>
+      </div>
+      <button type="button" class="icon-btn" id="topbarLogoutBtn" title="Log out"><svg data-lucide="log-out"></svg></button>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div id="overviewTab" class="tab-view">
+      <div class="page-head"><div><h2>Overview</h2><p>Quick snapshot of the platform.</p></div></div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="icon"><svg data-lucide="users"></svg></div><div class="value" id="statUsers">—</div><div class="label">Total users</div></div>
+        <div class="stat-card"><div class="icon"><svg data-lucide="list-checks"></svg></div><div class="value" id="statTasks">—</div><div class="label">Active tasks</div></div>
+        <div class="stat-card"><div class="icon"><svg data-lucide="clock"></svg></div><div class="value" id="statPendingWithdrawals">—</div><div class="label">Pending withdrawals</div></div>
+        <div class="stat-card"><div class="icon"><svg data-lucide="banknote"></svg></div><div class="value" id="statPendingAmount">—</div><div class="label">Pending payout (₦)</div></div>
+      </div>
+      <section class="panel">
+        <div class="page-head" style="margin:0 0 6px;"><h2 style="font-size:15px;">Recent admin activity</h2></div>
+        <div id="overviewLogsList"><div class="empty-state"><svg data-lucide="loader-2"></svg><p>Loading…</p></div></div>
+      </section>
+    </div>
+
+    <!-- TASKS -->
+    <div id="tasksTab" class="tab-view" hidden>
+      <div class="page-head">
+        <div><h2>Tasks</h2><p>Create and manage earning tasks.</p></div>
+        <button type="button" class="btn btn-primary btn-sm" id="addTaskBtn"><svg data-lucide="plus"></svg>Add Task</button>
+      </div>
+      <div id="tasksList"><div class="empty-state"><svg data-lucide="loader-2"></svg><p>Loading…</p></div></div>
+    </div>
+
+    <!-- USERS -->
+    <div id="usersTab" class="tab-view" hidden>
+      <div class="page-head"><div><h2>Users</h2><p>Search, view, and manage user accounts.</p></div></div>
+      <div class="search-wrap"><svg data-lucide="search"></svg><input type="text" id="userSearchInput" placeholder="Search by name or email"></div>
+      <div id="usersList"><div class="empty-state"><svg data-lucide="loader-2"></svg><p>Loading…</p></div></div>
+    </div>
+
+    <!-- WITHDRAWALS -->
+    <div id="withdrawalsTab" class="tab-view" hidden>
+      <div class="page-head"><div><h2>Withdrawals</h2><p>Pending withdrawal requests awaiting review.</p></div></div>
+      <div id="withdrawalsList"><div class="empty-state"><svg data-lucide="loader-2"></svg><p>Loading…</p></div></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="settingsTab" class="tab-view" hidden>
+      <div class="page-head"><div><h2>Settings</h2><p>Site-wide rules and rewards.</p></div></div>
+      <section class="panel">
+        <div class="field">
+          <label for="setReferralReward">Referral reward (₦ per successful referral)</label>
+          <div class="input-wrap no-icon"><input type="number" id="setReferralReward" min="0"></div>
+        </div>
+        <div class="field">
+          <label for="setMinBank">Minimum bank withdrawal (₦)</label>
+          <div class="input-wrap no-icon"><input type="number" id="setMinBank" min="0"></div>
+        </div>
+        <div class="field">
+          <label for="setMinAirtime">Minimum airtime withdrawal (₦)</label>
+          <div class="input-wrap no-icon"><input type="number" id="setMinAirtime" min="0"></div>
+        </div>
+        <div class="field">
+          <label for="setWelcomeBonus">Welcome / signup bonus (₦)</label>
+          <div class="input-wrap no-icon"><input type="number" id="setWelcomeBonus" min="0"></div>
+          <p class="field-hint">Credited automatically to every new account on signup.</p>
+        </div>
+        <div class="switch-row">
+          <div><div class="switch-label">New signups allowed</div><div class="switch-sub">Turn off to temporarily close registration.</div></div>
+          <label class="switch"><input type="checkbox" id="setSignupsEnabled"><div class="switch-track"></div><div class="switch-thumb"></div></label>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label for="setAnnouncement">Announcement banner</label>
+          <div class="input-wrap no-icon"><textarea id="setAnnouncement" placeholder="Leave blank to hide the banner"></textarea></div>
+        </div>
+        <button type="button" class="btn btn-primary btn-block" id="saveSettingsBtn"><span class="btn-label">Save Settings</span></button>
+      </section>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="#" class="bn-item" data-tab="overview"><svg data-lucide="layout-dashboard"></svg><span>Overview</span></a>
+    <a href="#" class="bn-item" data-tab="tasks"><svg data-lucide="list-checks"></svg><span>Tasks</span></a>
+    <a href="#" class="bn-item" data-tab="users"><svg data-lucide="users"></svg><span>Users</span></a>
+    <a href="#" class="bn-item" data-tab="withdrawals"><svg data-lucide="wallet"></svg><span>Withdraw</span></a>
+    <a href="#" class="bn-item" data-tab="settings"><svg data-lucide="settings"></svg><span>Settings</span></a>
+  </nav>
+</div>
+
+<!-- TASK FORM SHEET -->
+<div class="sheet-overlay" id="taskSheet">
+  <div class="sheet">
+    <div class="sheet-head"><h3 id="taskSheetTitle">Add Task</h3><button type="button" class="sheet-close" id="taskSheetClose"><svg data-lucide="x"></svg></button></div>
+    <div class="sheet-body">
+      <div class="field">
+        <label for="taskTitle">Title</label>
+        <div class="input-wrap no-icon"><input type="text" id="taskTitle" placeholder="e.g. Follow us on X"></div>
+        <div class="field-error" id="taskTitleError"></div>
+      </div>
+      <div class="field">
+        <label for="taskDesc">Description</label>
+        <div class="input-wrap no-icon"><textarea id="taskDesc" placeholder="What should the user do?"></textarea></div>
+        <div class="field-error" id="taskDescError"></div>
+      </div>
+      <div class="field">
+        <label for="taskReward">Reward (₦)</label>
+        <div class="input-wrap no-icon"><input type="number" id="taskReward" min="1" placeholder="50"></div>
+        <div class="field-error" id="taskRewardError"></div>
+      </div>
+      <div class="field">
+        <label for="taskLink">Link / URL</label>
+        <div class="input-wrap no-icon"><input type="url" id="taskLink" placeholder="https://..."></div>
+        <div class="field-error" id="taskLinkError"></div>
+      </div>
+      <div class="field">
+        <label for="taskType">Type</label>
+        <div class="input-wrap no-icon">
+          <select id="taskType">
+            <option value="social">Social Media</option>
+            <option value="app">App / Install</option>
+            <option value="survey">Survey</option>
+            <option value="website">Website Visit</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="taskDifficulty">Difficulty</label>
+        <div class="input-wrap no-icon">
+          <select id="taskDifficulty">
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="taskTime">Time estimate</label>
+        <div class="input-wrap no-icon"><input type="text" id="taskTime" placeholder="2 min"></div>
+      </div>
+      <div class="switch-row">
+        <div><div class="switch-label">Active</div><div class="switch-sub">Inactive tasks are hidden from users.</div></div>
+        <label class="switch"><input type="checkbox" id="taskActive" checked><div class="switch-track"></div><div class="switch-thumb"></div></label>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button type="button" class="btn btn-ghost" id="taskSheetCancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="taskSheetSave"><span class="btn-label">Save Task</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- USER DETAIL SHEET -->
+<div class="sheet-overlay" id="userSheet">
+  <div class="sheet">
+    <div class="sheet-head"><h3>User Details</h3><button type="button" class="sheet-close" id="userSheetClose"><svg data-lucide="x"></svg></button></div>
+    <div class="sheet-body">
+      <div style="text-align:center;margin-bottom:6px;">
+        <h4 id="userDetailName" style="font-size:17px;font-weight:800;">—</h4>
+        <p id="userDetailEmail" style="font-size:13px;color:var(--text-muted);">—</p>
+        <p id="userDetailJoined" style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">—</p>
+        <div id="userDetailBanBadge" style="margin-top:8px;" hidden><span class="badge danger"><svg data-lucide="ban" style="width:12px;height:12px;"></svg>Banned</span></div>
+      </div>
+      <div class="detail-stats">
+        <div class="detail-stat"><div class="value" id="userDetailBalance">₦0</div><div class="label">Balance</div></div>
+        <div class="detail-stat"><div class="value" id="userDetailTasks">0</div><div class="label">Tasks done</div></div>
+        <div class="detail-stat"><div class="value" id="userDetailReferrals">0</div><div class="label">Referrals</div></div>
+      </div>
+      <div class="detail-actions">
+        <button type="button" class="btn btn-ghost btn-block" id="userAddBalanceBtn"><svg data-lucide="plus-circle"></svg>Add / Deduct Balance</button>
+        <button type="button" class="btn btn-ghost btn-block" id="userBanBtn"><svg data-lucide="ban"></svg>Ban User</button>
+        <button type="button" class="btn btn-danger btn-block" id="userDeleteBtn"><svg data-lucide="trash-2"></svg>Delete User</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BALANCE ADJUST SHEET -->
+<div class="sheet-overlay" id="balanceSheet">
+  <div class="sheet">
+    <div class="sheet-head"><h3>Adjust Balance</h3><button type="button" class="sheet-close" id="balanceSheetClose"><svg data-lucide="x"></svg></button></div>
+    <div class="sheet-body">
+      <div class="amount-btns">
+        <button type="button" class="amount-toggle credit active" data-mode="credit" id="balanceModeCredit">+ Add</button>
+        <button type="button" class="amount-toggle debit" data-mode="debit" id="balanceModeDebit">− Deduct</button>
+      </div>
+      <div class="field">
+        <label for="balanceAmount">Amount (₦)</label>
+        <div class="input-wrap no-icon"><input type="number" id="balanceAmount" min="1" placeholder="0"></div>
+        <div class="field-error" id="balanceAmountError"></div>
+      </div>
+      <div class="field">
+        <label for="balanceReason">Reason</label>
+        <div class="input-wrap no-icon"><textarea id="balanceReason" placeholder="Why are you making this change?"></textarea></div>
+        <div class="field-error" id="balanceReasonError"></div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button type="button" class="btn btn-ghost" id="balanceSheetCancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="balanceSheetConfirm"><span class="btn-label">Confirm</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- GENERIC CONFIRM SHEET -->
+<div class="sheet-overlay" id="confirmSheet">
+  <div class="sheet" style="top:auto;bottom:0;height:auto;">
+    <div class="sheet-body">
+      <div class="confirm-icon" id="confirmIconWrap"><svg data-lucide="alert-triangle" id="confirmIcon"></svg></div>
+      <div class="confirm-body">
+        <h4 id="confirmTitle">Are you sure?</h4>
+        <p id="confirmMessage">This action cannot be undone.</p>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button type="button" class="btn btn-ghost" id="confirmCancelBtn">Cancel</button>
+      <button type="button" class="btn btn-danger" id="confirmOkBtn"><span class="btn-label">Confirm</span></button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+import {
+  getAuth, setPersistence, browserLocalPersistence,
+  signInWithEmailAndPassword, onAuthStateChanged, signOut,
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc,
+  collection, getDocs, query, where, serverTimestamp, increment, runTransaction,
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCx3IdRjDUPN9B-MFjvdZo5XJoptseFq3Q",
+  authDomain: "rareearners.firebaseapp.com",
+  projectId: "rareearners",
+  storageBucket: "rareearners.firebasestorage.app",
+  messagingSenderId: "141222061047",
+  appId: "1:141222061047:web:9c044716391c58d09dc4f2"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Client-side allowlist gate. Real enforcement lives in Firestore rules via the
+// `admins/{uid}` collection (see isAdmin() in firestore.rules) — this is just UX.
+const ADMIN_EMAILS = ["admin@rare-earners.com.ng"];
+
+const $ = (id) => document.getElementById(id);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+function refreshIcons() { if (window.lucide) window.lucide.createIcons(); }
+
+function toast(message, type = "default") {
+  const root = $("toastRoot");
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  const iconName = type === "success" ? "check-circle" : type === "error" ? "alert-circle" : "info";
+  el.innerHTML = `<svg data-lucide="${iconName}"></svg><span></span>`;
+  el.querySelector("span").textContent = message;
+  root.appendChild(el);
+  refreshIcons();
+  setTimeout(() => {
+    el.style.transition = "opacity .25s, transform .25s";
+    el.style.opacity = "0";
+    el.style.transform = "translateY(-8px)";
+    setTimeout(() => el.remove(), 250);
+  }, 3200);
+}
+
+function setLoading(btn, loading) {
+  if (!btn) return;
+  btn.disabled = loading;
+  const label = btn.querySelector(".btn-label");
+  if (loading) {
+    btn.dataset.prevHtml = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner"></span>`;
+  } else if (btn.dataset.prevHtml) {
+    btn.innerHTML = btn.dataset.prevHtml;
+    delete btn.dataset.prevHtml;
+  }
+  refreshIcons();
+}
+
+function showFieldError(inputId, message) {
+  const input = $(inputId);
+  const err = $(inputId + "Error");
+  if (input) input.classList.add("error");
+  if (err) { err.textContent = message; err.classList.add("show"); }
+}
+function clearFieldError(inputId) {
+  const input = $(inputId);
+  const err = $(inputId + "Error");
+  if (input) input.classList.remove("error");
+  if (err) { err.textContent = ""; err.classList.remove("show"); }
+}
+function clearFormErrors(ids) { ids.forEach(clearFieldError); }
+
+function formatMoney(n) {
+  return (Number(n) || 0).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function formatDate(ts) {
+  try {
+    const d = ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+    if (!d || isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
+  } catch (e) { return "—"; }
+}
+function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+async function logAdminAction(action, details = {}) {
+  try {
+    await addDoc(collection(db, "adminLogs"), {
+      adminUid: currentAdmin?.uid || "",
+      adminEmail: currentAdmin?.email || "",
+      action,
+      ...details,
+      createdAt: serverTimestamp(),
+    });
+  } catch (e) { /* logging failure shouldn't block the actual action */ }
+}
+
+/* ---------------- generic confirm sheet ---------------- */
+let confirmResolver = null;
+function openConfirm({ title, message, okLabel = "Confirm", danger = true }) {
+  $("confirmTitle").textContent = title;
+  $("confirmMessage").textContent = message;
+  $("confirmOkBtn").querySelector(".btn-label")?.remove();
+  $("confirmOkBtn").innerHTML = `<span class="btn-label">${okLabel}</span>`;
+  $("confirmOkBtn").className = danger ? "btn btn-danger" : "btn btn-primary";
+  $("confirmSheet").classList.add("show");
+  return new Promise((resolve) => { confirmResolver = resolve; });
+}
+function closeConfirm(result) {
+  $("confirmSheet").classList.remove("show");
+  if (confirmResolver) { confirmResolver(result); confirmResolver = null; }
+}
+$("confirmCancelBtn").addEventListener("click", () => closeConfirm(false));
+$("confirmOkBtn").addEventListener("click", () => closeConfirm(true));
+$("confirmSheet").addEventListener("click", (e) => { if (e.target === $("confirmSheet")) closeConfirm(false); });
+
+/* ---------------- login ---------------- */
+let currentAdmin = null;
+
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearFormErrors(["loginEmail", "loginPassword"]);
+  const email = $("loginEmail").value.trim();
+  const password = $("loginPassword").value;
+  let valid = true;
+  if (!isValidEmail(email)) { showFieldError("loginEmail", "Enter a valid email address."); valid = false; }
+  if (!password) { showFieldError("loginPassword", "Enter your password."); valid = false; }
+  if (!valid) return;
+
+  const btn = $("loginSubmitBtn");
+  setLoading(btn, true);
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (err) {
+    const map = {
+      "auth/invalid-credential": "Incorrect email or password.",
+      "auth/wrong-password": "Incorrect email or password.",
+      "auth/user-not-found": "No account found with that email.",
+      "auth/too-many-requests": "Too many attempts. Try again later.",
+    };
+    toast(map[err?.code] || "Could not log in. Try again.", "error");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+function showOnly(id) {
+  ["loginScreen", "deniedScreen", "setupScreen", "adminScreen"].forEach((s) => { $(s).hidden = s !== id; });
+}
+
+[["deniedLogoutBtn"], ["setupLogoutBtn"], ["sidebarLogoutBtn"], ["topbarLogoutBtn"]].forEach(([id]) => {
+  $(id).addEventListener("click", async () => { try { await signOut(auth); } catch (e) {} });
+});
+$("setupRetryBtn").addEventListener("click", () => checkAdminAccess(auth.currentUser));
+
+async function checkAdminAccess(user) {
+  if (!user) { showOnly("loginScreen"); return; }
+  const email = (user.email || "").toLowerCase();
+  if (!ADMIN_EMAILS.includes(email)) {
+    showOnly("deniedScreen");
+    return;
+  }
+  try {
+    const snap = await getDoc(doc(db, "admins", user.uid));
+    if (!snap.exists()) {
+      $("setupUid").textContent = user.uid;
+      showOnly("setupScreen");
+      return;
+    }
+  } catch (e) {
+    $("setupUid").textContent = user.uid;
+    showOnly("setupScreen");
+    return;
+  }
+  currentAdmin = user;
+  showOnly("adminScreen");
+  initAdminData();
+}
+
+onAuthStateChanged(auth, (user) => { checkAdminAccess(user); });
+
+/* ---------------- tab navigation ---------------- */
+const TABS = ["overview", "tasks", "users", "withdrawals", "settings"];
+function switchTab(tab) {
+  TABS.forEach((t) => { $(t + "Tab").hidden = t !== tab; });
+  $$(".nav-item").forEach((el) => el.classList.toggle("active", el.dataset.tab === tab));
+  $$(".bn-item").forEach((el) => el.classList.toggle("active", el.dataset.tab === tab));
+  window.scrollTo({ top: 0 });
+  // Re-fetch on every visit so admins always see current data, not a stale snapshot from login.
+  if (tab === "overview") refreshOverview();
+  else if (tab === "tasks") loadTasksAdmin();
+  else if (tab === "users") loadUsersAdmin();
+  else if (tab === "withdrawals") loadWithdrawalsAdmin();
+  else if (tab === "settings") loadSettingsAdmin();
+}
+$$("[data-tab]").forEach((el) => {
+  el.addEventListener("click", (e) => { e.preventDefault(); switchTab(el.dataset.tab); });
+});
+
+async function initAdminData() {
+  switchTab("overview");
+}
+
+/* ================= TASKS ================= */
+const TASK_TYPE_META = {
+  social: { icon: "at-sign", color: "#000000" },
+  app: { icon: "smartphone", color: "#2563EB" },
+  survey: { icon: "clipboard-list", color: "#7C3AED" },
+  website: { icon: "globe", color: "#16A34A" },
+  other: { icon: "star", color: "#111827" },
+};
+let ADMIN_TASKS = [];
+
+async function loadTasksAdmin() {
+  try {
+    const snap = await getDocs(collection(db, "tasks"));
+    ADMIN_TASKS = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (e) {
+    ADMIN_TASKS = [];
+    toast("Could not load tasks.", "error");
+  }
+  renderTasksAdmin();
+}
+
+function renderTasksAdmin() {
+  const container = $("tasksList");
+  if (!ADMIN_TASKS.length) {
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="inbox"></svg><p>No tasks yet. Add your first one.</p></div>`;
+    refreshIcons();
+    return;
+  }
+  container.innerHTML = ADMIN_TASKS.map((t) => {
+    const meta = TASK_TYPE_META[t.type] || TASK_TYPE_META.other;
+    return `
+    <div class="row-card">
+      <div class="row-icon" style="background:${t.color || meta.color}"><svg data-lucide="${t.icon || meta.icon}"></svg></div>
+      <div class="row-info">
+        <h4>${t.name || ""}</h4>
+        <p>₦${t.reward || 0} · ${t.difficulty || "Easy"} · ${t.active === false ? "Inactive" : "Active"}</p>
+      </div>
+      <div class="row-actions">
+        <label class="switch" title="Toggle active" style="width:38px;height:22px;">
+          <input type="checkbox" data-toggle-active="${t.id}" ${t.active !== false ? "checked" : ""}>
+          <div class="switch-track"></div><div class="switch-thumb" style="width:16px;height:16px;top:3px;left:3px;"></div>
+        </label>
+        <button type="button" class="icon-btn" data-edit-task="${t.id}"><svg data-lucide="pencil"></svg></button>
+        <button type="button" class="icon-btn" data-delete-task="${t.id}"><svg data-lucide="trash-2"></svg></button>
+      </div>
+    </div>`;
+  }).join("");
+  refreshIcons();
+
+  $$("[data-toggle-active]").forEach((el) => {
+    el.addEventListener("change", async () => {
+      const id = el.dataset.toggleActive;
+      const task = ADMIN_TASKS.find((t) => t.id === id);
+      const nextActive = el.checked;
+      try {
+        await updateDoc(doc(db, "tasks", id), { active: nextActive });
+        task.active = nextActive;
+        await logAdminAction(nextActive ? "task_activated" : "task_deactivated", { targetType: "task", targetId: id, taskName: task.name });
+        toast(`Task ${nextActive ? "activated" : "deactivated"}.`, "success");
+        renderTasksAdmin();
+      } catch (e) {
+        el.checked = !nextActive;
+        toast("Could not update task.", "error");
+      }
+    });
+  });
+  $$("[data-edit-task]").forEach((el) => el.addEventListener("click", () => openTaskSheet(el.dataset.editTask)));
+  $$("[data-delete-task]").forEach((el) => el.addEventListener("click", () => deleteTaskFlow(el.dataset.deleteTask)));
+}
+
+let editingTaskId = null;
+function openTaskSheet(taskId) {
+  editingTaskId = taskId || null;
+  clearFormErrors(["taskTitle", "taskDesc", "taskReward", "taskLink"]);
+  const task = taskId ? ADMIN_TASKS.find((t) => t.id === taskId) : null;
+  $("taskSheetTitle").textContent = task ? "Edit Task" : "Add Task";
+  $("taskTitle").value = task?.name || "";
+  $("taskDesc").value = task?.desc || "";
+  $("taskReward").value = task?.reward || "";
+  $("taskLink").value = task?.link || "";
+  $("taskType").value = task?.type || "social";
+  $("taskDifficulty").value = task?.difficulty || "Easy";
+  $("taskTime").value = task?.time || "2 min";
+  $("taskActive").checked = task ? task.active !== false : true;
+  $("taskSheet").classList.add("show");
+}
+function closeTaskSheet() { $("taskSheet").classList.remove("show"); }
+$("addTaskBtn").addEventListener("click", () => openTaskSheet(null));
+$("taskSheetClose").addEventListener("click", closeTaskSheet);
+$("taskSheetCancel").addEventListener("click", closeTaskSheet);
+$("taskSheet").addEventListener("click", (e) => { if (e.target === $("taskSheet")) closeTaskSheet(); });
+
+$("taskSheetSave").addEventListener("click", async () => {
+  clearFormErrors(["taskTitle", "taskDesc", "taskReward", "taskLink"]);
+  const name = $("taskTitle").value.trim();
+  const desc = $("taskDesc").value.trim();
+  const reward = Number($("taskReward").value);
+  const link = $("taskLink").value.trim();
+  const type = $("taskType").value;
+  const difficulty = $("taskDifficulty").value;
+  const time = $("taskTime").value.trim() || "2 min";
+  const active = $("taskActive").checked;
+  let valid = true;
+  if (!name) { showFieldError("taskTitle", "Title is required."); valid = false; }
+  if (!desc) { showFieldError("taskDesc", "Description is required."); valid = false; }
+  if (!reward || reward <= 0) { showFieldError("taskReward", "Enter a reward greater than 0."); valid = false; }
+  if (!link) { showFieldError("taskLink", "Link/URL is required."); valid = false; }
+  if (!valid) return;
+
+  const meta = TASK_TYPE_META[type] || TASK_TYPE_META.other;
+  const payload = { name, desc, reward, link, type, difficulty, time, active, icon: meta.icon, color: meta.color, updatedAt: serverTimestamp() };
+
+  const btn = $("taskSheetSave");
+  setLoading(btn, true);
+  try {
+    if (editingTaskId) {
+      await updateDoc(doc(db, "tasks", editingTaskId), payload);
+      await logAdminAction("task_edited", { targetType: "task", targetId: editingTaskId, taskName: name });
+      toast("Task updated.", "success");
+    } else {
+      payload.createdAt = serverTimestamp();
+      const ref = await addDoc(collection(db, "tasks"), payload);
+      await logAdminAction("task_created", { targetType: "task", targetId: ref.id, taskName: name });
+      toast("Task added.", "success");
+    }
+    closeTaskSheet();
+    await loadTasksAdmin();
+  } catch (e) {
+    toast("Could not save task.", "error");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+async function deleteTaskFlow(taskId) {
+  const task = ADMIN_TASKS.find((t) => t.id === taskId);
+  const ok = await openConfirm({
+    title: "Delete this task?",
+    message: `"${task?.name || "This task"}" will be permanently deleted. Users can no longer see or submit it.`,
+    okLabel: "Delete",
+  });
+  if (!ok) return;
+  try {
+    await deleteDoc(doc(db, "tasks", taskId));
+    await logAdminAction("task_deleted", { targetType: "task", targetId: taskId, taskName: task?.name || "" });
+    toast("Task deleted.", "success");
+    await loadTasksAdmin();
+  } catch (e) {
+    toast("Could not delete task.", "error");
+  }
+}
+
+/* ================= USERS ================= */
+let ADMIN_USERS = [];
+let userSearchQuery = "";
+
+async function loadUsersAdmin() {
+  try {
+    const snap = await getDocs(collection(db, "users"));
+    ADMIN_USERS = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    ADMIN_USERS.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+  } catch (e) {
+    ADMIN_USERS = [];
+    toast("Could not load users.", "error");
+  }
+  renderUsersAdmin();
+}
+
+function renderUsersAdmin() {
+  const q = userSearchQuery.trim().toLowerCase();
+  const list = ADMIN_USERS.filter((u) => !q || (u.name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q));
+  const container = $("usersList");
+  if (!list.length) {
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="${ADMIN_USERS.length ? "search-x" : "users"}"></svg><p>${ADMIN_USERS.length ? "No users match your search." : "No users yet."}</p></div>`;
+    refreshIcons();
+    return;
+  }
+  container.innerHTML = list.map((u) => `
+    <div class="row-card" data-open-user="${u.id}" style="cursor:pointer;">
+      <div class="row-icon" style="background:var(--primary-dark);">${(u.name || u.email || "?").slice(0, 1).toUpperCase()}</div>
+      <div class="row-info">
+        <h4>${u.name || "—"}${u.banned ? ' <span class="badge danger" style="margin-left:4px;">Banned</span>' : ""}</h4>
+        <p>${u.email || "—"} · ₦${formatMoney(u.balance)}</p>
+      </div>
+      <svg data-lucide="chevron-right" style="width:18px;height:18px;color:var(--text-muted);flex-shrink:0;"></svg>
+    </div>`).join("");
+  refreshIcons();
+  $$("[data-open-user]").forEach((el) => el.addEventListener("click", () => openUserDetail(el.dataset.openUser)));
+}
+$("userSearchInput").addEventListener("input", (e) => { userSearchQuery = e.target.value; renderUsersAdmin(); });
+
+let currentDetailUserId = null;
+async function openUserDetail(uid) {
+  currentDetailUserId = uid;
+  const u = ADMIN_USERS.find((x) => x.id === uid);
+  if (!u) return;
+  $("userDetailName").textContent = u.name || "—";
+  $("userDetailEmail").textContent = u.email || "—";
+  $("userDetailJoined").textContent = `Joined ${formatDate(u.createdAt)}`;
+  $("userDetailBalance").textContent = `₦${formatMoney(u.balance)}`;
+  $("userDetailBanBadge").hidden = !u.banned;
+  $("userBanBtn").innerHTML = u.banned ? `<svg data-lucide="check-circle"></svg>Unban User` : `<svg data-lucide="ban"></svg>Ban User`;
+  $("userDetailTasks").textContent = "…";
+  $("userDetailReferrals").textContent = "…";
+  $("userSheet").classList.add("show");
+  refreshIcons();
+
+  try {
+    const [subsSnap, refSnap] = await Promise.all([
+      getDocs(query(collection(db, "taskSubmissions"), where("userId", "==", uid))),
+      getDocs(query(collection(db, "referrals"), where("referrerId", "==", uid))),
+    ]);
+    const approved = subsSnap.docs.filter((d) => d.data().status === "approved").length;
+    $("userDetailTasks").textContent = approved;
+    $("userDetailReferrals").textContent = refSnap.size;
+  } catch (e) {
+    $("userDetailTasks").textContent = "—";
+    $("userDetailReferrals").textContent = "—";
+  }
+}
+$("userSheetClose").addEventListener("click", () => $("userSheet").classList.remove("show"));
+$("userSheet").addEventListener("click", (e) => { if (e.target === $("userSheet")) $("userSheet").classList.remove("show"); });
+
+/* balance adjust */
+let balanceMode = "credit";
+$("balanceModeCredit").addEventListener("click", () => setBalanceMode("credit"));
+$("balanceModeDebit").addEventListener("click", () => setBalanceMode("debit"));
+function setBalanceMode(mode) {
+  balanceMode = mode;
+  $("balanceModeCredit").classList.toggle("active", mode === "credit");
+  $("balanceModeDebit").classList.toggle("active", mode === "debit");
+}
+$("userAddBalanceBtn").addEventListener("click", () => {
+  setBalanceMode("credit");
+  clearFormErrors(["balanceAmount", "balanceReason"]);
+  $("balanceAmount").value = "";
+  $("balanceReason").value = "";
+  $("balanceSheet").classList.add("show");
+});
+$("balanceSheetClose").addEventListener("click", () => $("balanceSheet").classList.remove("show"));
+$("balanceSheetCancel").addEventListener("click", () => $("balanceSheet").classList.remove("show"));
+$("balanceSheet").addEventListener("click", (e) => { if (e.target === $("balanceSheet")) $("balanceSheet").classList.remove("show"); });
+
+$("balanceSheetConfirm").addEventListener("click", async () => {
+  clearFormErrors(["balanceAmount", "balanceReason"]);
+  const amount = Number($("balanceAmount").value);
+  const reason = $("balanceReason").value.trim();
+  let valid = true;
+  if (!amount || amount <= 0) { showFieldError("balanceAmount", "Enter an amount greater than 0."); valid = false; }
+  if (!reason) { showFieldError("balanceReason", "A reason is required."); valid = false; }
+  if (!valid) return;
+
+  const uid = currentDetailUserId;
+  const btn = $("balanceSheetConfirm");
+  setLoading(btn, true);
+  try {
+    const userRef = doc(db, "users", uid);
+    const delta = balanceMode === "credit" ? amount : -amount;
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(userRef);
+      if (!snap.exists()) throw new Error("User not found.");
+      const current = Number(snap.data().balance) || 0;
+      if (balanceMode === "debit" && amount > current) throw new Error("Amount exceeds the user's current balance.");
+      const update = { balance: increment(delta) };
+      if (balanceMode === "credit") { update.totalEarned = increment(amount); update.todayEarnings = increment(amount); }
+      tx.update(userRef, update);
+      const txRef = doc(collection(db, "transactions"));
+      tx.set(txRef, {
+        userId: uid,
+        type: balanceMode === "credit" ? "admin_credit" : "admin_debit",
+        amount: delta,
+        description: `${balanceMode === "credit" ? "Admin credit" : "Admin deduction"} — ${reason}`,
+        createdAt: serverTimestamp(),
+      });
+      const logRef = doc(collection(db, "adminLogs"));
+      tx.set(logRef, {
+        adminUid: currentAdmin?.uid || "",
+        adminEmail: currentAdmin?.email || "",
+        action: balanceMode === "credit" ? "balance_credited" : "balance_debited",
+        targetType: "user",
+        targetId: uid,
+        amount,
+        reason,
+        createdAt: serverTimestamp(),
+      });
+    });
+    toast(`Balance ${balanceMode === "credit" ? "added" : "deducted"} successfully.`, "success");
+    $("balanceSheet").classList.remove("show");
+    await loadUsersAdmin();
+    const u = ADMIN_USERS.find((x) => x.id === uid);
+    if (u) openUserDetail(uid);
+  } catch (e) {
+    toast(e?.message || "Could not update balance.", "error");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+$("userBanBtn").addEventListener("click", async () => {
+  const uid = currentDetailUserId;
+  const u = ADMIN_USERS.find((x) => x.id === uid);
+  if (!u) return;
+  const willBan = !u.banned;
+  const ok = await openConfirm({
+    title: willBan ? "Ban this user?" : "Unban this user?",
+    message: willBan ? `${u.name || u.email} will be immediately signed out and blocked from using the app.` : `${u.name || u.email} will be able to sign in again.`,
+    okLabel: willBan ? "Ban" : "Unban",
+    danger: willBan,
+  });
+  if (!ok) return;
+  try {
+    await updateDoc(doc(db, "users", uid), { banned: willBan });
+    u.banned = willBan;
+    await logAdminAction(willBan ? "user_banned" : "user_unbanned", { targetType: "user", targetId: uid, targetEmail: u.email || "" });
+    toast(willBan ? "User banned." : "User unbanned.", "success");
+    openUserDetail(uid);
+    renderUsersAdmin();
+  } catch (e) {
+    toast("Could not update user.", "error");
+  }
+});
+
+$("userDeleteBtn").addEventListener("click", async () => {
+  const uid = currentDetailUserId;
+  const u = ADMIN_USERS.find((x) => x.id === uid);
+  if (!u) return;
+  const ok = await openConfirm({
+    title: "Delete this user's data?",
+    message: `This permanently deletes ${u.name || u.email}'s profile — balance, stats, everything. It does NOT delete their login, so they can still sign in and will get a fresh ₦0 account. To fully block them instead, use Ban.`,
+    okLabel: "Delete",
+  });
+  if (!ok) return;
+  try {
+    await deleteDoc(doc(db, "users", uid));
+    await logAdminAction("user_deleted", { targetType: "user", targetId: uid, targetEmail: u.email || "" });
+    toast("User data deleted.", "success");
+    $("userSheet").classList.remove("show");
+    await loadUsersAdmin();
+  } catch (e) {
+    toast("Could not delete user.", "error");
+  }
+});
+
+/* ================= WITHDRAWALS ================= */
+let ADMIN_WITHDRAWALS = [];
+
+async function loadWithdrawalsAdmin() {
+  try {
+    const q = query(collection(db, "withdrawals"), where("status", "==", "pending"));
+    const snap = await getDocs(q);
+    ADMIN_WITHDRAWALS = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    ADMIN_WITHDRAWALS.sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+  } catch (e) {
+    ADMIN_WITHDRAWALS = [];
+    toast("Could not load withdrawals.", "error");
+  }
+  renderWithdrawalsAdmin();
+}
+
+function renderWithdrawalsAdmin() {
+  const container = $("withdrawalsList");
+  if (!ADMIN_WITHDRAWALS.length) {
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="inbox"></svg><p>No pending withdrawal requests.</p></div>`;
+    refreshIcons();
+    return;
+  }
+  container.innerHTML = ADMIN_WITHDRAWALS.map((w) => {
+    const detail = w.method === "bank"
+      ? `${w.details?.bankName || ""} · ${w.details?.accountNumber || ""} · ${w.details?.accountName || ""}`
+      : `${w.details?.network || ""} · ${w.details?.phone || ""}`;
+    return `
+    <div class="row-card" style="flex-wrap:wrap;">
+      <div class="row-icon" style="background:${w.method === "bank" ? "#166534" : "#2563EB"}"><svg data-lucide="${w.method === "bank" ? "landmark" : "smartphone"}"></svg></div>
+      <div class="row-info">
+        <h4>₦${formatMoney(w.amount)} — ${w.userName || w.userEmail || "Unknown user"}</h4>
+        <p>${detail}</p>
+      </div>
+      <div class="row-actions">
+        <button type="button" class="btn btn-ghost btn-xs" data-reject-withdrawal="${w.id}">Reject</button>
+        <button type="button" class="btn btn-primary btn-xs" data-approve-withdrawal="${w.id}">Approve</button>
+      </div>
+    </div>`;
+  }).join("");
+  refreshIcons();
+  $$("[data-approve-withdrawal]").forEach((el) => el.addEventListener("click", () => approveWithdrawal(el.dataset.approveWithdrawal)));
+  $$("[data-reject-withdrawal]").forEach((el) => el.addEventListener("click", () => rejectWithdrawal(el.dataset.rejectWithdrawal)));
+}
+
+async function approveWithdrawal(wId) {
+  const w = ADMIN_WITHDRAWALS.find((x) => x.id === wId);
+  const ok = await openConfirm({
+    title: "Approve this withdrawal?",
+    message: `Confirm only after you've actually sent ₦${formatMoney(w?.amount)} to ${w?.userName || w?.userEmail || "this user"} outside the app.`,
+    okLabel: "Approve",
+    danger: false,
+  });
+  if (!ok) return;
+  try {
+    await updateDoc(doc(db, "withdrawals", wId), {
+      status: "completed",
+      processedAt: serverTimestamp(),
+      processedBy: currentAdmin?.email || "",
+    });
+    await logAdminAction("withdrawal_approved", { targetType: "withdrawal", targetId: wId, amount: w?.amount || 0, targetEmail: w?.userEmail || "" });
+    toast("Withdrawal approved.", "success");
+    await loadWithdrawalsAdmin();
+  } catch (e) {
+    toast("Could not approve withdrawal.", "error");
+  }
+}
+
+async function rejectWithdrawal(wId) {
+  const w = ADMIN_WITHDRAWALS.find((x) => x.id === wId);
+  const ok = await openConfirm({
+    title: "Reject this withdrawal?",
+    message: `₦${formatMoney(w?.amount)} will be refunded to ${w?.userName || w?.userEmail || "this user"}'s balance immediately.`,
+    okLabel: "Reject & Refund",
+  });
+  if (!ok) return;
+  try {
+    await runTransaction(db, async (tx) => {
+      const wRef = doc(db, "withdrawals", wId);
+      const wSnap = await tx.get(wRef);
+      if (!wSnap.exists()) throw new Error("Withdrawal not found.");
+      const data = wSnap.data();
+      if (data.status !== "pending") throw new Error("This withdrawal was already processed.");
+      const userRef = doc(db, "users", data.userId);
+      tx.update(userRef, { balance: increment(data.amount) });
+      tx.update(wRef, { status: "rejected", refunded: true, processedAt: serverTimestamp(), processedBy: currentAdmin?.email || "" });
+      const txRef = doc(collection(db, "transactions"));
+      tx.set(txRef, {
+        userId: data.userId,
+        type: "withdrawal_refund",
+        amount: data.amount,
+        description: "Withdrawal rejected — refunded",
+        createdAt: serverTimestamp(),
+      });
+      const logRef = doc(collection(db, "adminLogs"));
+      tx.set(logRef, {
+        adminUid: currentAdmin?.uid || "",
+        adminEmail: currentAdmin?.email || "",
+        action: "withdrawal_rejected",
+        targetType: "withdrawal",
+        targetId: wId,
+        amount: data.amount,
+        targetEmail: data.userEmail || "",
+        createdAt: serverTimestamp(),
+      });
+    });
+    toast("Withdrawal rejected and refunded.", "success");
+    await loadWithdrawalsAdmin();
+  } catch (e) {
+    toast(e?.message || "Could not reject withdrawal.", "error");
+  }
+}
+
+/* ================= SETTINGS ================= */
+async function loadSettingsAdmin() {
+  try {
+    const snap = await getDoc(doc(db, "settings", "site"));
+    const s = snap.exists() ? snap.data() : {};
+    $("setReferralReward").value = s.referralReward ?? 100;
+    $("setMinBank").value = s.minWithdrawalBank ?? 500;
+    $("setMinAirtime").value = s.minWithdrawalAirtime ?? 100;
+    $("setWelcomeBonus").value = s.welcomeBonus ?? 0;
+    $("setSignupsEnabled").checked = s.signupsEnabled !== false;
+    $("setAnnouncement").value = s.announcementBanner || "";
+  } catch (e) {
+    toast("Could not load settings.", "error");
+  }
+}
+
+$("saveSettingsBtn").addEventListener("click", async () => {
+  const payload = {
+    referralReward: Number($("setReferralReward").value) || 0,
+    minWithdrawalBank: Number($("setMinBank").value) || 0,
+    minWithdrawalAirtime: Number($("setMinAirtime").value) || 0,
+    welcomeBonus: Number($("setWelcomeBonus").value) || 0,
+    signupsEnabled: $("setSignupsEnabled").checked,
+    announcementBanner: $("setAnnouncement").value.trim(),
+    updatedAt: serverTimestamp(),
+    updatedBy: currentAdmin?.email || "",
+  };
+  const btn = $("saveSettingsBtn");
+  setLoading(btn, true);
+  try {
+    await setDoc(doc(db, "settings", "site"), payload, { merge: true });
+    await logAdminAction("settings_updated", { targetType: "settings", targetId: "site" });
+    toast("Settings saved.", "success");
+  } catch (e) {
+    toast("Could not save settings.", "error");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+/* ================= OVERVIEW ================= */
+async function refreshOverview() {
+  await Promise.all([loadTasksAdmin(), loadUsersAdmin(), loadWithdrawalsAdmin()]);
+  renderOverview();
+}
+function renderOverview() {
+  $("statUsers").textContent = ADMIN_USERS.length;
+  $("statTasks").textContent = ADMIN_TASKS.filter((t) => t.active !== false).length;
+  $("statPendingWithdrawals").textContent = ADMIN_WITHDRAWALS.length;
+  const pendingAmount = ADMIN_WITHDRAWALS.reduce((sum, w) => sum + (Number(w.amount) || 0), 0);
+  $("statPendingAmount").textContent = formatMoney(pendingAmount);
+  loadOverviewLogs();
+}
+
+async function loadOverviewLogs() {
+  const container = $("overviewLogsList");
+  try {
+    const snap = await getDocs(collection(db, "adminLogs"));
+    const logs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0))
+      .slice(0, 15);
+    if (!logs.length) {
+      container.innerHTML = `<div class="empty-state"><svg data-lucide="history"></svg><p>No admin activity yet.</p></div>`;
+      refreshIcons();
+      return;
+    }
+    container.innerHTML = logs.map((l) => `
+      <div class="row-card" style="margin-bottom:6px;">
+        <div class="row-icon" style="background:#334155;"><svg data-lucide="activity"></svg></div>
+        <div class="row-info">
+          <h4>${describeLog(l)}</h4>
+          <p>${l.adminEmail || "admin"} · ${formatDate(l.createdAt)}</p>
+        </div>
+      </div>`).join("");
+    refreshIcons();
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="alert-circle"></svg><p>Could not load activity log.</p></div>`;
+    refreshIcons();
+  }
+}
+function describeLog(l) {
+  const map = {
+    task_created: `Created task "${l.taskName || ""}"`,
+    task_edited: `Edited task "${l.taskName || ""}"`,
+    task_deleted: `Deleted task "${l.taskName || ""}"`,
+    task_activated: `Activated task "${l.taskName || ""}"`,
+    task_deactivated: `Deactivated task "${l.taskName || ""}"`,
+    balance_credited: `Credited ₦${formatMoney(l.amount)} — ${l.reason || ""}`,
+    balance_debited: `Deducted ₦${formatMoney(l.amount)} — ${l.reason || ""}`,
+    user_banned: `Banned ${l.targetEmail || "a user"}`,
+    user_unbanned: `Unbanned ${l.targetEmail || "a user"}`,
+    user_deleted: `Deleted user data for ${l.targetEmail || ""}`,
+    withdrawal_approved: `Approved ₦${formatMoney(l.amount)} withdrawal for ${l.targetEmail || ""}`,
+    withdrawal_rejected: `Rejected & refunded ₦${formatMoney(l.amount)} for ${l.targetEmail || ""}`,
+    settings_updated: `Updated site settings`,
+  };
+  return map[l.action] || l.action || "Admin action";
+}
+</script>
+</body>
+</html>

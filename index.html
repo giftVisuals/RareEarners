@@ -483,6 +483,12 @@
     font-size:12.5px;color:#9A3412;line-height:1.5;margin-bottom:14px;
   }
   .task-instructions svg{width:17px;height:17px;flex-shrink:0;margin-top:1px;color:#C2410C;}
+  .announcement-banner{
+    display:flex;align-items:flex-start;gap:10px;padding:13px 14px;border-radius:14px;
+    background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;font-size:13px;line-height:1.5;
+    font-weight:600;margin-bottom:16px;
+  }
+  .announcement-banner svg{width:18px;height:18px;flex-shrink:0;margin-top:1px;color:#C2410C;}
   .file-drop{
     display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:12px;
     border:1.5px dashed var(--border-strong);background:#F8FAFC;cursor:pointer;margin-bottom:12px;
@@ -710,6 +716,7 @@
             <input type="text" id="signupReferral" autocomplete="off" placeholder="Enter a referral code">
           </div>
         </div>
+        <p class="field-error show" id="signupsClosedNotice" hidden style="text-align:center;margin-bottom:12px;">New signups are temporarily closed. Please check back soon.</p>
         <button type="submit" class="btn btn-primary btn-block" id="signupSubmitBtn">
           <span class="btn-label">Create account</span>
         </button>
@@ -829,6 +836,9 @@
 
     <!-- HOME VIEW -->
     <div id="homeView">
+      <div class="announcement-banner" id="announcementBanner" hidden>
+        <svg data-lucide="megaphone"></svg><span></span>
+      </div>
       <div class="balance-card">
         <div class="balance-top">
           <div>
@@ -946,7 +956,7 @@
     <div id="referralsView" hidden>
       <div class="tasks-hero">
         <h2>Earn with referrals</h2>
-        <p>Invite friends. You earn ₦100 once they complete 3 approved tasks.</p>
+        <p>Invite friends. You earn <span id="referralRewardCopy">₦100</span> once they complete 3 approved tasks.</p>
         <div class="balance-stats" style="margin-top:14px;">
           <div class="stat-pill">
             <div><div class="label">Total Referrals</div><div class="value" id="refStatTotal">0</div></div>
@@ -1021,12 +1031,12 @@
           <div class="withdraw-method-list">
             <button type="button" class="withdraw-method" data-method="bank">
               <div class="wm-icon bank"><svg data-lucide="landmark"></svg></div>
-              <div class="wm-info"><h4>Bank Transfer</h4><p>Nigerian banks · Min ₦500</p></div>
+              <div class="wm-info"><h4>Bank Transfer</h4><p>Nigerian banks · Min <span id="withdrawBankMinCopy">₦500</span></p></div>
               <svg data-lucide="chevron-right" class="wm-chevron"></svg>
             </button>
             <button type="button" class="withdraw-method" data-method="airtime">
               <div class="wm-icon airtime"><svg data-lucide="smartphone"></svg></div>
-              <div class="wm-info"><h4>Airtime</h4><p>MTN, Glo, Airtel, 9mobile · Min ₦100</p></div>
+              <div class="wm-info"><h4>Airtime</h4><p>MTN, Glo, Airtel, 9mobile · Min <span id="withdrawAirtimeMinCopy">₦100</span></p></div>
               <svg data-lucide="chevron-right" class="wm-chevron"></svg>
             </button>
             <button type="button" class="withdraw-method disabled" disabled>
@@ -1182,6 +1192,58 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
+/* ---------------- site settings (admin-configurable, safe fallbacks) ---------------- */
+const SITE_SETTINGS = {
+  referralReward: 100,
+  minWithdrawalBank: 500,
+  minWithdrawalAirtime: 100,
+  welcomeBonus: 0,
+  signupsEnabled: true,
+  announcementBanner: "",
+};
+let siteSettingsLoaded = false;
+async function loadSiteSettings() {
+  try {
+    const snap = await getDoc(doc(db, "settings", "site"));
+    if (snap.exists()) Object.assign(SITE_SETTINGS, snap.data());
+  } catch (e) {
+    // Keep defaults — settings doc may not exist yet or rules aren't deployed.
+  } finally {
+    siteSettingsLoaded = true;
+    applySiteSettings();
+  }
+}
+function applySiteSettings() {
+  WITHDRAW_MIN.bank = SITE_SETTINGS.minWithdrawalBank;
+  WITHDRAW_MIN.airtime = SITE_SETTINGS.minWithdrawalAirtime;
+  const bankAmountInput = $("withdrawBankAmount");
+  if (bankAmountInput) bankAmountInput.placeholder = `Minimum ₦${SITE_SETTINGS.minWithdrawalBank}`;
+  const airtimeAmountInput = $("withdrawAirtimeAmount");
+  if (airtimeAmountInput) airtimeAmountInput.placeholder = `Minimum ₦${SITE_SETTINGS.minWithdrawalAirtime}`;
+  const bankMinCopy = $("withdrawBankMinCopy");
+  if (bankMinCopy) bankMinCopy.textContent = `₦${SITE_SETTINGS.minWithdrawalBank}`;
+  const airtimeMinCopy = $("withdrawAirtimeMinCopy");
+  if (airtimeMinCopy) airtimeMinCopy.textContent = `₦${SITE_SETTINGS.minWithdrawalAirtime}`;
+  const referralRewardCopy = $("referralRewardCopy");
+  if (referralRewardCopy) referralRewardCopy.textContent = `₦${SITE_SETTINGS.referralReward}`;
+
+  const signupBtn = $("signupSubmitBtn");
+  const signupsClosedNotice = $("signupsClosedNotice");
+  if (signupBtn && signupsClosedNotice) {
+    const closed = SITE_SETTINGS.signupsEnabled === false;
+    signupBtn.disabled = closed;
+    signupsClosedNotice.hidden = !closed;
+  }
+
+  const banner = $("announcementBanner");
+  if (banner) {
+    const text = (SITE_SETTINGS.announcementBanner || "").trim();
+    banner.hidden = !text;
+    if (text) banner.querySelector("span").textContent = text;
+  }
+}
+loadSiteSettings();
+
 /* ---------------- helpers ---------------- */
 const $ = (id) => document.getElementById(id);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -1314,13 +1376,14 @@ function buildDefaultProfile(user, nameOverride, referredByOverride) {
   const fallbackName = user.email ? user.email.split("@")[0] : "User";
   const name = nameOverride || user.displayName || fallbackName;
   const username = slugify(name) || slugify(fallbackName) || user.uid.slice(0, 6);
+  const bonus = Number(SITE_SETTINGS.welcomeBonus) || 0;
   return {
     name,
     email: user.email || "",
     photoURL: user.photoURL || null,
-    balance: 0,
-    todayEarnings: 0,
-    totalEarned: 0,
+    balance: bonus,
+    todayEarnings: bonus,
+    totalEarned: bonus,
     referralCode: username,
     referredBy: referredByOverride !== undefined ? referredByOverride : (localStorage.getItem("pendingReferral") || null),
     createdAt: serverTimestamp(),
@@ -1354,6 +1417,18 @@ async function resolveReferrerUid(rawCode) {
 }
 
 async function finalizeNewUserExtras(user, profile) {
+  const bonus = Number(profile.balance) || 0;
+  if (bonus > 0) {
+    try {
+      await addDoc(collection(db, "transactions"), {
+        userId: user.uid,
+        type: "welcome_bonus",
+        amount: bonus,
+        description: "Welcome bonus",
+        createdAt: serverTimestamp(),
+      });
+    } catch (e) { /* best effort */ }
+  }
   try {
     const finalCode = await claimReferralCode(profile.referralCode, user.uid);
     if (finalCode !== profile.referralCode) {
@@ -1392,6 +1467,7 @@ $("signupForm").addEventListener("submit", async (e) => {
   const referral = $("signupReferral").value.trim();
   let valid = true;
 
+  if (SITE_SETTINGS.signupsEnabled === false) { toast("New signups are temporarily closed.", "error"); return; }
   if (name.length < 2) { showFieldError("signupName", "Please enter your full name."); valid = false; }
   if (!isValidEmail(email)) { showFieldError("signupEmail", "Please enter a valid email address."); valid = false; }
   if (password.length < 6) { showFieldError("signupPassword", "Password must be at least 6 characters."); valid = false; }
@@ -1693,23 +1769,6 @@ async function shareReferral() {
 });
 
 /* ---------------- tasks ---------------- */
-// TEMP: one hardcoded task so the submit-proof flow can be tested before the
-// admin panel exists to create real ones. Delete once the admin panel is live —
-// it only shows up when Firestore's "tasks" collection is empty.
-const TEMP_TEST_TASKS = [
-  {
-    id: "temp-crediplex-x",
-    name: "Follow Crediplex on X",
-    desc: "Follow Crediplex X account, like and comment positive things (e.g. cool, good, very good).",
-    reward: 50,
-    time: "2 min",
-    difficulty: "Easy",
-    icon: "at-sign",
-    color: "#000000",
-    link: "https://x.com/crediplexhq",
-  },
-];
-
 let TASKS = [];
 let tasksLoaded = false;
 let mySubmissions = {};
@@ -1723,9 +1782,9 @@ $("ringFill").style.strokeDashoffset = `${RING_CIRCUMFERENCE}`;
 async function loadTasksData() {
   try {
     const snap = await getDocs(collection(db, "tasks"));
-    TASKS = snap.docs.length ? snap.docs.map((d) => ({ id: d.id, ...d.data() })) : TEMP_TEST_TASKS;
+    TASKS = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((t) => t.active !== false);
   } catch (e) {
-    TASKS = TEMP_TEST_TASKS;
+    TASKS = [];
   }
 }
 async function loadMySubmissions() {
@@ -2500,6 +2559,8 @@ async function submitWithdrawal(method, amount, details, btn) {
     await updateDoc(doc(db, "users", currentUser.uid), { balance: increment(-amount) });
     await addDoc(collection(db, "withdrawals"), {
       userId: currentUser.uid,
+      userEmail: currentProfile?.email || currentUser.email || "",
+      userName: currentProfile?.name || currentUser.displayName || "",
       method,
       amount,
       details,
@@ -2634,18 +2695,19 @@ async function syncMyReferralProgress() {
 }
 async function creditEligibleReferralRewards() {
   let creditedAny = false;
+  const reward = Number(SITE_SETTINGS.referralReward) || 0;
   for (const r of myReferralsAsReferrer) {
     if (r.rewardCredited || (r.approvedTaskCount || 0) < 3) continue;
     try {
       await updateDoc(doc(db, "users", currentUser.uid), {
-        balance: increment(100),
-        totalEarned: increment(100),
-        todayEarnings: increment(100),
+        balance: increment(reward),
+        totalEarned: increment(reward),
+        todayEarnings: increment(reward),
       });
       await addDoc(collection(db, "transactions"), {
         userId: currentUser.uid,
         type: "referral_reward",
-        amount: 100,
+        amount: reward,
         description: `Referral reward — ${r.referredUserName || "a friend"} completed 3 tasks`,
         referralId: r.id,
         createdAt: serverTimestamp(),
@@ -2747,6 +2809,11 @@ onAuthStateChanged(auth, async (user) => {
       } catch (e) {
         // Firestore still unreachable/denied — proceed with in-memory defaults.
       }
+    }
+    if (profile && profile.banned) {
+      toast("Your account has been suspended. Contact support if you think this is a mistake.", "error");
+      await signOut(auth);
+      return;
     }
     currentUser = user;
     currentProfile = profile;
