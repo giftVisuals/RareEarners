@@ -150,7 +150,7 @@
   .stat-card .icon svg{width:17px;height:17px;}
   .stat-card .value{font-size:22px;font-weight:800;letter-spacing:-.02em;}
   .stat-card .label{font-size:12px;color:var(--text-muted);margin-top:2px;}
-  @media (min-width:640px){.stat-grid{grid-template-columns:repeat(4,1fr);}}
+  @media (min-width:640px){.stat-grid{grid-template-columns:repeat(3,1fr);}}
 
   .row-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid var(--border);background:#fff;margin-bottom:10px;}
   .row-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;}
@@ -163,6 +163,16 @@
   .badge.warn{background:var(--warn-light);color:#92400E;}
   .badge.danger{background:var(--danger-light);color:#991B1B;}
   .badge.muted{background:#F1F5F9;color:var(--text-muted);}
+
+  .submission-card{border:1px solid var(--border);border-radius:16px;padding:14px;background:#fff;margin-bottom:12px;}
+  .submission-shot{width:100%;max-height:320px;object-fit:contain;border-radius:12px;background:var(--bg);border:1px solid var(--border);margin-bottom:12px;cursor:zoom-in;}
+  .submission-meta h4{font-size:14.5px;font-weight:800;}
+  .submission-meta p{font-size:12px;color:var(--text-muted);margin-top:2px;}
+  .submission-actions{display:flex;gap:10px;margin-top:12px;}
+  .submission-actions .btn{flex:1;}
+  .lightbox-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease);}
+  .lightbox-overlay.show{opacity:1;pointer-events:auto;}
+  .lightbox-overlay img{max-width:100%;max-height:100%;border-radius:8px;}
 
   .search-wrap{position:relative;margin-bottom:16px;}
   .search-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text-muted);}
@@ -292,6 +302,7 @@
     </div>
     <nav class="nav-list">
       <a href="#" class="nav-item" data-tab="overview"><svg data-lucide="layout-dashboard"></svg>Overview</a>
+      <a href="#" class="nav-item" data-tab="submissions"><svg data-lucide="image"></svg>Submissions</a>
       <a href="#" class="nav-item" data-tab="tasks"><svg data-lucide="list-checks"></svg>Tasks</a>
       <a href="#" class="nav-item" data-tab="users"><svg data-lucide="users"></svg>Users</a>
       <a href="#" class="nav-item" data-tab="withdrawals"><svg data-lucide="wallet"></svg>Withdrawals</a>
@@ -314,6 +325,7 @@
       <div class="page-head"><div><h2>Overview</h2><p>Quick snapshot of the platform.</p></div></div>
       <div class="stat-grid">
         <div class="stat-card"><div class="icon"><svg data-lucide="users"></svg></div><div class="value" id="statUsers">—</div><div class="label">Total users</div></div>
+        <div class="stat-card"><div class="icon"><svg data-lucide="image"></svg></div><div class="value" id="statPendingSubmissions">—</div><div class="label">Submissions to review</div></div>
         <div class="stat-card"><div class="icon"><svg data-lucide="list-checks"></svg></div><div class="value" id="statTasks">—</div><div class="label">Active tasks</div></div>
         <div class="stat-card"><div class="icon"><svg data-lucide="clock"></svg></div><div class="value" id="statPendingWithdrawals">—</div><div class="label">Pending withdrawals</div></div>
         <div class="stat-card"><div class="icon"><svg data-lucide="banknote"></svg></div><div class="value" id="statPendingAmount">—</div><div class="label">Pending payout (₦)</div></div>
@@ -322,6 +334,12 @@
         <div class="page-head" style="margin:0 0 6px;"><h2 style="font-size:15px;">Recent admin activity</h2></div>
         <div id="overviewLogsList"><div class="empty-state"><svg data-lucide="loader-2"></svg><p>Loading…</p></div></div>
       </section>
+    </div>
+
+    <!-- SUBMISSIONS -->
+    <div id="submissionsTab" class="tab-view" hidden>
+      <div class="page-head"><div><h2>Task Submissions</h2><p>Review proof screenshots and approve or reject.</p></div></div>
+      <div id="submissionsList"><div class="empty-state"><svg data-lucide="loader-2"></svg><p>Loading…</p></div></div>
     </div>
 
     <!-- TASKS -->
@@ -382,6 +400,7 @@
 
   <nav class="bottom-nav">
     <a href="#" class="bn-item" data-tab="overview"><svg data-lucide="layout-dashboard"></svg><span>Overview</span></a>
+    <a href="#" class="bn-item" data-tab="submissions"><svg data-lucide="image"></svg><span>Review</span></a>
     <a href="#" class="bn-item" data-tab="tasks"><svg data-lucide="list-checks"></svg><span>Tasks</span></a>
     <a href="#" class="bn-item" data-tab="users"><svg data-lucide="users"></svg><span>Users</span></a>
     <a href="#" class="bn-item" data-tab="withdrawals"><svg data-lucide="wallet"></svg><span>Withdraw</span></a>
@@ -519,6 +538,11 @@
       <button type="button" class="btn btn-danger" id="confirmOkBtn"><span class="btn-label">Confirm</span></button>
     </div>
   </div>
+</div>
+
+<!-- SCREENSHOT LIGHTBOX -->
+<div class="lightbox-overlay" id="lightboxOverlay">
+  <img id="lightboxImg" src="" alt="Submission screenshot">
 </div>
 
 <script type="module">
@@ -709,7 +733,7 @@ async function checkAdminAccess(user) {
 onAuthStateChanged(auth, (user) => { checkAdminAccess(user); });
 
 /* ---------------- tab navigation ---------------- */
-const TABS = ["overview", "tasks", "users", "withdrawals", "settings"];
+const TABS = ["overview", "submissions", "tasks", "users", "withdrawals", "settings"];
 function switchTab(tab) {
   TABS.forEach((t) => { $(t + "Tab").hidden = t !== tab; });
   $$(".nav-item").forEach((el) => el.classList.toggle("active", el.dataset.tab === tab));
@@ -717,6 +741,7 @@ function switchTab(tab) {
   window.scrollTo({ top: 0 });
   // Re-fetch on every visit so admins always see current data, not a stale snapshot from login.
   if (tab === "overview") refreshOverview();
+  else if (tab === "submissions") loadSubmissionsAdmin();
   else if (tab === "tasks") loadTasksAdmin();
   else if (tab === "users") loadUsersAdmin();
   else if (tab === "withdrawals") loadWithdrawalsAdmin();
@@ -879,6 +904,121 @@ async function deleteTaskFlow(taskId) {
     await loadTasksAdmin();
   } catch (e) {
     toast("Could not delete task.", "error");
+  }
+}
+
+/* ================= SUBMISSIONS ================= */
+let ADMIN_SUBMISSIONS = [];
+
+async function loadSubmissionsAdmin() {
+  try {
+    const q = query(collection(db, "taskSubmissions"), where("status", "==", "pending"));
+    const snap = await getDocs(q);
+    ADMIN_SUBMISSIONS = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    ADMIN_SUBMISSIONS.sort((a, b) => (a.submittedAt?.toMillis?.() || 0) - (b.submittedAt?.toMillis?.() || 0));
+  } catch (e) {
+    ADMIN_SUBMISSIONS = [];
+    toast("Could not load submissions.", "error");
+  }
+  renderSubmissionsAdmin();
+}
+
+function renderSubmissionsAdmin() {
+  const container = $("submissionsList");
+  if (!ADMIN_SUBMISSIONS.length) {
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="inbox"></svg><p>No submissions waiting for review.</p></div>`;
+    refreshIcons();
+    return;
+  }
+  container.innerHTML = ADMIN_SUBMISSIONS.map((s) => `
+    <div class="submission-card">
+      <img class="submission-shot" src="${s.screenshot || ""}" alt="Proof screenshot" data-zoom="${s.screenshot || ""}" loading="lazy">
+      <div class="submission-meta">
+        <h4>${s.taskName || "Task"} — ₦${s.reward || 0}</h4>
+        <p>${s.userName || "Unknown user"} · ${formatDate(s.submittedAt)}</p>
+      </div>
+      <div class="submission-actions">
+        <button type="button" class="btn btn-ghost" data-reject-sub="${s.id}">Reject</button>
+        <button type="button" class="btn btn-primary" data-approve-sub="${s.id}">Approve</button>
+      </div>
+    </div>`).join("");
+  refreshIcons();
+  $$("[data-zoom]").forEach((img) => img.addEventListener("click", () => openLightbox(img.dataset.zoom)));
+  $$("[data-approve-sub]").forEach((el) => el.addEventListener("click", () => approveSubmission(el.dataset.approveSub)));
+  $$("[data-reject-sub]").forEach((el) => el.addEventListener("click", () => rejectSubmission(el.dataset.rejectSub)));
+}
+
+function openLightbox(src) {
+  if (!src) return;
+  $("lightboxImg").src = src;
+  $("lightboxOverlay").classList.add("show");
+}
+$("lightboxOverlay").addEventListener("click", () => $("lightboxOverlay").classList.remove("show"));
+
+async function approveSubmission(subId) {
+  const s = ADMIN_SUBMISSIONS.find((x) => x.id === subId);
+  const ok = await openConfirm({
+    title: "Approve this submission?",
+    message: `${s?.userName || "This user"} will be credited ₦${s?.reward || 0} for "${s?.taskName || "this task"}".`,
+    okLabel: "Approve",
+    danger: false,
+  });
+  if (!ok) return;
+  try {
+    await runTransaction(db, async (tx) => {
+      const subRef = doc(db, "taskSubmissions", subId);
+      const subSnap = await tx.get(subRef);
+      if (!subSnap.exists()) throw new Error("Submission not found.");
+      const data = subSnap.data();
+      if (data.status !== "pending") throw new Error("This submission was already reviewed.");
+      const reward = Number(data.reward) || 0;
+      const userRef = doc(db, "users", data.userId);
+      tx.update(userRef, { balance: increment(reward), totalEarned: increment(reward), todayEarnings: increment(reward) });
+      tx.update(subRef, { status: "approved", reviewedAt: serverTimestamp(), reviewedBy: currentAdmin?.email || "" });
+      const txRef = doc(collection(db, "transactions"));
+      tx.set(txRef, {
+        userId: data.userId,
+        type: "task_reward",
+        amount: reward,
+        description: `Task reward — ${data.taskName || "Task"}`,
+        submissionId: subId,
+        taskId: data.taskId,
+        createdAt: serverTimestamp(),
+      });
+      const logRef = doc(collection(db, "adminLogs"));
+      tx.set(logRef, {
+        adminUid: currentAdmin?.uid || "",
+        adminEmail: currentAdmin?.email || "",
+        action: "submission_approved",
+        targetType: "submission",
+        targetId: subId,
+        amount: reward,
+        targetEmail: data.userName || "",
+        createdAt: serverTimestamp(),
+      });
+    });
+    toast("Submission approved and reward credited.", "success");
+    await loadSubmissionsAdmin();
+  } catch (e) {
+    toast(e?.message || "Could not approve submission.", "error");
+  }
+}
+
+async function rejectSubmission(subId) {
+  const s = ADMIN_SUBMISSIONS.find((x) => x.id === subId);
+  const ok = await openConfirm({
+    title: "Reject this submission?",
+    message: `${s?.userName || "This user"} will be marked as not approved for "${s?.taskName || "this task"}". No reward is credited.`,
+    okLabel: "Reject",
+  });
+  if (!ok) return;
+  try {
+    await updateDoc(doc(db, "taskSubmissions", subId), { status: "rejected", reviewedAt: serverTimestamp(), reviewedBy: currentAdmin?.email || "" });
+    await logAdminAction("submission_rejected", { targetType: "submission", targetId: subId, targetEmail: s?.userName || "" });
+    toast("Submission rejected.", "success");
+    await loadSubmissionsAdmin();
+  } catch (e) {
+    toast("Could not reject submission.", "error");
   }
 }
 
@@ -1228,11 +1368,12 @@ $("saveSettingsBtn").addEventListener("click", async () => {
 
 /* ================= OVERVIEW ================= */
 async function refreshOverview() {
-  await Promise.all([loadTasksAdmin(), loadUsersAdmin(), loadWithdrawalsAdmin()]);
+  await Promise.all([loadTasksAdmin(), loadUsersAdmin(), loadWithdrawalsAdmin(), loadSubmissionsAdmin()]);
   renderOverview();
 }
 function renderOverview() {
   $("statUsers").textContent = ADMIN_USERS.length;
+  $("statPendingSubmissions").textContent = ADMIN_SUBMISSIONS.length;
   $("statTasks").textContent = ADMIN_TASKS.filter((t) => t.active !== false).length;
   $("statPendingWithdrawals").textContent = ADMIN_WITHDRAWALS.length;
   const pendingAmount = ADMIN_WITHDRAWALS.reduce((sum, w) => sum + (Number(w.amount) || 0), 0);
@@ -1280,6 +1421,8 @@ function describeLog(l) {
     user_deleted: `Deleted user data for ${l.targetEmail || ""}`,
     withdrawal_approved: `Approved ₦${formatMoney(l.amount)} withdrawal for ${l.targetEmail || ""}`,
     withdrawal_rejected: `Rejected & refunded ₦${formatMoney(l.amount)} for ${l.targetEmail || ""}`,
+    submission_approved: `Approved a task submission — credited ₦${formatMoney(l.amount)} to ${l.targetEmail || ""}`,
+    submission_rejected: `Rejected a task submission from ${l.targetEmail || ""}`,
     settings_updated: `Updated site settings`,
   };
   return map[l.action] || l.action || "Admin action";

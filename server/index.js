@@ -4,11 +4,37 @@ import cors from "cors";
 const app = express();
 const PORT = process.env.PORT || 3000;
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+const IMGBB_API_KEY = process.env.IMGBB_API_KEY;
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "https://rare-earners.vercel.app";
 
 app.use(cors({ origin: ALLOWED_ORIGIN }));
+app.use(express.json({ limit: "12mb" })); // task-proof screenshots come in as base64 JSON
 
 app.get("/health", (req, res) => res.json({ ok: true }));
+
+// Uploads a task-proof screenshot to ImgBB and returns its hosted URL, so
+// Firestore only ever stores a short link instead of a multi-hundred-KB
+// base64 blob per submission. IMGBB_API_KEY stays server-side.
+app.post("/api/upload-image", async (req, res) => {
+  if (!IMGBB_API_KEY) return res.status(500).json({ error: "Server is missing IMGBB_API_KEY." });
+  const { image } = req.body || {};
+  if (!image || typeof image !== "string") {
+    return res.status(400).json({ error: "A base64 'image' field is required." });
+  }
+  try {
+    const form = new FormData();
+    form.append("image", image);
+    const r = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(IMGBB_API_KEY)}`, {
+      method: "POST",
+      body: form,
+    });
+    const data = await r.json();
+    if (!data.success) return res.status(502).json({ error: data?.error?.message || "ImgBB upload failed." });
+    res.json({ url: data.data.url });
+  } catch (e) {
+    res.status(502).json({ error: "Could not reach the image host." });
+  }
+});
 
 // Proxies Paystack's bank list so the frontend gets Paystack's own bank codes
 // (the codes that /api/resolve-account actually needs) instead of a hardcoded list.
