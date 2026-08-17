@@ -2167,9 +2167,10 @@ const NIGERIA_BANKS = [
 const FREQUENT_BANK_NAMES = ["OPay (Paycom)", "Access Bank", "United Bank for Africa (UBA)", "First Bank of Nigeria", "GTBank (Guaranty Trust Bank)", "Zenith Bank"];
 let selectedBank = null;
 
-// Railway backend (server/) — proxies Paystack's bank list + account-resolve endpoints
-// so PAYSTACK_SECRET_KEY never has to live in client code.
-const RESOLVE_ACCOUNT_API = "https://rareearners-production.up.railway.app";
+// Auto-verify is turned off for now — manual account-name entry only.
+// The Railway backend (server/) is still deployed and working; set this back to
+// "https://rareearners-production.up.railway.app" whenever you want to turn it on again.
+const RESOLVE_ACCOUNT_API = "";
 
 function nubanCheckDigit(bankCode, serial9) {
   const weights = [3, 7, 3, 3, 7, 3, 3, 7, 3, 3, 7, 3];
