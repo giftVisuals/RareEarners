@@ -630,7 +630,10 @@
     <div class="telegram-prompt-icon"><svg data-lucide="send"></svg></div>
     <h3>Join our Telegram channel</h3>
     <p>Stay updated with the latest news, task alerts, and important announcements — don't miss out!</p>
-    <a href="https://t.me/tasklilyoff" target="_blank" rel="noopener" class="btn btn-primary btn-block" id="telegramPromptJoinBtn">Join Channel</a>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <a href="https://t.me/tasklilyoff" target="_blank" rel="noopener" class="btn btn-primary btn-block" id="telegramPromptJoinBtn" style="flex:1;">Telegram</a>
+      <a href="https://whatsapp.com/channel/0029VbDOWHD8V0tieDWiFI16" target="_blank" rel="noopener" class="btn btn-primary btn-block" id="whatsappPromptJoinBtn" style="flex:1;background:linear-gradient(180deg,#25D366,#1FAD56);">WhatsApp</a>
+    </div>
     <button type="button" class="telegram-prompt-skip" id="telegramPromptSkipBtn">Maybe later</button>
   </div>
 </div>
@@ -2995,13 +2998,10 @@ $("profileLogoutBtn").addEventListener("click", async () => {
   catch (e) { toast("Could not log out. Try again.", "error"); }
 });
 
-/* ---------------- telegram channel prompt ---------------- */
-// Shown once per session (not on every tab switch) until the user actually taps
-// Join — dismissing with Skip/close just hides it for now, it comes back next visit.
-let telegramPromptShownThisSession = false;
+/* ---------------- telegram/whatsapp channel prompt ---------------- */
+// Shown on every login (until user joins both channels)
 function maybeShowTelegramPrompt() {
-  if (!currentProfile || currentProfile.telegramJoined || telegramPromptShownThisSession) return;
-  telegramPromptShownThisSession = true;
+  if (!currentProfile || currentProfile.telegramJoined) return;
   $("telegramPromptOverlay").classList.add("show");
   refreshIcons();
 }
