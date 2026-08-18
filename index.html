@@ -2750,6 +2750,12 @@ async function submitWithdrawal(method, amount, details, btn) {
     toast(`You don't have enough ${method === "bank" ? "cash" : "airtime"} balance for this withdrawal.`, "error");
     return;
   }
+  const maxField = method === "bank" ? "maxWithdrawalBank" : "maxWithdrawalAirtime";
+  const maxLimit = SITE_SETTINGS?.[maxField];
+  if (maxLimit > 0 && amount > maxLimit) {
+    toast(`Maximum withdrawal is ₦${maxLimit} for ${method === "bank" ? "bank transfers" : "airtime"}.`, "error");
+    return;
+  }
   setLoading(btn, true);
   try {
     await updateDoc(doc(db, "users", currentUser.uid), { [balanceField]: increment(-amount) });
@@ -2797,6 +2803,7 @@ $("withdrawBankSubmit").addEventListener("click", async () => {
   const accountName = $("withdrawBankAccountName").value.trim();
   let valid = true;
   if (!amount || amount < WITHDRAW_MIN.bank) { showFieldError("withdrawBankAmount", `Minimum withdrawal is ₦${WITHDRAW_MIN.bank}.`); valid = false; }
+  if (SITE_SETTINGS?.maxWithdrawalBank > 0 && amount > SITE_SETTINGS.maxWithdrawalBank) { showFieldError("withdrawBankAmount", `Maximum withdrawal is ₦${SITE_SETTINGS.maxWithdrawalBank}.`); valid = false; }
   if (!/^\d{10}$/.test(accountNumber)) { showFieldError("withdrawBankAccount", "Enter a valid 10-digit account number."); valid = false; }
   if (!selectedBank) { showFieldError("withdrawBankCode", "Please select your bank."); valid = false; }
   else if (checkNubanValidity(selectedBank, accountNumber) === false) { showFieldError("withdrawBankAccount", `This account number doesn't look valid for ${selectedBank.name}.`); valid = false; }
@@ -2813,6 +2820,7 @@ $("withdrawAirtimeSubmit").addEventListener("click", async () => {
   if (!selectedAirtimeNetwork) { showFieldError("withdrawAirtimeNetwork", "Please select a network."); valid = false; }
   if (!/^0\d{10}$/.test(phone)) { showFieldError("withdrawAirtimePhone", "Enter a valid 11-digit phone number."); valid = false; }
   if (!amount || amount < WITHDRAW_MIN.airtime) { showFieldError("withdrawAirtimeAmount", `Minimum withdrawal is ₦${WITHDRAW_MIN.airtime}.`); valid = false; }
+  if (SITE_SETTINGS?.maxWithdrawalAirtime > 0 && amount > SITE_SETTINGS.maxWithdrawalAirtime) { showFieldError("withdrawAirtimeAmount", `Maximum withdrawal is ₦${SITE_SETTINGS.maxWithdrawalAirtime}.`); valid = false; }
   if (!valid) return;
   await submitWithdrawal("airtime", amount, { network: selectedAirtimeNetwork, phone }, $("withdrawAirtimeSubmit"));
 });

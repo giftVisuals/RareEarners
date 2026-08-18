@@ -400,6 +400,14 @@
           <div class="input-wrap no-icon"><input type="number" id="setMinAirtime" min="0"></div>
         </div>
         <div class="field">
+          <label for="setMaxBank">Maximum bank withdrawal (₦)</label>
+          <div class="input-wrap no-icon"><input type="number" id="setMaxBank" min="0"></div>
+        </div>
+        <div class="field">
+          <label for="setMaxAirtime">Maximum airtime withdrawal (₦)</label>
+          <div class="input-wrap no-icon"><input type="number" id="setMaxAirtime" min="0"></div>
+        </div>
+        <div class="field">
           <label for="setWelcomeBonus">Welcome / signup bonus (₦)</label>
           <div class="input-wrap no-icon"><input type="number" id="setWelcomeBonus" min="0"></div>
           <p class="field-hint">Credited automatically to every new account on signup.</p>
@@ -1719,6 +1727,8 @@ async function loadSettingsAdmin() {
     $("setReferralReward").value = s.referralReward ?? 100;
     $("setMinBank").value = s.minWithdrawalBank ?? 500;
     $("setMinAirtime").value = s.minWithdrawalAirtime ?? 100;
+    $("setMaxBank").value = s.maxWithdrawalBank ?? 0;
+    $("setMaxAirtime").value = s.maxWithdrawalAirtime ?? 0;
     $("setWelcomeBonus").value = s.welcomeBonus ?? 0;
     $("setMinTasksForWithdrawal").value = s.minTasksForWithdrawal ?? 6;
     $("setSignupsEnabled").checked = s.signupsEnabled !== false;
@@ -1824,6 +1834,8 @@ $("saveSettingsBtn").addEventListener("click", async () => {
     referralReward: Number($("setReferralReward").value) || 0,
     minWithdrawalBank: Number($("setMinBank").value) || 0,
     minWithdrawalAirtime: Number($("setMinAirtime").value) || 0,
+    maxWithdrawalBank: Number($("setMaxBank").value) || 0,
+    maxWithdrawalAirtime: Number($("setMaxAirtime").value) || 0,
     welcomeBonus: Number($("setWelcomeBonus").value) || 0,
     minTasksForWithdrawal: Number($("setMinTasksForWithdrawal").value) || 0,
     signupsEnabled: $("setSignupsEnabled").checked,
