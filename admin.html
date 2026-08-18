@@ -418,6 +418,29 @@
       </section>
 
       <section class="panel" style="margin-top:16px;">
+        <div class="page-head" style="margin:0 0 4px;"><h2 style="font-size:15px;">Airtime Auto-Pay (CheapDataHub)</h2></div>
+        <p class="field-hint" style="margin:0 0 12px;">Approving an airtime withdrawal sends real airtime automatically via CheapDataHub. Find each network's Provider ID in your CheapDataHub dashboard and enter it below — leave blank to fall back to manual approval for that network.</p>
+        <div id="cdhWalletBalance" class="field-hint" style="margin-bottom:12px;"></div>
+        <div class="field">
+          <label for="setProviderMTN">MTN Provider ID</label>
+          <div class="input-wrap no-icon"><input type="number" id="setProviderMTN" min="0" placeholder="e.g. 1"></div>
+        </div>
+        <div class="field">
+          <label for="setProviderGlo">Glo Provider ID</label>
+          <div class="input-wrap no-icon"><input type="number" id="setProviderGlo" min="0" placeholder="e.g. 2"></div>
+        </div>
+        <div class="field">
+          <label for="setProviderAirtel">Airtel Provider ID</label>
+          <div class="input-wrap no-icon"><input type="number" id="setProviderAirtel" min="0" placeholder="e.g. 3"></div>
+        </div>
+        <div class="field">
+          <label for="setProvider9mobile">9mobile Provider ID</label>
+          <div class="input-wrap no-icon"><input type="number" id="setProvider9mobile" min="0" placeholder="e.g. 4"></div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-block" id="saveProviderIdsBtn"><span class="btn-label">Save Provider IDs</span></button>
+      </section>
+
+      <section class="panel" style="margin-top:16px;">
         <div class="page-head" style="margin:0 0 12px;"><h2 style="font-size:15px;">Admin Access</h2></div>
         <div class="field">
           <label for="grantAdminEmail">Grant admin access by email</label>
@@ -916,6 +939,27 @@ async function uploadTaskImage(file) {
     return data.url || null;
   } catch (e) {
     return null;
+  }
+}
+
+// Calls a CheapDataHub proxy endpoint on the same Railway backend. Returns the parsed
+// JSON body on success (2xx), or null on any network/timeout/non-2xx failure — callers
+// check the returned error message via a second call if they need the failure reason.
+async function cheapDataHubRequest(path, options = {}) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
+    const res = await fetch(`${IMAGE_UPLOAD_API}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      ...options,
+    });
+    clearTimeout(timer);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { error: data.error || `Request failed (${res.status}).` };
+    return data;
+  } catch (e) {
+    return { error: "Could not reach the airtime service." };
   }
 }
 
@@ -1489,6 +1533,8 @@ function fallbackCopy(text, cb) {
 
 async function approveWithdrawal(wId) {
   const w = ADMIN_WITHDRAWALS.find((x) => x.id === wId);
+  if (w?.method === "airtime") return approveAirtimeWithdrawal(wId, w);
+
   const ok = await openConfirm({
     title: "Approve this withdrawal?",
     message: `Confirm only after you've actually sent ₦${formatMoney(w?.amount)} to ${w?.userName || w?.userEmail || "this user"} outside the app.`,
@@ -1507,6 +1553,64 @@ async function approveWithdrawal(wId) {
     await loadWithdrawalsAdmin();
   } catch (e) {
     toast("Could not approve withdrawal.", "error");
+  }
+}
+
+// Airtime withdrawals are auto-paid via CheapDataHub rather than sent manually.
+// The withdrawal only moves to "completed" if the real airtime purchase succeeds —
+// on any failure it stays "pending" so admin can fix the issue (fund wallet, fix
+// provider ID, retry) without losing or double-crediting the request.
+async function approveAirtimeWithdrawal(wId, w) {
+  const network = w?.details?.network;
+  const phone = w?.details?.phone;
+  if (!network || !phone) {
+    toast("This withdrawal is missing network/phone details.", "error");
+    return;
+  }
+
+  let providerIds = {};
+  try {
+    const snap = await getDoc(doc(db, "settings", "site"));
+    providerIds = (snap.exists() ? snap.data().airtimeProviderIds : null) || {};
+  } catch (e) {
+    toast("Could not load provider settings.", "error");
+    return;
+  }
+  const providerId = providerIds[network];
+  if (!providerId) {
+    toast(`No CheapDataHub Provider ID set for ${network}. Add it in Settings first.`, "error");
+    return;
+  }
+
+  const ok = await openConfirm({
+    title: "Send airtime automatically?",
+    message: `₦${formatMoney(w?.amount)} airtime will be sent to ${phone} (${network}) via CheapDataHub right now.`,
+    okLabel: "Send Airtime",
+    danger: false,
+  });
+  if (!ok) return;
+
+  const result = await cheapDataHubRequest("/api/cheapdatahub/airtime", {
+    method: "POST",
+    body: JSON.stringify({ provider_id: providerId, phone_number: phone, amount: w.amount }),
+  });
+  if (!result || result.error) {
+    toast(result?.error || "Airtime purchase failed. Withdrawal left pending — you can retry.", "error");
+    return;
+  }
+
+  try {
+    await updateDoc(doc(db, "withdrawals", wId), {
+      status: "completed",
+      processedAt: serverTimestamp(),
+      processedBy: currentAdmin?.email || "",
+      providerReference: result.reference ? String(result.reference) : "",
+    });
+    await logAdminAction("withdrawal_approved", { targetType: "withdrawal", targetId: wId, amount: w?.amount || 0, targetEmail: w?.userEmail || "" });
+    toast("Airtime sent and withdrawal completed.", "success");
+    await loadWithdrawalsAdmin();
+  } catch (e) {
+    toast("Airtime was sent, but the withdrawal record could not be updated — mark it manually.", "error");
   }
 }
 
@@ -1569,10 +1673,27 @@ async function loadSettingsAdmin() {
     $("setBankWithdrawalsEnabled").checked = s.bankWithdrawalsEnabled !== false;
     $("setAirtimeWithdrawalsEnabled").checked = s.airtimeWithdrawalsEnabled !== false;
     $("setAnnouncement").value = s.announcementBanner || "";
+    const providerIds = s.airtimeProviderIds || {};
+    $("setProviderMTN").value = providerIds.MTN ?? "";
+    $("setProviderGlo").value = providerIds.Glo ?? "";
+    $("setProviderAirtel").value = providerIds.Airtel ?? "";
+    $("setProvider9mobile").value = providerIds["9mobile"] ?? "";
   } catch (e) {
     toast("Could not load settings.", "error");
   }
+  loadCheapDataHubBalance();
   await loadAdminsAdmin();
+}
+
+async function loadCheapDataHubBalance() {
+  const el = $("cdhWalletBalance");
+  el.textContent = "Checking CheapDataHub wallet balance…";
+  const data = await cheapDataHubRequest("/api/cheapdatahub/balance");
+  if (data && typeof data.balance === "number") {
+    el.textContent = `CheapDataHub wallet balance: ₦${formatMoney(data.balance)}`;
+  } else {
+    el.textContent = "Could not fetch CheapDataHub wallet balance.";
+  }
 }
 
 /* ---------------- admin access management ---------------- */
@@ -1666,6 +1787,27 @@ $("saveSettingsBtn").addEventListener("click", async () => {
     toast("Settings saved.", "success");
   } catch (e) {
     toast("Could not save settings.", "error");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+$("saveProviderIdsBtn").addEventListener("click", async () => {
+  const toIntOrNull = (v) => (v === "" ? null : Number(v));
+  const airtimeProviderIds = {
+    MTN: toIntOrNull($("setProviderMTN").value),
+    Glo: toIntOrNull($("setProviderGlo").value),
+    Airtel: toIntOrNull($("setProviderAirtel").value),
+    "9mobile": toIntOrNull($("setProvider9mobile").value),
+  };
+  const btn = $("saveProviderIdsBtn");
+  setLoading(btn, true);
+  try {
+    await setDoc(doc(db, "settings", "site"), { airtimeProviderIds, updatedAt: serverTimestamp(), updatedBy: currentAdmin?.email || "" }, { merge: true });
+    await logAdminAction("settings_updated", { targetType: "settings", targetId: "site" });
+    toast("Provider IDs saved.", "success");
+  } catch (e) {
+    toast("Could not save provider IDs.", "error");
   } finally {
     setLoading(btn, false);
   }
