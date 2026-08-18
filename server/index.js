@@ -147,7 +147,7 @@ app.get("/api/geodnatech/balance", async (req, res) => {
     const data = await r.json().catch(() => ({}));
     if (!r.ok) return res.status(r.status || 502).json({ error: data.detail || data.error || "Could not fetch wallet balance." });
     const balance = data.balance ?? data.wallet_balance ?? data.wallet?.balance ?? data.user?.balance ?? null;
-    res.json({ balance });
+    res.json({ balance, raw: data }); // TODO: remove `raw` once we confirm the real balance field name
   } catch (e) {
     res.status(502).json({ error: "Could not reach GeoDnaTech." });
   }
