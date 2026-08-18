@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Rare Earners — Complete tasks, earn rewards</title>
-<meta name="description" content="Rare Earners — complete simple tasks, invite friends, and earn real rewards.">
-<link rel="icon" href="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png">
+<title>Tasklily — Complete tasks, earn rewards</title>
+<meta name="description" content="Tasklily — complete simple tasks, invite friends, and earn real rewards.">
+<link rel="icon" href="https://i.postimg.cc/GpP4GnVK/file-00000000875482438f8eb3fc8aef654b.png">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
 <style>
   :root{
@@ -603,8 +603,8 @@
 <!-- ================= SPLASH / SKELETON LOADING ================= -->
 <div id="splashScreen">
   <div class="splash-inner">
-    <img class="splash-logo" src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="Rare Earners">
-    <div class="splash-wordmark">RARE EARNERS</div>
+    <img class="splash-logo" src="https://i.postimg.cc/GpP4GnVK/file-00000000875482438f8eb3fc8aef654b.png" alt="Tasklily">
+    <div class="splash-wordmark">TASKLILY</div>
     <div class="splash-spinner"></div>
   </div>
 </div>
@@ -614,8 +614,8 @@
   <div class="auth-card glass">
 
     <div class="auth-brand">
-      <img src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="Rare Earners">
-      <span>RARE EARNERS</span>
+      <img src="https://i.postimg.cc/GpP4GnVK/file-00000000875482438f8eb3fc8aef654b.png" alt="Tasklily">
+      <span>TASKLILY</span>
     </div>
 
     <!-- LOGIN VIEW -->
@@ -758,8 +758,8 @@
   <aside class="mobile-drawer" id="mobileDrawer">
     <button type="button" class="drawer-close" id="drawerCloseBtn"><svg data-lucide="x"></svg></button>
     <div class="sidebar-brand">
-      <img src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="Rare Earners">
-      <span>RARE EARNERS</span>
+      <img src="https://i.postimg.cc/GpP4GnVK/file-00000000875482438f8eb3fc8aef654b.png" alt="Tasklily">
+      <span>TASKLILY</span>
     </div>
     <nav class="nav-list">
       <a href="#" class="nav-item active" data-view="home"><svg data-lucide="home"></svg>Home</a>
@@ -774,13 +774,13 @@
       <p>Earn more when your friends join and complete tasks.</p>
       <button type="button" class="btn btn-primary btn-sm btn-block" id="inviteBtnDrawer"><svg data-lucide="user-plus" style="width:15px;height:15px"></svg>Invite Friends</button>
     </div>
-    <div class="sidebar-footer">© 2026 Rare Earners<br>All rights reserved.</div>
+    <div class="sidebar-footer">© 2026 Tasklily<br>All rights reserved.</div>
   </aside>
 
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <img src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="Rare Earners">
-      <span>RARE EARNERS</span>
+      <img src="https://i.postimg.cc/GpP4GnVK/file-00000000875482438f8eb3fc8aef654b.png" alt="Tasklily">
+      <span>TASKLILY</span>
     </div>
     <nav class="nav-list">
       <a href="#" class="nav-item active" data-view="home"><svg data-lucide="home"></svg>Home</a>
@@ -795,7 +795,7 @@
       <p>Earn more when your friends join and complete tasks.</p>
       <button type="button" class="btn btn-primary btn-sm btn-block" id="inviteBtnSidebar"><svg data-lucide="user-plus" style="width:15px;height:15px"></svg>Invite Friends</button>
     </div>
-    <div class="sidebar-footer">© 2026 Rare Earners<br>All rights reserved.</div>
+    <div class="sidebar-footer">© 2026 Tasklily<br>All rights reserved.</div>
   </aside>
 
   <main class="main-content">
@@ -803,7 +803,7 @@
       <div class="topbar-left">
         <button type="button" class="icon-btn menu-btn" id="menuBtn"><svg data-lucide="menu"></svg></button>
         <div class="topbar-brand">
-          <img src="https://i.postimg.cc/WpGyQmWT/file-00000000333081f4a772f18fc0db484f.png" alt="Rare Earners">
+          <img src="https://i.postimg.cc/GpP4GnVK/file-00000000875482438f8eb3fc8aef654b.png" alt="Tasklily">
           <span>RARE<br>EARNERS</span>
         </div>
       </div>
@@ -1569,7 +1569,7 @@ $("signupForm").addEventListener("submit", async (e) => {
     }
 
     haptic(15);
-    toast("Account created. Welcome to Rare Earners!", "success");
+    toast("Account created. Welcome to Tasklily!", "success");
   } catch (err) {
     haptic([10, 30, 10]);
     toast(mapAuthError(err), "error");
@@ -1830,7 +1830,7 @@ async function shareReferral() {
   if (!currentReferralLink) return;
   if (navigator.share) {
     try {
-      await navigator.share({ title: "Rare Earners", text: "Join me on Rare Earners and start earning!", url: currentReferralLink });
+      await navigator.share({ title: "Tasklily", text: "Join me on Tasklily and start earning!", url: currentReferralLink });
       return;
     } catch (e) {
       return;
@@ -2197,7 +2197,7 @@ function renderActivity() {
       <div class="activity-row">
         <div class="activity-icon"><svg data-lucide="check-circle"></svg></div>
         <div class="activity-info">
-          <h5>Welcome to Rare Earners!</h5>
+          <h5>Welcome to Tasklily!</h5>
           <p>Account created successfully</p>
         </div>
         <span class="activity-time">${timeAgo(profileCreatedDate)}</span>
