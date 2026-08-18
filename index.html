@@ -2061,7 +2061,7 @@ function wireTaskCardEvents(container) {
 // Railway backend (server/) — proxies ImgBB uploads so proof screenshots are stored as a
 // short hosted URL instead of a big base64 blob per Firestore document. Falls back to
 // storing the compressed image inline if this isn't configured or the upload fails.
-const IMAGE_UPLOAD_API = "https://rareearners-production.up.railway.app";
+const IMAGE_UPLOAD_API = "";
 
 async function uploadScreenshot(dataUrl) {
   if (!IMAGE_UPLOAD_API) return null;

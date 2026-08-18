@@ -5,14 +5,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const IMGBB_API_KEY = process.env.IMGBB_API_KEY;
-const CHEAPDATAHUB_API_KEY = process.env.CHEAPDATAHUB_API_KEY;
 const GEODNATECH_API_KEY = process.env.GEODNATECH_API_KEY;
 // Comma-separated list, e.g. "https://rareearners.com.ng,https://www.rareearners.com.ng,https://rare-earners.vercel.app"
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || "https://rare-earners.vercel.app")
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
-const CHEAPDATAHUB_BASE = "https://www.cheapdatahub.ng/api/v1/resellers";
 
 app.set("trust proxy", true); // Railway sits behind a proxy — needed for req.ip to be the real client IP
 
@@ -84,52 +82,6 @@ app.get("/api/resolve-account", async (req, res) => {
     res.json({ account_name: data.data.account_name, account_number: data.data.account_number });
   } catch (e) {
     res.status(502).json({ error: "Could not reach the verification service." });
-  }
-});
-
-// Proxies CheapDataHub's reseller wallet balance so admin can see if the wallet
-// needs funding before airtime auto-pay requests will succeed.
-app.get("/api/cheapdatahub/balance", async (req, res) => {
-  if (!CHEAPDATAHUB_API_KEY) return res.status(500).json({ error: "Server is missing CHEAPDATAHUB_API_KEY." });
-  try {
-    const r = await fetch(`${CHEAPDATAHUB_BASE}/wallet/balance/`, {
-      headers: { Authorization: `Bearer ${CHEAPDATAHUB_API_KEY}` },
-    });
-    const data = await r.json();
-    if (String(data.status) !== "true") return res.status(502).json({ error: data.message || "Could not fetch wallet balance." });
-    res.json({ balance: data.data?.balance });
-  } catch (e) {
-    res.status(502).json({ error: "Could not reach CheapDataHub." });
-  }
-});
-
-// Sends real airtime via CheapDataHub's reseller API. Called by admin.html when an
-// admin approves a pending airtime withdrawal, so CHEAPDATAHUB_API_KEY stays server-side.
-app.post("/api/cheapdatahub/airtime", async (req, res) => {
-  if (!CHEAPDATAHUB_API_KEY) return res.status(500).json({ error: "Server is missing CHEAPDATAHUB_API_KEY." });
-  const { provider_id, phone_number, amount } = req.body || {};
-  if (!provider_id || !phone_number || !amount) {
-    return res.status(400).json({ error: "provider_id, phone_number and amount are required." });
-  }
-  try {
-    const r = await fetch(`${CHEAPDATAHUB_BASE}/airtime/purchase/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${CHEAPDATAHUB_API_KEY}` },
-      body: JSON.stringify({ provider_id, phone_number, amount }),
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok || String(data.status) !== "true") {
-      const messages = {
-        401: "CheapDataHub rejected the API key.",
-        402: "CheapDataHub wallet has insufficient balance.",
-        409: "Duplicate request — please requery before retrying.",
-        422: "CheapDataHub rejected the request details.",
-      };
-      return res.status(r.status || 502).json({ error: data.message || messages[r.status] || "Airtime purchase failed." });
-    }
-    res.json({ reference: data.reference || data.transaction_id || null, message: data.message || "Airtime delivered." });
-  } catch (e) {
-    res.status(502).json({ error: "Could not reach CheapDataHub." });
   }
 });
 
