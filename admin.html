@@ -1547,16 +1547,21 @@ async function approveWithdrawal(wId) {
   });
   if (!ok) return;
   try {
-    await updateDoc(doc(db, "withdrawals", wId), {
-      status: "completed",
-      processedAt: serverTimestamp(),
-      processedBy: currentAdmin?.email || "",
+    // Claim atomically: only the click that finds status still "pending" gets to
+    // proceed, so a repeat click (or a second admin/tab) can't double-log this.
+    await runTransaction(db, async (tx) => {
+      const wRef = doc(db, "withdrawals", wId);
+      const wSnap = await tx.get(wRef);
+      if (!wSnap.exists()) throw new Error("Withdrawal not found.");
+      if (wSnap.data().status !== "pending") throw new Error("ALREADY_CLAIMED");
+      tx.update(wRef, { status: "completed", processedAt: serverTimestamp(), processedBy: currentAdmin?.email || "" });
     });
     await logAdminAction("withdrawal_approved", { targetType: "withdrawal", targetId: wId, amount: w?.amount || 0, targetEmail: w?.userEmail || "" });
     toast("Withdrawal approved.", "success");
     await loadWithdrawalsAdmin();
   } catch (e) {
-    toast("Could not approve withdrawal.", "error");
+    toast(e?.message === "ALREADY_CLAIMED" ? "This withdrawal was already processed." : "Could not approve withdrawal.", "error");
+    await loadWithdrawalsAdmin();
   }
 }
 
@@ -1594,12 +1599,34 @@ async function approveAirtimeWithdrawal(wId, w) {
   });
   if (!ok) return;
 
+  // Atomically claim this withdrawal before calling GeoDnaTech. A repeat click, a second
+  // admin, or a second browser tab will all see status !== "pending" and bail out here —
+  // so the real airtime purchase can never fire twice for the same withdrawal.
+  try {
+    await runTransaction(db, async (tx) => {
+      const wRef = doc(db, "withdrawals", wId);
+      const wSnap = await tx.get(wRef);
+      if (!wSnap.exists()) throw new Error("Withdrawal not found.");
+      if (wSnap.data().status !== "pending") throw new Error("ALREADY_CLAIMED");
+      tx.update(wRef, { status: "processing", processingAt: serverTimestamp(), processingBy: currentAdmin?.email || "" });
+    });
+  } catch (e) {
+    toast(e?.message === "ALREADY_CLAIMED"
+      ? "This withdrawal is already being processed — please wait."
+      : "Could not start processing this withdrawal.", "error");
+    await loadWithdrawalsAdmin();
+    return;
+  }
+
   const result = await backendApiRequest("/api/geodnatech/airtime", {
     method: "POST",
     body: JSON.stringify({ network: networkId, mobile_number: phone, amount: w.amount }),
   });
   if (!result || result.error) {
+    // Release the claim so admin can fix the issue and retry.
+    try { await updateDoc(doc(db, "withdrawals", wId), { status: "pending" }); } catch (e) { /* best effort */ }
     toast(result?.error || "Airtime purchase failed. Withdrawal left pending — you can retry.", "error");
+    await loadWithdrawalsAdmin();
     return;
   }
 
