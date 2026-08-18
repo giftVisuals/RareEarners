@@ -6,12 +6,16 @@ const PORT = process.env.PORT || 3000;
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const IMGBB_API_KEY = process.env.IMGBB_API_KEY;
 const CHEAPDATAHUB_API_KEY = process.env.CHEAPDATAHUB_API_KEY;
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "https://rare-earners.vercel.app";
+// Comma-separated list, e.g. "https://rareearners.com.ng,https://www.rareearners.com.ng,https://rare-earners.vercel.app"
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || "https://rare-earners.vercel.app")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
 const CHEAPDATAHUB_BASE = "https://www.cheapdatahub.ng/api/v1/resellers";
 
 app.set("trust proxy", true); // Railway sits behind a proxy — needed for req.ip to be the real client IP
 
-app.use(cors({ origin: ALLOWED_ORIGIN }));
+app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json({ limit: "12mb" })); // task-proof screenshots come in as base64 JSON
 
 app.get("/health", (req, res) => res.json({ ok: true }));
