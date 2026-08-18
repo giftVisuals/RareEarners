@@ -759,6 +759,10 @@
           </div>
         </div>
         <p class="field-error show" id="signupsClosedNotice" hidden style="text-align:center;margin-bottom:12px;">New signups are temporarily closed. Please check back soon.</p>
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;">
+          <input type="checkbox" id="signupTermsAgree" style="margin-top:4px;flex-shrink:0;">
+          <label for="signupTermsAgree" style="font-size:12.5px;color:var(--text-muted);line-height:1.4;cursor:pointer;">I agree to the <a href="#" style="color:var(--primary);text-decoration:underline;">Terms & Conditions</a>, <a href="#" style="color:var(--primary);text-decoration:underline;">Privacy Policy</a>, and <a href="#" style="color:var(--primary);text-decoration:underline;">Cookies Policy</a></label>
+        </div>
         <button type="submit" class="btn btn-primary btn-block" id="signupSubmitBtn">
           <span class="btn-label">Create account</span>
         </button>
@@ -814,7 +818,7 @@
       <p>Earn more when your friends join and complete tasks.</p>
       <button type="button" class="btn btn-primary btn-sm btn-block" id="inviteBtnDrawer"><svg data-lucide="user-plus" style="width:15px;height:15px"></svg>Invite Friends</button>
     </div>
-    <div class="sidebar-footer">© 2026 Tasklily<br>All rights reserved.</div>
+    <div class="sidebar-footer">© 2026 Tasklily<br><span style="font-size:11px;">Developed by <a href="https://t.me/Giftupdateofficial" target="_blank" style="color:var(--primary);text-decoration:none;">Gift</a></span><br><span style="font-size:10px;color:var(--text-muted);">📞 +2349161376561 | 📧 giftupdate01@gmail.com</span></div>
   </aside>
 
   <aside class="sidebar">
@@ -835,7 +839,7 @@
       <p>Earn more when your friends join and complete tasks.</p>
       <button type="button" class="btn btn-primary btn-sm btn-block" id="inviteBtnSidebar"><svg data-lucide="user-plus" style="width:15px;height:15px"></svg>Invite Friends</button>
     </div>
-    <div class="sidebar-footer">© 2026 Tasklily<br>All rights reserved.</div>
+    <div class="sidebar-footer">© 2026 Tasklily<br><span style="font-size:11px;">Developed by <a href="https://t.me/Giftupdateofficial" target="_blank" style="color:var(--primary);text-decoration:none;">Gift</a></span><br><span style="font-size:10px;color:var(--text-muted);">📞 +2349161376561 | 📧 giftupdate01@gmail.com</span></div>
   </aside>
 
   <main class="main-content">
@@ -1589,6 +1593,7 @@ $("signupForm").addEventListener("submit", async (e) => {
   if (!isValidEmail(email)) { showFieldError("signupEmail", "Please enter a valid email address."); valid = false; }
   if (password.length < 6) { showFieldError("signupPassword", "Password must be at least 6 characters."); valid = false; }
   if (confirm !== password || !confirm) { showFieldError("signupConfirm", "Passwords do not match."); valid = false; }
+  if (!$("signupTermsAgree").checked) { toast("Please agree to the Terms & Conditions, Privacy Policy, and Cookies Policy.", "error"); valid = false; }
   if (!valid) return;
 
   const btn = $("signupSubmitBtn");
