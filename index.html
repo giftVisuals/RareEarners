@@ -355,6 +355,29 @@
   .profile-btn span{font-size:13.5px;font-weight:600;}
   .profile-btn svg{width:15px;height:15px;color:var(--text-muted);}
 
+  .telegram-prompt-overlay{
+    position:fixed;inset:0;z-index:150;background:rgba(15,23,42,.55);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    opacity:0;pointer-events:none;transition:opacity .2s var(--ease);
+  }
+  .telegram-prompt-overlay.show{opacity:1;pointer-events:auto;}
+  .telegram-prompt-card{
+    background:#fff;border-radius:20px;max-width:360px;width:100%;padding:28px 22px 22px;
+    text-align:center;transform:translateY(12px) scale(.98);opacity:0;position:relative;
+    transition:transform .22s var(--ease), opacity .22s var(--ease);box-shadow:var(--shadow-lg);
+  }
+  .telegram-prompt-overlay.show .telegram-prompt-card{transform:translateY(0) scale(1);opacity:1;}
+  .telegram-prompt-close{
+    position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:9px;
+    background:var(--bg);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;
+  }
+  .telegram-prompt-close svg{width:15px;height:15px;color:var(--text-muted);}
+  .telegram-prompt-icon{width:56px;height:56px;border-radius:16px;background:#229ED9;display:flex;align-items:center;justify-content:center;margin:6px auto 16px;}
+  .telegram-prompt-icon svg{width:28px;height:28px;color:#fff;}
+  .telegram-prompt-card h3{font-size:17px;font-weight:800;margin-bottom:8px;}
+  .telegram-prompt-card p{font-size:13.5px;color:var(--text-muted);line-height:1.5;margin-bottom:20px;}
+  .telegram-prompt-skip{display:block;width:100%;margin-top:12px;font-size:12.5px;color:var(--text-muted);font-weight:600;padding:6px;}
+
   .popover{
     position:absolute;top:calc(100% + 8px);right:0;width:230px;max-width:calc(100vw - 32px);border-radius:14px;padding:8px;z-index:60;
     background:#fff;border:1px solid var(--border-strong);box-shadow:var(--shadow-lg);
@@ -599,6 +622,18 @@
 <body>
 
 <div id="toastRoot"></div>
+
+<!-- TELEGRAM CHANNEL PROMPT -->
+<div class="telegram-prompt-overlay" id="telegramPromptOverlay">
+  <div class="telegram-prompt-card">
+    <button type="button" class="telegram-prompt-close" id="telegramPromptClose"><svg data-lucide="x"></svg></button>
+    <div class="telegram-prompt-icon"><svg data-lucide="send"></svg></div>
+    <h3>Join our Telegram channel</h3>
+    <p>Stay updated with the latest news, task alerts, and important announcements — don't miss out!</p>
+    <a href="https://t.me/tasklilyoff" target="_blank" rel="noopener" class="btn btn-primary btn-block" id="telegramPromptJoinBtn">Join Channel</a>
+    <button type="button" class="telegram-prompt-skip" id="telegramPromptSkipBtn">Maybe later</button>
+  </div>
+</div>
 
 <!-- ================= SPLASH / SKELETON LOADING ================= -->
 <div id="splashScreen">
@@ -2952,6 +2987,32 @@ $("profileLogoutBtn").addEventListener("click", async () => {
   catch (e) { toast("Could not log out. Try again.", "error"); }
 });
 
+/* ---------------- telegram channel prompt ---------------- */
+// Shown once per session (not on every tab switch) until the user actually taps
+// Join — dismissing with Skip/close just hides it for now, it comes back next visit.
+let telegramPromptShownThisSession = false;
+function maybeShowTelegramPrompt() {
+  if (!currentProfile || currentProfile.telegramJoined || telegramPromptShownThisSession) return;
+  telegramPromptShownThisSession = true;
+  $("telegramPromptOverlay").classList.add("show");
+  refreshIcons();
+}
+function closeTelegramPrompt() {
+  $("telegramPromptOverlay").classList.remove("show");
+}
+$("telegramPromptClose").addEventListener("click", () => { haptic(); closeTelegramPrompt(); });
+$("telegramPromptSkipBtn").addEventListener("click", () => { haptic(); closeTelegramPrompt(); });
+$("telegramPromptOverlay").addEventListener("click", (e) => { if (e.target === $("telegramPromptOverlay")) closeTelegramPrompt(); });
+$("telegramPromptJoinBtn").addEventListener("click", async () => {
+  haptic();
+  closeTelegramPrompt();
+  if (!currentUser) return;
+  if (currentProfile) currentProfile.telegramJoined = true;
+  try {
+    await updateDoc(doc(db, "users", currentUser.uid), { telegramJoined: true });
+  } catch (e) { /* best effort — if this fails it'll just show again next session */ }
+});
+
 /* ---------------- auth state ---------------- */
 onAuthStateChanged(auth, async (user) => {
   if (user) {
@@ -2984,6 +3045,7 @@ onAuthStateChanged(auth, async (user) => {
     renderDashboard(user, profile);
     renderRoute();
     refreshIcons();
+    maybeShowTelegramPrompt();
 
     if (isNewProfile) await finalizeNewUserExtras(user, profile);
 
