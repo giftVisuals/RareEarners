@@ -1059,6 +1059,11 @@
         </div>
       </div>
 
+      <div class="announcement-banner" id="withdrawEligibilityNotice" hidden>
+        <svg data-lucide="lock"></svg>
+        <span id="withdrawEligibilityText"></span>
+      </div>
+
       <div id="withdrawMethodsStep">
         <section class="panel">
           <div class="panel-head"><h3>Choose a withdrawal method</h3></div>
@@ -1236,6 +1241,7 @@ const SITE_SETTINGS = {
   bankWithdrawalsEnabled: true,
   airtimeWithdrawalsEnabled: true,
   announcementBanner: "",
+  minTasksForWithdrawal: 6,
 };
 let siteSettingsLoaded = false;
 async function loadSiteSettings() {
@@ -1259,23 +1265,35 @@ function applySiteSettings() {
   const referralRewardCopy = $("referralRewardCopy");
   if (referralRewardCopy) referralRewardCopy.textContent = `₦${SITE_SETTINGS.referralReward}`;
 
+  const elig = getWithdrawEligibility();
+  const eligNotice = $("withdrawEligibilityNotice");
+  if (eligNotice) {
+    eligNotice.hidden = elig.eligible;
+    if (!elig.eligible) {
+      const parts = [];
+      if (elig.approvedCount < elig.minTasks) parts.push(`complete ${elig.minTasks - elig.approvedCount} more approved task${elig.minTasks - elig.approvedCount === 1 ? "" : "s"} (${elig.approvedCount}/${elig.minTasks})`);
+      if (elig.missingRequired.length) parts.push(`complete: ${elig.missingRequired.map((t) => t.name).join(", ")}`);
+      $("withdrawEligibilityText").textContent = `Withdrawals are locked until you ${parts.join(" and ")}.`;
+    }
+  }
+
   const bankMethodBtn = $("withdrawMethodBank");
   const bankMethodSub = $("withdrawBankMethodSub");
   if (bankMethodBtn && bankMethodSub) {
-    const enabled = SITE_SETTINGS.bankWithdrawalsEnabled !== false;
-    bankMethodBtn.disabled = !enabled;
-    bankMethodBtn.classList.toggle("disabled", !enabled);
-    bankMethodSub.innerHTML = enabled
+    const methodEnabled = SITE_SETTINGS.bankWithdrawalsEnabled !== false;
+    bankMethodBtn.disabled = !methodEnabled || !elig.eligible;
+    bankMethodBtn.classList.toggle("disabled", !methodEnabled || !elig.eligible);
+    bankMethodSub.innerHTML = methodEnabled
       ? `Nigerian banks · Min <span id="withdrawBankMinCopy">₦${SITE_SETTINGS.minWithdrawalBank}</span>`
       : "Temporarily closed";
   }
   const airtimeMethodBtn = $("withdrawMethodAirtime");
   const airtimeMethodSub = $("withdrawAirtimeMethodSub");
   if (airtimeMethodBtn && airtimeMethodSub) {
-    const enabled = SITE_SETTINGS.airtimeWithdrawalsEnabled !== false;
-    airtimeMethodBtn.disabled = !enabled;
-    airtimeMethodBtn.classList.toggle("disabled", !enabled);
-    airtimeMethodSub.innerHTML = enabled
+    const methodEnabled = SITE_SETTINGS.airtimeWithdrawalsEnabled !== false;
+    airtimeMethodBtn.disabled = !methodEnabled || !elig.eligible;
+    airtimeMethodBtn.classList.toggle("disabled", !methodEnabled || !elig.eligible);
+    airtimeMethodSub.innerHTML = methodEnabled
       ? `MTN, Glo, Airtel, 9mobile · Min <span id="withdrawAirtimeMinCopy">₦${SITE_SETTINGS.minWithdrawalAirtime}</span>`
       : "Temporarily closed";
   }
@@ -1841,12 +1859,16 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * 26;
 $("ringFill").style.strokeDasharray = `${RING_CIRCUMFERENCE}`;
 $("ringFill").style.strokeDashoffset = `${RING_CIRCUMFERENCE}`;
 
+let REQUIRED_TASKS = [];
 async function loadTasksData() {
   try {
     const snap = await getDocs(collection(db, "tasks"));
-    TASKS = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((t) => t.active !== false);
+    const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    TASKS = all.filter((t) => t.active !== false);
+    REQUIRED_TASKS = all.filter((t) => t.requiredForWithdrawal === true);
   } catch (e) {
     TASKS = [];
+    REQUIRED_TASKS = [];
   }
 }
 async function loadMySubmissions() {
@@ -1870,10 +1892,25 @@ async function loadTasks() {
   await Promise.all([loadTasksData(), loadMySubmissions()]);
   tasksLoaded = true;
   renderTasksPage();
+  applySiteSettings(); // re-apply now that task/submission data needed for withdraw eligibility is ready
 }
 
 function completedTaskCount() {
   return Object.values(mySubmissions).filter((s) => s === "approved").length;
+}
+// Users must have `minTasksForWithdrawal` approved tasks, including every task admin
+// has flagged requiredForWithdrawal (tracked by that task's own Firestore ID, not its
+// name — so renaming a task never breaks this).
+function getWithdrawEligibility() {
+  const minTasks = Number(SITE_SETTINGS.minTasksForWithdrawal) || 0;
+  const approvedCount = completedTaskCount();
+  const missingRequired = REQUIRED_TASKS.filter((t) => mySubmissions[t.id] !== "approved");
+  return {
+    eligible: approvedCount >= minTasks && missingRequired.length === 0,
+    approvedCount,
+    minTasks,
+    missingRequired,
+  };
 }
 function updateProgressWidgets() {
   const completed = completedTaskCount();
@@ -2671,6 +2708,7 @@ $$("#airtimeNetworkChips .network-chip").forEach((chip) => {
 async function submitWithdrawal(method, amount, details, btn) {
   const methodEnabled = method === "bank" ? SITE_SETTINGS.bankWithdrawalsEnabled !== false : SITE_SETTINGS.airtimeWithdrawalsEnabled !== false;
   if (!methodEnabled) { toast("This withdrawal method is temporarily closed.", "error"); return; }
+  if (!getWithdrawEligibility().eligible) { toast("Complete the required tasks before withdrawing.", "error"); return; }
   const balanceField = method === "bank" ? "cashBalance" : "airtimeBalance";
   const available = currentProfile?.[balanceField] || 0;
   if (amount > available) {

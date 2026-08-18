@@ -404,6 +404,11 @@
           <div class="input-wrap no-icon"><input type="number" id="setWelcomeBonus" min="0"></div>
           <p class="field-hint">Credited automatically to every new account on signup.</p>
         </div>
+        <div class="field">
+          <label for="setMinTasksForWithdrawal">Minimum approved tasks before withdrawal</label>
+          <div class="input-wrap no-icon"><input type="number" id="setMinTasksForWithdrawal" min="0"></div>
+          <p class="field-hint">Users must also complete any task marked "Required for withdrawal" (set per-task when editing it).</p>
+        </div>
         <div class="switch-row">
           <div><div class="switch-label">New signups allowed</div><div class="switch-sub">Turn off to temporarily close registration.</div></div>
           <label class="switch"><input type="checkbox" id="setSignupsEnabled"><div class="switch-track"></div><div class="switch-thumb"></div></label>
@@ -444,13 +449,6 @@
           <div class="input-wrap no-icon"><input type="number" id="setProvider9mobile" min="0" placeholder="e.g. 3"></div>
         </div>
         <button type="button" class="btn btn-ghost btn-block" id="saveProviderIdsBtn"><span class="btn-label">Save Provider IDs</span></button>
-      </section>
-
-      <section class="panel" style="margin-top:16px;">
-        <div class="page-head" style="margin:0 0 4px;"><h2 style="font-size:15px;">Legacy Balance Migration</h2></div>
-        <p class="field-hint" style="margin:0 0 12px;">Accounts created before the Cash/Airtime balance split still have their money in an old single "balance" field. This scans for those accounts and splits their balance based on their actual transaction history (task rewards → Airtime, referrals/welcome bonus → Cash, withdrawals matched by method) — never changes the total amount they had.</p>
-        <button type="button" class="btn btn-ghost btn-block" id="scanLegacyBtn"><span class="btn-label">Scan for Old Accounts</span></button>
-        <div id="legacyMigrationResults" style="margin-top:12px;"></div>
       </section>
 
       <section class="panel" style="margin-top:16px;">
@@ -543,6 +541,10 @@
       <div class="switch-row">
         <div><div class="switch-label">Active</div><div class="switch-sub">Inactive tasks are hidden from users.</div></div>
         <label class="switch"><input type="checkbox" id="taskActive" checked><div class="switch-track"></div><div class="switch-thumb"></div></label>
+      </div>
+      <div class="switch-row">
+        <div><div class="switch-label">Required for withdrawal</div><div class="switch-sub">Users must have this task approved (tracked by its ID, safe to rename later) before they can withdraw.</div></div>
+        <label class="switch"><input type="checkbox" id="taskRequiredForWithdrawal"><div class="switch-track"></div><div class="switch-thumb"></div></label>
       </div>
     </div>
     <div class="sheet-foot">
@@ -896,7 +898,7 @@ function renderTasksAdmin() {
       <div class="row-icon" style="background:${t.color || meta.color};overflow:hidden;">${t.imageUrl ? `<img src="${t.imageUrl}" alt="" style="width:100%;height:100%;object-fit:cover;">` : `<svg data-lucide="${t.icon || meta.icon}"></svg>`}</div>
       <div class="row-info">
         <h4>${t.name || ""}</h4>
-        <p>₦${t.reward || 0} · ${t.difficulty || "Easy"} · ${t.active === false ? "Inactive" : "Active"}</p>
+        <p>₦${t.reward || 0} · ${t.difficulty || "Easy"} · ${t.active === false ? "Inactive" : "Active"}${t.requiredForWithdrawal ? " · Required for withdrawal" : ""}</p>
       </div>
       <div class="row-actions">
         <label class="switch" title="Toggle active" style="width:38px;height:22px;">
@@ -1030,6 +1032,7 @@ function openTaskSheet(taskId) {
   $("taskDifficulty").value = task?.difficulty || "Easy";
   $("taskTime").value = task?.time || "2 min";
   $("taskActive").checked = task ? task.active !== false : true;
+  $("taskRequiredForWithdrawal").checked = task?.requiredForWithdrawal === true;
   currentTaskImageUrl = task?.imageUrl || null;
   pendingTaskImageFile = null;
   pendingTaskImageRemoved = false;
@@ -1053,6 +1056,7 @@ $("taskSheetSave").addEventListener("click", async () => {
   const difficulty = $("taskDifficulty").value;
   const time = $("taskTime").value.trim() || "2 min";
   const active = $("taskActive").checked;
+  const requiredForWithdrawal = $("taskRequiredForWithdrawal").checked;
   let valid = true;
   if (!name) { showFieldError("taskTitle", "Title is required."); valid = false; }
   if (!desc) { showFieldError("taskDesc", "Description is required."); valid = false; }
@@ -1061,7 +1065,7 @@ $("taskSheetSave").addEventListener("click", async () => {
   if (!valid) return;
 
   const meta = TASK_TYPE_META[type] || TASK_TYPE_META.other;
-  const payload = { name, desc, reward, link, type, difficulty, time, active, icon: meta.icon, color: meta.color, updatedAt: serverTimestamp() };
+  const payload = { name, desc, reward, link, type, difficulty, time, active, requiredForWithdrawal, icon: meta.icon, color: meta.color, updatedAt: serverTimestamp() };
 
   const btn = $("taskSheetSave");
   setLoading(btn, true);
@@ -1716,6 +1720,7 @@ async function loadSettingsAdmin() {
     $("setMinBank").value = s.minWithdrawalBank ?? 500;
     $("setMinAirtime").value = s.minWithdrawalAirtime ?? 100;
     $("setWelcomeBonus").value = s.welcomeBonus ?? 0;
+    $("setMinTasksForWithdrawal").value = s.minTasksForWithdrawal ?? 6;
     $("setSignupsEnabled").checked = s.signupsEnabled !== false;
     $("setBankWithdrawalsEnabled").checked = s.bankWithdrawalsEnabled !== false;
     $("setAirtimeWithdrawalsEnabled").checked = s.airtimeWithdrawalsEnabled !== false;
@@ -1814,133 +1819,13 @@ async function revokeAdminFlow(uid, email) {
   }
 }
 
-/* ---------------- legacy (pre cash/airtime split) balance migration ---------------- */
-// Reconstructs each old-schema user's split from their actual history: task_reward
-// transactions -> Airtime, referral_reward/welcome_bonus -> Cash, withdrawals debited
-// by their real "method" field (never guessed). Any leftover (from admin credits/debits
-// made before the split existed, which have no recorded pool) is assigned to Cash by
-// default — it's the only ambiguous piece, and admin can move it with the existing
-// Credit/Deduct tool afterward. The reconstruction never changes a user's total money.
-async function computeLegacySplit(uid, oldBalance) {
-  const [txSnap, wdSnap] = await Promise.all([
-    getDocs(query(collection(db, "transactions"), where("userId", "==", uid))),
-    getDocs(query(collection(db, "withdrawals"), where("userId", "==", uid))),
-  ]);
-  let rawCash = 0, rawAirtime = 0;
-  txSnap.docs.forEach((d) => {
-    const t = d.data();
-    const amt = Number(t.amount) || 0;
-    if (t.type === "task_reward") rawAirtime += amt;
-    else if (t.type === "referral_reward" || t.type === "welcome_bonus") rawCash += amt;
-  });
-  wdSnap.docs.forEach((d) => {
-    const w = d.data();
-    if (w.refunded) return; // refunded withdrawals net to zero — already reversed
-    const amt = Number(w.amount) || 0;
-    if (w.method === "bank") rawCash -= amt;
-    else rawAirtime -= amt;
-  });
-  const legacyAdjustment = oldBalance - (rawCash + rawAirtime);
-  const cashBalance = rawCash + legacyAdjustment;
-  const airtimeBalance = rawAirtime;
-  return { cashBalance, airtimeBalance };
-}
-
-async function scanLegacyUsers() {
-  const btn = $("scanLegacyBtn");
-  const results = $("legacyMigrationResults");
-  setLoading(btn, true);
-  results.innerHTML = "";
-  try {
-    const snap = await getDocs(collection(db, "users"));
-    const legacyUsers = snap.docs
-      .map((d) => ({ id: d.id, ...d.data() }))
-      .filter((u) => u.cashBalance === undefined && typeof u.balance === "number");
-    if (!legacyUsers.length) {
-      results.innerHTML = `<div class="empty-state"><svg data-lucide="check-circle"></svg><p>No old-schema accounts found — nothing to migrate.</p></div>`;
-      refreshIcons();
-      return;
-    }
-    results.innerHTML = `
-      <div class="field-hint" style="margin-bottom:10px;">Found ${legacyUsers.length} account(s) still on the old balance field:</div>
-      <div id="legacyUsersList"></div>
-      <button type="button" class="btn btn-primary btn-block" id="runLegacyMigrationBtn" style="margin-top:10px;">Migrate These ${legacyUsers.length} Account(s)</button>
-    `;
-    $("legacyUsersList").innerHTML = legacyUsers.map((u) => `
-      <div class="row-card" style="margin-bottom:6px;">
-        <div class="row-icon" style="background:#475569;">${(u.name || u.email || "?").slice(0, 1).toUpperCase()}</div>
-        <div class="row-info"><h4>${u.name || u.email || u.id}</h4><p>Old balance: ₦${formatMoney(u.balance)}</p></div>
-      </div>`).join("");
-    refreshIcons();
-    $("runLegacyMigrationBtn").addEventListener("click", () => runLegacyMigration(legacyUsers));
-  } catch (e) {
-    results.innerHTML = `<div class="empty-state"><svg data-lucide="alert-circle"></svg><p>Could not scan users.</p></div>`;
-    refreshIcons();
-  } finally {
-    setLoading(btn, false);
-  }
-}
-$("scanLegacyBtn").addEventListener("click", scanLegacyUsers);
-
-async function runLegacyMigration(legacyUsers) {
-  const ok = await openConfirm({
-    title: `Migrate ${legacyUsers.length} account(s)?`,
-    message: "Each account's old balance will be split into Cash/Airtime based on their real transaction history. Their total money does not change — only how it's divided. You can move money between pools afterward with the Credit/Deduct tool on any account.",
-    okLabel: "Migrate Now",
-    danger: false,
-  });
-  if (!ok) return;
-
-  const btn = $("runLegacyMigrationBtn");
-  setLoading(btn, true);
-  const migrated = [];
-  const skipped = [];
-  for (const u of legacyUsers) {
-    try {
-      const split = await computeLegacySplit(u.id, Number(u.balance) || 0);
-      if (split.cashBalance < 0 || split.airtimeBalance < 0) {
-        skipped.push({ ...u, reason: "Computed a negative balance — needs manual review, not auto-migrated." });
-        continue;
-      }
-      await updateDoc(doc(db, "users", u.id), {
-        cashBalance: split.cashBalance,
-        airtimeBalance: split.airtimeBalance,
-      });
-      await logAdminAction("legacy_balance_migrated", {
-        targetType: "user", targetId: u.id, targetEmail: u.email || "",
-        oldBalance: u.balance, cashBalance: split.cashBalance, airtimeBalance: split.airtimeBalance,
-      });
-      migrated.push({ ...u, ...split });
-    } catch (e) {
-      skipped.push({ ...u, reason: "Migration failed for this account — try again." });
-    }
-  }
-  setLoading(btn, false);
-
-  const results = $("legacyMigrationResults");
-  results.innerHTML = `
-    <div class="field-hint" style="margin-bottom:8px;">Migrated ${migrated.length} account(s)${skipped.length ? `, ${skipped.length} need manual review` : ""}.</div>
-    ${migrated.map((u) => `
-      <div class="row-card" style="margin-bottom:6px;">
-        <div class="row-icon" style="background:#166534;"><svg data-lucide="check"></svg></div>
-        <div class="row-info"><h4>${u.name || u.email}</h4><p>Cash ₦${formatMoney(u.cashBalance)} · Airtime ₦${formatMoney(u.airtimeBalance)} (was ₦${formatMoney(u.balance)})</p></div>
-      </div>`).join("")}
-    ${skipped.map((u) => `
-      <div class="row-card" style="margin-bottom:6px;">
-        <div class="row-icon" style="background:#B91C1C;"><svg data-lucide="alert-triangle"></svg></div>
-        <div class="row-info"><h4>${u.name || u.email}</h4><p>${u.reason}</p></div>
-      </div>`).join("")}
-  `;
-  refreshIcons();
-  toast(`Migrated ${migrated.length} account(s).`, migrated.length ? "success" : "default");
-}
-
 $("saveSettingsBtn").addEventListener("click", async () => {
   const payload = {
     referralReward: Number($("setReferralReward").value) || 0,
     minWithdrawalBank: Number($("setMinBank").value) || 0,
     minWithdrawalAirtime: Number($("setMinAirtime").value) || 0,
     welcomeBonus: Number($("setWelcomeBonus").value) || 0,
+    minTasksForWithdrawal: Number($("setMinTasksForWithdrawal").value) || 0,
     signupsEnabled: $("setSignupsEnabled").checked,
     bankWithdrawalsEnabled: $("setBankWithdrawalsEnabled").checked,
     airtimeWithdrawalsEnabled: $("setAirtimeWithdrawalsEnabled").checked,
@@ -2125,8 +2010,8 @@ async function loadOverviewLogs() {
       refreshIcons();
       return;
     }
-    container.innerHTML = ALL_ADMIN_LOGS.slice(0, 3).map(logRowHtml).join("");
-    viewMoreBtn.hidden = ALL_ADMIN_LOGS.length <= 3;
+    container.innerHTML = ALL_ADMIN_LOGS.slice(0, 2).map(logRowHtml).join("");
+    viewMoreBtn.hidden = ALL_ADMIN_LOGS.length <= 2;
     refreshIcons();
   } catch (e) {
     container.innerHTML = `<div class="empty-state"><svg data-lucide="alert-circle"></svg><p>Could not load activity log.</p></div>`;
