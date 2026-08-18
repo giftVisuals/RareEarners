@@ -136,8 +136,7 @@ app.post("/api/cheapdatahub/airtime", async (req, res) => {
 const GEODNATECH_BASE = "https://geodnatech.com/api";
 
 // Proxies GeoDnaTech's account details so admin can see their wallet balance
-// before airtime auto-pay requests will succeed. Response field names aren't
-// documented, so we defensively look for whichever balance-like field exists.
+// before airtime auto-pay requests will succeed.
 app.get("/api/geodnatech/balance", async (req, res) => {
   if (!GEODNATECH_API_KEY) return res.status(500).json({ error: "Server is missing GEODNATECH_API_KEY." });
   try {
@@ -146,8 +145,9 @@ app.get("/api/geodnatech/balance", async (req, res) => {
     });
     const data = await r.json().catch(() => ({}));
     if (!r.ok) return res.status(r.status || 502).json({ error: data.detail || data.error || "Could not fetch wallet balance." });
-    const balance = data.balance ?? data.wallet_balance ?? data.wallet?.balance ?? data.user?.balance ?? null;
-    res.json({ balance, raw: data }); // TODO: remove `raw` once we confirm the real balance field name
+    const raw = data.user?.wallet_balance ?? data.user?.Account_Balance ?? null;
+    const balance = raw !== null ? Number(raw) : null;
+    res.json({ balance });
   } catch (e) {
     res.status(502).json({ error: "Could not reach GeoDnaTech." });
   }
