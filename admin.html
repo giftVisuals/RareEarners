@@ -423,24 +423,24 @@
       </section>
 
       <section class="panel" style="margin-top:16px;">
-        <div class="page-head" style="margin:0 0 4px;"><h2 style="font-size:15px;">Airtime Auto-Pay (CheapDataHub)</h2></div>
-        <p class="field-hint" style="margin:0 0 12px;">Approving an airtime withdrawal sends real airtime automatically via CheapDataHub. Find each network's Provider ID in your CheapDataHub dashboard and enter it below — leave blank to fall back to manual approval for that network.</p>
-        <div id="cdhWalletBalance" class="field-hint" style="margin-bottom:12px;"></div>
+        <div class="page-head" style="margin:0 0 4px;"><h2 style="font-size:15px;">Airtime Auto-Pay (GeoDnaTech)</h2></div>
+        <p class="field-hint" style="margin:0 0 12px;">Approving an airtime withdrawal sends real airtime automatically via GeoDnaTech. Network IDs are pre-filled from their documentation — only change them if GeoDnaTech updates their IDs.</p>
+        <div id="airtimeWalletBalance" class="field-hint" style="margin-bottom:12px;"></div>
         <div class="field">
-          <label for="setProviderMTN">MTN Provider ID</label>
+          <label for="setProviderMTN">MTN Network ID</label>
           <div class="input-wrap no-icon"><input type="number" id="setProviderMTN" min="0" placeholder="e.g. 1"></div>
         </div>
         <div class="field">
-          <label for="setProviderGlo">Glo Provider ID</label>
+          <label for="setProviderGlo">Glo Network ID</label>
           <div class="input-wrap no-icon"><input type="number" id="setProviderGlo" min="0" placeholder="e.g. 2"></div>
         </div>
         <div class="field">
-          <label for="setProviderAirtel">Airtel Provider ID</label>
-          <div class="input-wrap no-icon"><input type="number" id="setProviderAirtel" min="0" placeholder="e.g. 3"></div>
+          <label for="setProviderAirtel">Airtel Network ID</label>
+          <div class="input-wrap no-icon"><input type="number" id="setProviderAirtel" min="0" placeholder="e.g. 4"></div>
         </div>
         <div class="field">
-          <label for="setProvider9mobile">9mobile Provider ID</label>
-          <div class="input-wrap no-icon"><input type="number" id="setProvider9mobile" min="0" placeholder="e.g. 4"></div>
+          <label for="setProvider9mobile">9mobile Network ID</label>
+          <div class="input-wrap no-icon"><input type="number" id="setProvider9mobile" min="0" placeholder="e.g. 3"></div>
         </div>
         <button type="button" class="btn btn-ghost btn-block" id="saveProviderIdsBtn"><span class="btn-label">Save Provider IDs</span></button>
       </section>
@@ -947,10 +947,9 @@ async function uploadTaskImage(file) {
   }
 }
 
-// Calls a CheapDataHub proxy endpoint on the same Railway backend. Returns the parsed
-// JSON body on success (2xx), or null on any network/timeout/non-2xx failure — callers
-// check the returned error message via a second call if they need the failure reason.
-async function cheapDataHubRequest(path, options = {}) {
+// Calls an airtime-provider proxy endpoint on the same Railway backend. Returns the
+// parsed JSON body on success (2xx), or {error} on any network/timeout/non-2xx failure.
+async function backendApiRequest(path, options = {}) {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 20000);
@@ -1561,10 +1560,10 @@ async function approveWithdrawal(wId) {
   }
 }
 
-// Airtime withdrawals are auto-paid via CheapDataHub rather than sent manually.
+// Airtime withdrawals are auto-paid via GeoDnaTech rather than sent manually.
 // The withdrawal only moves to "completed" if the real airtime purchase succeeds —
 // on any failure it stays "pending" so admin can fix the issue (fund wallet, fix
-// provider ID, retry) without losing or double-crediting the request.
+// network ID, retry) without losing or double-crediting the request.
 async function approveAirtimeWithdrawal(wId, w) {
   const network = w?.details?.network;
   const phone = w?.details?.phone;
@@ -1581,23 +1580,23 @@ async function approveAirtimeWithdrawal(wId, w) {
     toast("Could not load provider settings.", "error");
     return;
   }
-  const providerId = providerIds[network];
-  if (!providerId) {
-    toast(`No CheapDataHub Provider ID set for ${network}. Add it in Settings first.`, "error");
+  const networkId = providerIds[network];
+  if (!networkId) {
+    toast(`No GeoDnaTech Network ID set for ${network}. Add it in Settings first.`, "error");
     return;
   }
 
   const ok = await openConfirm({
     title: "Send airtime automatically?",
-    message: `₦${formatMoney(w?.amount)} airtime will be sent to ${phone} (${network}) via CheapDataHub right now.`,
+    message: `₦${formatMoney(w?.amount)} airtime will be sent to ${phone} (${network}) via GeoDnaTech right now.`,
     okLabel: "Send Airtime",
     danger: false,
   });
   if (!ok) return;
 
-  const result = await cheapDataHubRequest("/api/cheapdatahub/airtime", {
+  const result = await backendApiRequest("/api/geodnatech/airtime", {
     method: "POST",
-    body: JSON.stringify({ provider_id: providerId, phone_number: phone, amount: w.amount }),
+    body: JSON.stringify({ network: networkId, mobile_number: phone, amount: w.amount }),
   });
   if (!result || result.error) {
     toast(result?.error || "Airtime purchase failed. Withdrawal left pending — you can retry.", "error");
@@ -1678,26 +1677,27 @@ async function loadSettingsAdmin() {
     $("setBankWithdrawalsEnabled").checked = s.bankWithdrawalsEnabled !== false;
     $("setAirtimeWithdrawalsEnabled").checked = s.airtimeWithdrawalsEnabled !== false;
     $("setAnnouncement").value = s.announcementBanner || "";
+    // Defaults match GeoDnaTech's documented Network List (MTN=1, GLO=2, 9MOBILE=3, AIRTEL=4).
     const providerIds = s.airtimeProviderIds || {};
-    $("setProviderMTN").value = providerIds.MTN ?? "";
-    $("setProviderGlo").value = providerIds.Glo ?? "";
-    $("setProviderAirtel").value = providerIds.Airtel ?? "";
-    $("setProvider9mobile").value = providerIds["9mobile"] ?? "";
+    $("setProviderMTN").value = providerIds.MTN ?? 1;
+    $("setProviderGlo").value = providerIds.Glo ?? 2;
+    $("setProviderAirtel").value = providerIds.Airtel ?? 4;
+    $("setProvider9mobile").value = providerIds["9mobile"] ?? 3;
   } catch (e) {
     toast("Could not load settings.", "error");
   }
-  loadCheapDataHubBalance();
+  loadAirtimeWalletBalance();
   await loadAdminsAdmin();
 }
 
-async function loadCheapDataHubBalance() {
-  const el = $("cdhWalletBalance");
-  el.textContent = "Checking CheapDataHub wallet balance…";
-  const data = await cheapDataHubRequest("/api/cheapdatahub/balance");
+async function loadAirtimeWalletBalance() {
+  const el = $("airtimeWalletBalance");
+  el.textContent = "Checking GeoDnaTech wallet balance…";
+  const data = await backendApiRequest("/api/geodnatech/balance");
   if (data && typeof data.balance === "number") {
-    el.textContent = `CheapDataHub wallet balance: ₦${formatMoney(data.balance)}`;
+    el.textContent = `GeoDnaTech wallet balance: ₦${formatMoney(data.balance)}`;
   } else {
-    el.textContent = "Could not fetch CheapDataHub wallet balance.";
+    el.textContent = "Could not fetch GeoDnaTech wallet balance.";
   }
 }
 

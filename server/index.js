@@ -6,6 +6,7 @@ const PORT = process.env.PORT || 3000;
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const IMGBB_API_KEY = process.env.IMGBB_API_KEY;
 const CHEAPDATAHUB_API_KEY = process.env.CHEAPDATAHUB_API_KEY;
+const GEODNATECH_API_KEY = process.env.GEODNATECH_API_KEY;
 // Comma-separated list, e.g. "https://rareearners.com.ng,https://www.rareearners.com.ng,https://rare-earners.vercel.app"
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || "https://rare-earners.vercel.app")
   .split(",")
@@ -129,6 +130,52 @@ app.post("/api/cheapdatahub/airtime", async (req, res) => {
     res.json({ reference: data.reference || data.transaction_id || null, message: data.message || "Airtime delivered." });
   } catch (e) {
     res.status(502).json({ error: "Could not reach CheapDataHub." });
+  }
+});
+
+const GEODNATECH_BASE = "https://geodnatech.com/api";
+
+// Proxies GeoDnaTech's account details so admin can see their wallet balance
+// before airtime auto-pay requests will succeed. Response field names aren't
+// documented, so we defensively look for whichever balance-like field exists.
+app.get("/api/geodnatech/balance", async (req, res) => {
+  if (!GEODNATECH_API_KEY) return res.status(500).json({ error: "Server is missing GEODNATECH_API_KEY." });
+  try {
+    const r = await fetch(`${GEODNATECH_BASE}/user/`, {
+      headers: { Authorization: `Token ${GEODNATECH_API_KEY}`, "Content-Type": "application/json" },
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) return res.status(r.status || 502).json({ error: data.detail || data.error || "Could not fetch wallet balance." });
+    const balance = data.balance ?? data.wallet_balance ?? data.wallet?.balance ?? data.user?.balance ?? null;
+    res.json({ balance });
+  } catch (e) {
+    res.status(502).json({ error: "Could not reach GeoDnaTech." });
+  }
+});
+
+// Sends real airtime via GeoDnaTech's Buy Airtime TopUp API. Called by admin.html when
+// an admin approves a pending airtime withdrawal, so GEODNATECH_API_KEY stays server-side.
+app.post("/api/geodnatech/airtime", async (req, res) => {
+  if (!GEODNATECH_API_KEY) return res.status(500).json({ error: "Server is missing GEODNATECH_API_KEY." });
+  const { network, amount, mobile_number } = req.body || {};
+  if (!network || !amount || !mobile_number) {
+    return res.status(400).json({ error: "network, amount and mobile_number are required." });
+  }
+  try {
+    const r = await fetch(`${GEODNATECH_BASE}/topup/`, {
+      method: "POST",
+      headers: { Authorization: `Token ${GEODNATECH_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ network, amount, mobile_number, Ported_number: true, airtime_type: "VTU" }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || data.Status === "failed" || data.transaction_status === "failed") {
+      return res.status(r.ok ? 502 : r.status).json({
+        error: data.api_response || data.detail || data.error || "Airtime purchase failed.",
+      });
+    }
+    res.json({ reference: data.ident || data.reference || null, message: data.api_response || "Airtime sent." });
+  } catch (e) {
+    res.status(502).json({ error: "Could not reach GeoDnaTech." });
   }
 });
 
