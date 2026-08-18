@@ -2999,9 +2999,9 @@ $("profileLogoutBtn").addEventListener("click", async () => {
 });
 
 /* ---------------- telegram/whatsapp channel prompt ---------------- */
-// Shown on every login (until user joins both channels)
+// Shown on every login, always
 function maybeShowTelegramPrompt() {
-  if (!currentProfile || currentProfile.telegramJoined) return;
+  if (!currentProfile) return;
   $("telegramPromptOverlay").classList.add("show");
   refreshIcons();
 }
