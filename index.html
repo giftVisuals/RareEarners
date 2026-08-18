@@ -1185,6 +1185,7 @@
             <label for="withdrawBankAmount">Amount (₦)</label>
             <div class="input-wrap"><svg data-lucide="wallet"></svg><input type="number" id="withdrawBankAmount" placeholder="Minimum ₦500" min="500"></div>
             <div class="field-error" id="withdrawBankAmountError"></div>
+            <p class="field-hint" id="withdrawBankFeeInfo" hidden></p>
           </div>
           <button type="button" class="btn btn-primary btn-block" id="withdrawBankSubmit"><span class="btn-label">Request Withdrawal</span></button>
         </section>
@@ -1238,6 +1239,7 @@
             <label for="withdrawAirtimeAmount">Amount (₦)</label>
             <div class="input-wrap"><svg data-lucide="wallet"></svg><input type="number" id="withdrawAirtimeAmount" placeholder="Minimum ₦100" min="100"></div>
             <div class="field-error" id="withdrawAirtimeAmountError"></div>
+            <p class="field-hint" id="withdrawAirtimeFeeInfo" hidden></p>
           </div>
           <button type="button" class="btn btn-primary btn-block" id="withdrawAirtimeSubmit"><span class="btn-label">Request Withdrawal</span></button>
         </section>
@@ -1302,6 +1304,8 @@ const SITE_SETTINGS = {
   referralReward: 100,
   minWithdrawalBank: 500,
   minWithdrawalAirtime: 100,
+  withdrawalFeeCash: 0,
+  withdrawalFeeAirtime: 0,
   welcomeBonus: 0,
   signupsEnabled: true,
   bankWithdrawalsEnabled: true,
@@ -2734,11 +2738,12 @@ function renderWithdrawPage() {
     const detail = w.method === "bank"
       ? `${w.details?.bankName || ""} · ${w.details?.accountNumber || ""}`
       : `${w.details?.network || ""} · ${w.details?.phone || ""}`;
+    const feeText = w.fee ? ` (₦${formatMoney(w.fee)} fee)` : "";
     return `
     <div class="activity-row">
       <div class="activity-icon"><svg data-lucide="${w.method === "bank" ? "landmark" : "smartphone"}"></svg></div>
       <div class="activity-info">
-        <h5>₦${formatMoney(w.amount)} — ${w.method === "bank" ? "Bank Transfer" : "Airtime"}</h5>
+        <h5>₦${formatMoney(w.amount)}${feeText} — ${w.method === "bank" ? "Bank Transfer" : "Airtime"}</h5>
         <p>${detail}</p>
       </div>
       <div class="task-card-status ${meta.cls}"><svg data-lucide="${meta.icon}"></svg>${meta.label}</div>
@@ -2791,12 +2796,15 @@ async function submitWithdrawal(method, amount, details, btn) {
   setLoading(btn, true);
   try {
     await updateDoc(doc(db, "users", currentUser.uid), { [balanceField]: increment(-amount) });
+    const feeField = method === "bank" ? "withdrawalFeeCash" : "withdrawalFeeAirtime";
+    const fee = SITE_SETTINGS[feeField] || 0;
     await addDoc(collection(db, "withdrawals"), {
       userId: currentUser.uid,
       userEmail: currentProfile?.email || currentUser.email || "",
       userName: currentProfile?.name || currentUser.displayName || "",
       method,
       amount,
+      fee,
       details,
       status: "pending",
       refunded: false,
@@ -2856,6 +2864,23 @@ $("withdrawAirtimeSubmit").addEventListener("click", async () => {
   if (!valid) return;
   await submitWithdrawal("airtime", amount, { network: selectedAirtimeNetwork, phone }, $("withdrawAirtimeSubmit"));
 });
+
+function updateWithdrawalFeeInfo(method) {
+  const amountInput = method === "bank" ? $("withdrawBankAmount") : $("withdrawAirtimeAmount");
+  const feeInfoEl = method === "bank" ? $("withdrawBankFeeInfo") : $("withdrawAirtimeFeeInfo");
+  const amount = Number(amountInput.value) || 0;
+  const fee = method === "bank" ? SITE_SETTINGS.withdrawalFeeCash : SITE_SETTINGS.withdrawalFeeAirtime;
+  if (!fee || amount === 0) {
+    feeInfoEl.hidden = true;
+  } else {
+    const net = amount - fee;
+    feeInfoEl.textContent = `Withdrawal fee: ₦${fee} • You'll receive: ₦${net}`;
+    feeInfoEl.hidden = false;
+  }
+}
+
+$("withdrawBankAmount").addEventListener("input", () => updateWithdrawalFeeInfo("bank"));
+$("withdrawAirtimeAmount").addEventListener("input", () => updateWithdrawalFeeInfo("airtime"));
 
 async function refundRejectedWithdrawals() {
   let refundedAny = false;

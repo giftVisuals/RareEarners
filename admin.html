@@ -410,6 +410,16 @@
           <div class="input-wrap no-icon"><input type="number" id="setMaxAirtime" min="0"></div>
         </div>
         <div class="field">
+          <label for="setWithdrawalFeeCash">Withdrawal fee - Bank Transfer (₦)</label>
+          <div class="input-wrap no-icon"><input type="number" id="setWithdrawalFeeCash" min="0"></div>
+          <p class="field-hint">Amount deducted from each bank withdrawal.</p>
+        </div>
+        <div class="field">
+          <label for="setWithdrawalFeeAirtime">Withdrawal fee - Airtime (₦)</label>
+          <div class="input-wrap no-icon"><input type="number" id="setWithdrawalFeeAirtime" min="0"></div>
+          <p class="field-hint">Amount deducted from each airtime withdrawal.</p>
+        </div>
+        <div class="field">
           <label for="setWelcomeBonus">Welcome / signup bonus (₦)</label>
           <div class="input-wrap no-icon"><input type="number" id="setWelcomeBonus" min="0"></div>
           <p class="field-hint">Credited automatically to every new account on signup.</p>
@@ -1469,11 +1479,12 @@ function renderWithdrawalsAdmin() {
     const detail = w.method === "bank"
       ? `${w.details?.bankName || ""} · ${w.details?.accountNumber || ""}`
       : `${w.details?.network || ""} · ${w.details?.phone || ""}`;
+    const feeText = w.fee ? ` (₦${formatMoney(w.fee)} fee)` : "";
     return `
     <div class="row-card" data-open-withdrawal="${w.id}" style="cursor:pointer;">
       <div class="row-icon" style="background:${w.method === "bank" ? "#166534" : "#2563EB"}"><svg data-lucide="${w.method === "bank" ? "landmark" : "smartphone"}"></svg></div>
       <div class="row-info">
-        <h4>₦${formatMoney(w.amount)} — ${w.userName || w.userEmail || "Unknown user"}</h4>
+        <h4>₦${formatMoney(w.amount)}${feeText} — ${w.userName || w.userEmail || "Unknown user"}</h4>
         <p>${detail}</p>
       </div>
       <svg data-lucide="chevron-right" style="width:18px;height:18px;color:var(--text-muted);flex-shrink:0;"></svg>
@@ -1498,10 +1509,15 @@ function openWithdrawalDetail(wId) {
   currentDetailWithdrawalId = wId;
   const rows = [
     copyRowHtml("Amount", `₦${formatMoney(w.amount)}`, String(w.amount)),
+  ];
+  if (w.fee) {
+    rows.push(copyRowHtml("Withdrawal Fee", `₦${formatMoney(w.fee)}`, String(w.fee)));
+  }
+  rows.push(
     copyRowHtml("User", w.userName || "—"),
     copyRowHtml("Email", w.userEmail || "—"),
     copyRowHtml("Method", w.method === "bank" ? "Bank Transfer" : "Airtime"),
-  ];
+  );
   if (w.method === "bank") {
     rows.push(
       copyRowHtml("Bank", w.details?.bankName || "—"),
@@ -1621,9 +1637,10 @@ async function approveAirtimeWithdrawal(wId, w) {
     return;
   }
 
+  const feeDisplay = w?.fee ? ` (₦${formatMoney(w.fee)} fee applied)` : "";
   const ok = await openConfirm({
     title: "Send airtime automatically?",
-    message: `₦${formatMoney(w?.amount)} airtime will be sent to ${phone} (${network}) via GeoDnaTech right now.`,
+    message: `₦${formatMoney(w?.amount - (w?.fee || 0))} airtime will be sent to ${phone} (${network}) via GeoDnaTech${feeDisplay}.`,
     okLabel: "Send Airtime",
     danger: false,
   });
@@ -1648,9 +1665,10 @@ async function approveAirtimeWithdrawal(wId, w) {
     return;
   }
 
+  const amountToSend = Math.max(0, w.amount - (w.fee || 0));
   const result = await backendApiRequest("/api/geodnatech/airtime", {
     method: "POST",
-    body: JSON.stringify({ network: networkId, mobile_number: phone, amount: w.amount }),
+    body: JSON.stringify({ network: networkId, mobile_number: phone, amount: amountToSend }),
   });
   if (!result || result.error) {
     // Release the claim so admin can fix the issue and retry.
@@ -1731,6 +1749,8 @@ async function loadSettingsAdmin() {
     $("setMinAirtime").value = s.minWithdrawalAirtime ?? 100;
     $("setMaxBank").value = s.maxWithdrawalBank ?? 0;
     $("setMaxAirtime").value = s.maxWithdrawalAirtime ?? 0;
+    $("setWithdrawalFeeCash").value = s.withdrawalFeeCash ?? 0;
+    $("setWithdrawalFeeAirtime").value = s.withdrawalFeeAirtime ?? 0;
     $("setWelcomeBonus").value = s.welcomeBonus ?? 0;
     $("setMinTasksForWithdrawal").value = s.minTasksForWithdrawal ?? 6;
     $("setSignupsEnabled").checked = s.signupsEnabled !== false;
@@ -1838,6 +1858,8 @@ $("saveSettingsBtn").addEventListener("click", async () => {
     minWithdrawalAirtime: Number($("setMinAirtime").value) || 0,
     maxWithdrawalBank: Number($("setMaxBank").value) || 0,
     maxWithdrawalAirtime: Number($("setMaxAirtime").value) || 0,
+    withdrawalFeeCash: Number($("setWithdrawalFeeCash").value) || 0,
+    withdrawalFeeAirtime: Number($("setWithdrawalFeeAirtime").value) || 0,
     welcomeBonus: Number($("setWelcomeBonus").value) || 0,
     minTasksForWithdrawal: Number($("setMinTasksForWithdrawal").value) || 0,
     signupsEnabled: $("setSignupsEnabled").checked,
