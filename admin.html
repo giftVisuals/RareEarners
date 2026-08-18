@@ -351,6 +351,7 @@
       <section class="panel" style="margin-top:16px;">
         <div class="page-head" style="margin:0 0 6px;"><h2 style="font-size:15px;">Recent admin activity</h2></div>
         <div id="overviewLogsList"><div class="empty-state"><svg data-lucide="loader-2"></svg><p>Loading…</p></div></div>
+        <button type="button" class="btn btn-ghost btn-block" id="viewMoreActivityBtn" style="margin-top:10px;" hidden>View More</button>
       </section>
     </div>
 
@@ -620,6 +621,14 @@
       <button type="button" class="btn btn-ghost" data-wd-reject>Reject</button>
       <button type="button" class="btn btn-primary" data-wd-approve>Approve</button>
     </div>
+  </div>
+</div>
+
+<!-- FULL ACTIVITY LOG SHEET -->
+<div class="sheet-overlay" id="activityLogSheet">
+  <div class="sheet">
+    <div class="sheet-head"><h3>All Recent Activity</h3><button type="button" class="sheet-close" id="activityLogClose"><svg data-lucide="x"></svg></button></div>
+    <div class="sheet-body" id="activityLogList"></div>
   </div>
 </div>
 
@@ -2092,32 +2101,46 @@ async function resolveFlaggedReferral(refId, approve) {
   }
 }
 
+let ALL_ADMIN_LOGS = [];
+function logRowHtml(l) {
+  return `
+    <div class="row-card" style="margin-bottom:6px;">
+      <div class="row-icon" style="background:#334155;"><svg data-lucide="activity"></svg></div>
+      <div class="row-info">
+        <h4>${describeLog(l)}</h4>
+        <p>${l.adminEmail || "admin"} · ${formatDate(l.createdAt)}</p>
+      </div>
+    </div>`;
+}
 async function loadOverviewLogs() {
   const container = $("overviewLogsList");
+  const viewMoreBtn = $("viewMoreActivityBtn");
   try {
     const snap = await getDocs(collection(db, "adminLogs"));
-    const logs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0))
-      .slice(0, 15);
-    if (!logs.length) {
+    ALL_ADMIN_LOGS = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+    if (!ALL_ADMIN_LOGS.length) {
       container.innerHTML = `<div class="empty-state"><svg data-lucide="history"></svg><p>No admin activity yet.</p></div>`;
+      viewMoreBtn.hidden = true;
       refreshIcons();
       return;
     }
-    container.innerHTML = logs.map((l) => `
-      <div class="row-card" style="margin-bottom:6px;">
-        <div class="row-icon" style="background:#334155;"><svg data-lucide="activity"></svg></div>
-        <div class="row-info">
-          <h4>${describeLog(l)}</h4>
-          <p>${l.adminEmail || "admin"} · ${formatDate(l.createdAt)}</p>
-        </div>
-      </div>`).join("");
+    container.innerHTML = ALL_ADMIN_LOGS.slice(0, 3).map(logRowHtml).join("");
+    viewMoreBtn.hidden = ALL_ADMIN_LOGS.length <= 3;
     refreshIcons();
   } catch (e) {
     container.innerHTML = `<div class="empty-state"><svg data-lucide="alert-circle"></svg><p>Could not load activity log.</p></div>`;
+    viewMoreBtn.hidden = true;
     refreshIcons();
   }
 }
+$("viewMoreActivityBtn").addEventListener("click", () => {
+  $("activityLogList").innerHTML = ALL_ADMIN_LOGS.map(logRowHtml).join("");
+  refreshIcons();
+  $("activityLogSheet").classList.add("show");
+});
+$("activityLogClose").addEventListener("click", () => $("activityLogSheet").classList.remove("show"));
+$("activityLogSheet").addEventListener("click", (e) => { if (e.target === $("activityLogSheet")) $("activityLogSheet").classList.remove("show"); });
 function describeLog(l) {
   const map = {
     task_created: `Created task "${l.taskName || ""}"`,
