@@ -342,8 +342,13 @@
         <div class="stat-card"><div class="icon"><svg data-lucide="list-checks"></svg></div><div class="value" id="statTasks">—</div><div class="label">Active tasks</div></div>
         <div class="stat-card"><div class="icon"><svg data-lucide="clock"></svg></div><div class="value" id="statPendingWithdrawals">—</div><div class="label">Pending withdrawals</div></div>
         <div class="stat-card"><div class="icon"><svg data-lucide="banknote"></svg></div><div class="value" id="statPendingAmount">—</div><div class="label">Pending payout (₦)</div></div>
+        <div class="stat-card"><div class="icon"><svg data-lucide="shield-alert"></svg></div><div class="value" id="statFlaggedReferrals">—</div><div class="label">Flagged referrals</div></div>
       </div>
-      <section class="panel">
+      <section class="panel" style="margin-top:16px;">
+        <div class="page-head" style="margin:0 0 6px;"><h2 style="font-size:15px;">Flagged Referrals (Same-IP)</h2><p>Referred user signed up from the same network as the referrer. Reward is held until you decide.</p></div>
+        <div id="flaggedReferralsList"><div class="empty-state"><svg data-lucide="loader-2"></svg><p>Loading…</p></div></div>
+      </section>
+      <section class="panel" style="margin-top:16px;">
         <div class="page-head" style="margin:0 0 6px;"><h2 style="font-size:15px;">Recent admin activity</h2></div>
         <div id="overviewLogsList"><div class="empty-state"><svg data-lucide="loader-2"></svg><p>Loading…</p></div></div>
       </section>
@@ -1815,7 +1820,7 @@ $("saveProviderIdsBtn").addEventListener("click", async () => {
 
 /* ================= OVERVIEW ================= */
 async function refreshOverview() {
-  await Promise.all([loadTasksAdmin(), loadUsersAdmin(), loadWithdrawalsAdmin(), loadSubmissionsAdmin()]);
+  await Promise.all([loadTasksAdmin(), loadUsersAdmin(), loadWithdrawalsAdmin(), loadSubmissionsAdmin(), loadFlaggedReferralsAdmin()]);
   renderOverview();
 }
 function renderOverview() {
@@ -1825,7 +1830,111 @@ function renderOverview() {
   $("statPendingWithdrawals").textContent = ADMIN_WITHDRAWALS.length;
   const pendingAmount = ADMIN_WITHDRAWALS.reduce((sum, w) => sum + (Number(w.amount) || 0), 0);
   $("statPendingAmount").textContent = formatMoney(pendingAmount);
+  $("statFlaggedReferrals").textContent = ADMIN_FLAGGED_REFERRALS.length;
+  renderFlaggedReferralsAdmin();
   loadOverviewLogs();
+}
+
+/* ---------------- flagged (same-IP) referrals ---------------- */
+let ADMIN_FLAGGED_REFERRALS = [];
+async function loadFlaggedReferralsAdmin() {
+  try {
+    const q = query(collection(db, "referrals"), where("duplicateIp", "==", true), where("status", "==", "pending"));
+    const snap = await getDocs(q);
+    ADMIN_FLAGGED_REFERRALS = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (e) {
+    ADMIN_FLAGGED_REFERRALS = [];
+  }
+}
+function renderFlaggedReferralsAdmin() {
+  const container = $("flaggedReferralsList");
+  if (!ADMIN_FLAGGED_REFERRALS.length) {
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="shield-check"></svg><p>No flagged referrals.</p></div>`;
+    refreshIcons();
+    return;
+  }
+  container.innerHTML = ADMIN_FLAGGED_REFERRALS.map((r) => {
+    const referrer = ADMIN_USERS.find((u) => u.id === r.referrerId);
+    return `
+    <div class="row-card" style="align-items:flex-start;">
+      <div class="row-icon" style="background:#B45309;"><svg data-lucide="shield-alert"></svg></div>
+      <div class="row-info">
+        <h4>${r.referredUserName || "A user"} → referrer: ${referrer?.name || referrer?.email || "Unknown"}</h4>
+        <p>Both signed up from the same IP address · ${formatDate(r.createdAt)}</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+        <button type="button" class="btn btn-primary btn-xs" data-approve-referral="${r.id}">Approve</button>
+        <button type="button" class="btn btn-ghost btn-xs" data-reject-referral="${r.id}">Reject</button>
+      </div>
+    </div>`;
+  }).join("");
+  refreshIcons();
+  $$("[data-approve-referral]").forEach((el) => el.addEventListener("click", () => resolveFlaggedReferral(el.dataset.approveReferral, true)));
+  $$("[data-reject-referral]").forEach((el) => el.addEventListener("click", () => resolveFlaggedReferral(el.dataset.rejectReferral, false)));
+}
+
+async function resolveFlaggedReferral(refId, approve) {
+  const r = ADMIN_FLAGGED_REFERRALS.find((x) => x.id === refId);
+  if (!r) return;
+  const referrer = ADMIN_USERS.find((u) => u.id === r.referrerId);
+  const ok = await openConfirm({
+    title: approve ? "Approve this referral reward?" : "Reject this referral?",
+    message: approve
+      ? `The referral reward will be credited to ${referrer?.name || referrer?.email || "the referrer"}'s cash balance despite the same-IP flag.`
+      : `This referral will be marked rejected — no reward will ever be paid for it.`,
+    okLabel: approve ? "Approve & Credit" : "Reject",
+    danger: !approve,
+  });
+  if (!ok) return;
+
+  if (!approve) {
+    try {
+      await updateDoc(doc(db, "referrals", refId), {
+        status: "rejected",
+        reviewedAt: serverTimestamp(),
+        reviewedBy: currentAdmin?.email || "",
+      });
+      await logAdminAction("referral_reward_rejected", { targetType: "referral", targetId: refId, targetEmail: referrer?.email || "" });
+      toast("Referral rejected — no reward paid.", "success");
+      await loadFlaggedReferralsAdmin();
+      renderFlaggedReferralsAdmin();
+      $("statFlaggedReferrals").textContent = ADMIN_FLAGGED_REFERRALS.length;
+    } catch (e) {
+      toast("Could not reject this referral.", "error");
+    }
+    return;
+  }
+
+  try {
+    const settingsSnap = await getDoc(doc(db, "settings", "site"));
+    const reward = Number(settingsSnap.exists() ? settingsSnap.data().referralReward : 0) || 0;
+    await runTransaction(db, async (tx) => {
+      const refRef = doc(db, "referrals", refId);
+      const refSnap = await tx.get(refRef);
+      if (!refSnap.exists()) throw new Error("Referral not found.");
+      const data = refSnap.data();
+      if (data.rewardCredited) throw new Error("This referral was already resolved.");
+      const userRef = doc(db, "users", data.referrerId);
+      tx.update(userRef, { cashBalance: increment(reward), totalEarned: increment(reward), todayEarnings: increment(reward) });
+      tx.update(refRef, { rewardCredited: true, status: "approved", reviewedAt: serverTimestamp(), reviewedBy: currentAdmin?.email || "" });
+      const txRef = doc(collection(db, "transactions"));
+      tx.set(txRef, {
+        userId: data.referrerId,
+        type: "referral_reward",
+        amount: reward,
+        description: `Referral reward (admin-approved despite same-IP flag) — ${data.referredUserName || "a friend"}`,
+        referralId: refId,
+        createdAt: serverTimestamp(),
+      });
+    });
+    await logAdminAction("referral_reward_approved", { targetType: "referral", targetId: refId, amount: reward, targetEmail: referrer?.email || "" });
+    toast("Referral reward approved and credited.", "success");
+    await loadFlaggedReferralsAdmin();
+    renderFlaggedReferralsAdmin();
+    $("statFlaggedReferrals").textContent = ADMIN_FLAGGED_REFERRALS.length;
+  } catch (e) {
+    toast(e?.message || "Could not approve this referral.", "error");
+  }
 }
 
 async function loadOverviewLogs() {
@@ -1873,6 +1982,8 @@ function describeLog(l) {
     settings_updated: `Updated site settings`,
     admin_granted: `Granted admin access to ${l.targetEmail || ""}`,
     admin_revoked: `Removed admin access from ${l.targetEmail || ""}`,
+    referral_reward_approved: `Approved a flagged (same-IP) referral — credited ₦${formatMoney(l.amount)} to ${l.targetEmail || ""}`,
+    referral_reward_rejected: `Rejected a flagged (same-IP) referral for ${l.targetEmail || ""}`,
   };
   return map[l.action] || l.action || "Admin action";
 }

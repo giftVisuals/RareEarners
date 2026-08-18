@@ -988,6 +988,11 @@
         </div>
       </div>
 
+      <div class="announcement-banner" id="referredDuplicateWarning" hidden>
+        <svg data-lucide="shield-alert"></svg>
+        <span>Your account was flagged because you signed up from the same network as the person who referred you. Their referral reward for you is on hold until admin reviews it.</span>
+      </div>
+
       <section class="panel" style="margin-bottom:16px;">
         <div class="referral-row">
           <div class="referral-icon"><svg data-lucide="link"></svg></div>
@@ -1420,7 +1425,7 @@ function toSlug(str) {
     .replace(/^-+|-+$/g, "");
 }
 
-function buildDefaultProfile(user, nameOverride, referredByOverride) {
+function buildDefaultProfile(user, nameOverride, referredByOverride, signupIp) {
   const fallbackName = user.email ? user.email.split("@")[0] : "User";
   const name = nameOverride || user.displayName || fallbackName;
   const username = slugify(name) || slugify(fallbackName) || user.uid.slice(0, 6);
@@ -1435,16 +1440,17 @@ function buildDefaultProfile(user, nameOverride, referredByOverride) {
     totalEarned: bonus,
     referralCode: username,
     referredBy: referredByOverride !== undefined ? referredByOverride : (localStorage.getItem("pendingReferral") || null),
+    signupIp: signupIp || null,
     createdAt: serverTimestamp(),
   };
 }
 
 /* ---------------- referral code claiming (runs once, for brand-new accounts) ---------------- */
-async function claimReferralCode(baseCode, uid) {
+async function claimReferralCode(baseCode, uid, signupIp) {
   const tryClaim = async (code) => {
     const ref = doc(db, "referralCodes", code);
     const snap = await getDoc(ref);
-    if (!snap.exists()) { await setDoc(ref, { uid }); return code; }
+    if (!snap.exists()) { await setDoc(ref, { uid, signupIp: signupIp || null }); return code; }
     if (snap.data().uid === uid) return code;
     return null;
   };
@@ -1455,11 +1461,13 @@ async function claimReferralCode(baseCode, uid) {
   }
 }
 
-async function resolveReferrerUid(rawCode) {
+async function resolveReferrer(rawCode) {
   if (!rawCode) return null;
   try {
     const snap = await getDoc(doc(db, "referralCodes", rawCode.trim()));
-    return snap.exists() ? snap.data().uid : null;
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    return { uid: data.uid, signupIp: data.signupIp || null };
   } catch (e) {
     return null;
   }
@@ -1479,7 +1487,7 @@ async function finalizeNewUserExtras(user, profile) {
     } catch (e) { /* best effort */ }
   }
   try {
-    const finalCode = await claimReferralCode(profile.referralCode, user.uid);
+    const finalCode = await claimReferralCode(profile.referralCode, user.uid, profile.signupIp);
     if (finalCode !== profile.referralCode) {
       await updateDoc(doc(db, "users", user.uid), { referralCode: finalCode });
       profile.referralCode = finalCode;
@@ -1488,15 +1496,17 @@ async function finalizeNewUserExtras(user, profile) {
 
   if (profile.referredBy) {
     try {
-      const referrerUid = await resolveReferrerUid(profile.referredBy);
-      if (referrerUid && referrerUid !== user.uid) {
+      const referrer = await resolveReferrer(profile.referredBy);
+      if (referrer && referrer.uid !== user.uid) {
+        const duplicateIp = !!(profile.signupIp && referrer.signupIp && profile.signupIp === referrer.signupIp);
         await addDoc(collection(db, "referrals"), {
-          referrerId: referrerUid,
+          referrerId: referrer.uid,
           referredUserId: user.uid,
           referredUserName: profile.name,
           approvedTaskCount: 0,
           status: "pending",
           rewardCredited: false,
+          duplicateIp,
           createdAt: serverTimestamp(),
         });
       }
@@ -1531,7 +1541,8 @@ $("signupForm").addEventListener("submit", async (e) => {
     await updateProfile(cred.user, { displayName: name });
 
     try {
-      const newProfile = buildDefaultProfile(cred.user, name, referral || null);
+      const signupIp = await fetchMyIp();
+      const newProfile = buildDefaultProfile(cred.user, name, referral || null, signupIp);
       await setDoc(doc(db, "users", cred.user.uid), newProfile);
       localStorage.removeItem("pendingReferral");
       await finalizeNewUserExtras(cred.user, newProfile);
@@ -2001,6 +2012,23 @@ async function uploadScreenshot(dataUrl) {
   }
 }
 
+// Best-effort IP lookup used to flag likely self-referrals (signing up from the same
+// network as the person who referred you). Never blocks signup if this fails.
+async function fetchMyIp() {
+  if (!IMAGE_UPLOAD_API) return null;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2500);
+    const res = await fetch(`${IMAGE_UPLOAD_API}/api/my-ip`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.ip || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 function compressImageToDataUrl(file, { maxWidth = 1280, quality = 0.7 } = {}) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -2236,6 +2264,7 @@ async function loadReferrals() {
   }
 }
 function renderReferralsPage() {
+  $("referredDuplicateWarning").hidden = !(myReferralAsReferred?.duplicateIp && !myReferralAsReferred?.rewardCredited);
   $("refStatTotal").textContent = String(myReferralsAsReferrer.length);
   const earned = myReferralsAsReferrer.filter((r) => r.rewardCredited).length * 100;
   $("refStatEarned").textContent = `₦${formatMoney(earned)}`;
@@ -2248,14 +2277,18 @@ function renderReferralsPage() {
   }
   container.innerHTML = myReferralsAsReferrer.map((r) => {
     const count = Math.min(r.approvedTaskCount || 0, 3);
+    const flagged = r.duplicateIp && !r.rewardCredited;
+    const statusIcon = r.rewardCredited ? "check-circle" : flagged ? "shield-alert" : "clock";
+    const statusLabel = r.rewardCredited ? "Approved" : flagged ? "Under review" : "Pending";
     return `
     <div class="activity-row">
       <div class="activity-icon"><svg data-lucide="user-round"></svg></div>
       <div class="activity-info">
         <h5>${r.referredUserName || "A friend"}</h5>
         <p>Joined ${timeAgo(txDate(r))} • ${count}/3 tasks completed</p>
+        ${flagged ? `<p style="color:#C2410C;font-weight:600;">Reward on hold — signed up from the same network as your account, being reviewed by admin.</p>` : ""}
       </div>
-      <div class="task-card-status${r.rewardCredited ? "" : " pending"}"><svg data-lucide="${r.rewardCredited ? "check-circle" : "clock"}"></svg>${r.rewardCredited ? "Approved" : "Pending"}</div>
+      <div class="task-card-status${r.rewardCredited ? "" : " pending"}"><svg data-lucide="${statusIcon}"></svg>${statusLabel}</div>
     </div>`;
   }).join("");
   refreshIcons();
@@ -2789,6 +2822,7 @@ async function creditEligibleReferralRewards() {
   const reward = Number(SITE_SETTINGS.referralReward) || 0;
   for (const r of myReferralsAsReferrer) {
     if (r.rewardCredited || (r.approvedTaskCount || 0) < 3) continue;
+    if (r.duplicateIp) continue; // held for admin review — signed up from the same network as the referrer
     try {
       await updateDoc(doc(db, "users", currentUser.uid), {
         cashBalance: increment(reward),
@@ -2892,7 +2926,8 @@ onAuthStateChanged(auth, async (user) => {
       toast("Could not load your profile. Some data may be missing.", "error");
     }
     if (!profile) {
-      profile = buildDefaultProfile(user);
+      const signupIp = await fetchMyIp();
+      profile = buildDefaultProfile(user, undefined, undefined, signupIp);
       isNewProfile = true;
       try {
         await setDoc(doc(db, "users", user.uid), profile, { merge: true });

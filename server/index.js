@@ -9,10 +9,15 @@ const CHEAPDATAHUB_API_KEY = process.env.CHEAPDATAHUB_API_KEY;
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "https://rare-earners.vercel.app";
 const CHEAPDATAHUB_BASE = "https://www.cheapdatahub.ng/api/v1/resellers";
 
+app.set("trust proxy", true); // Railway sits behind a proxy — needed for req.ip to be the real client IP
+
 app.use(cors({ origin: ALLOWED_ORIGIN }));
 app.use(express.json({ limit: "12mb" })); // task-proof screenshots come in as base64 JSON
 
 app.get("/health", (req, res) => res.json({ ok: true }));
+
+// Returns the caller's public IP, used client-side to flag same-network referral signups.
+app.get("/api/my-ip", (req, res) => res.json({ ip: req.ip || "" }));
 
 // Uploads a task-proof screenshot to ImgBB and returns its hosted URL, so
 // Firestore only ever stores a short link instead of a multi-hundred-KB
