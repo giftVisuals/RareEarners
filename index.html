@@ -392,6 +392,7 @@
   .balance-amount{font-size:34px;font-weight:800;letter-spacing:-.02em;}
   .balance-card .btn-ghost{background:#fff;color:var(--primary-dark);border:none;}
   .balance-stats{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;position:relative;z-index:1;}
+  .balance-split-hint{font-size:11px;color:rgba(255,255,255,.75);margin-top:10px;line-height:1.4;position:relative;z-index:1;}
   .stat-pill{
     flex:1;min-width:140px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);
     border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -456,8 +457,9 @@
   }
   .task-card:hover{box-shadow:var(--shadow-md);}
   .task-card-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;}
-  .task-card-icon{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;}
+  .task-card-icon{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;overflow:hidden;}
   .task-card-icon svg{width:21px;height:21px;}
+  .task-card-icon img{width:100%;height:100%;object-fit:cover;display:block;}
   .task-card-title{flex:1;min-width:0;}
   .task-card-title h4{font-size:15px;font-weight:800;margin-bottom:2px;}
   .task-card-meta-row{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-muted);}
@@ -852,6 +854,23 @@
         <div class="balance-stats">
           <div class="stat-pill">
             <div>
+              <div class="label">Cash Balance</div>
+              <div class="value">₦<span id="cashBalanceValue">0.00</span></div>
+            </div>
+            <div class="stat-icon"><svg data-lucide="banknote"></svg></div>
+          </div>
+          <div class="stat-pill">
+            <div>
+              <div class="label">Airtime Balance</div>
+              <div class="value">₦<span id="airtimeBalanceValue">0.00</span></div>
+            </div>
+            <div class="stat-icon"><svg data-lucide="smartphone"></svg></div>
+          </div>
+        </div>
+        <p class="balance-split-hint">Task rewards go to Airtime Balance · Referral rewards go to Cash Balance (bank withdrawable)</p>
+        <div class="balance-stats" style="margin-top:10px;">
+          <div class="stat-pill">
+            <div>
               <div class="label">Today's Earnings</div>
               <div class="value">₦<span id="todayEarnings">0.00</span></div>
             </div>
@@ -1023,20 +1042,30 @@
       <div class="balance-card" style="margin-bottom:16px;">
         <div class="balance-label">Available Balance</div>
         <div class="balance-amount">₦<span id="withdrawAvailBalance">0.00</span></div>
+        <div class="balance-stats">
+          <div class="stat-pill">
+            <div><div class="label">Cash (Bank)</div><div class="value">₦<span id="withdrawCashBalance">0.00</span></div></div>
+            <div class="stat-icon"><svg data-lucide="banknote"></svg></div>
+          </div>
+          <div class="stat-pill">
+            <div><div class="label">Airtime</div><div class="value">₦<span id="withdrawAirtimeBalance">0.00</span></div></div>
+            <div class="stat-icon"><svg data-lucide="smartphone"></svg></div>
+          </div>
+        </div>
       </div>
 
       <div id="withdrawMethodsStep">
         <section class="panel">
           <div class="panel-head"><h3>Choose a withdrawal method</h3></div>
           <div class="withdraw-method-list">
-            <button type="button" class="withdraw-method" data-method="bank">
+            <button type="button" class="withdraw-method" data-method="bank" id="withdrawMethodBank">
               <div class="wm-icon bank"><svg data-lucide="landmark"></svg></div>
-              <div class="wm-info"><h4>Bank Transfer</h4><p>Nigerian banks · Min <span id="withdrawBankMinCopy">₦500</span></p></div>
+              <div class="wm-info"><h4>Bank Transfer</h4><p id="withdrawBankMethodSub">Nigerian banks · Min <span id="withdrawBankMinCopy">₦500</span></p></div>
               <svg data-lucide="chevron-right" class="wm-chevron"></svg>
             </button>
-            <button type="button" class="withdraw-method" data-method="airtime">
+            <button type="button" class="withdraw-method" data-method="airtime" id="withdrawMethodAirtime">
               <div class="wm-icon airtime"><svg data-lucide="smartphone"></svg></div>
-              <div class="wm-info"><h4>Airtime</h4><p>MTN, Glo, Airtel, 9mobile · Min <span id="withdrawAirtimeMinCopy">₦100</span></p></div>
+              <div class="wm-info"><h4>Airtime</h4><p id="withdrawAirtimeMethodSub">MTN, Glo, Airtel, 9mobile · Min <span id="withdrawAirtimeMinCopy">₦100</span></p></div>
               <svg data-lucide="chevron-right" class="wm-chevron"></svg>
             </button>
             <button type="button" class="withdraw-method disabled" disabled>
@@ -1199,6 +1228,8 @@ const SITE_SETTINGS = {
   minWithdrawalAirtime: 100,
   welcomeBonus: 0,
   signupsEnabled: true,
+  bankWithdrawalsEnabled: true,
+  airtimeWithdrawalsEnabled: true,
   announcementBanner: "",
 };
 let siteSettingsLoaded = false;
@@ -1220,12 +1251,29 @@ function applySiteSettings() {
   if (bankAmountInput) bankAmountInput.placeholder = `Minimum ₦${SITE_SETTINGS.minWithdrawalBank}`;
   const airtimeAmountInput = $("withdrawAirtimeAmount");
   if (airtimeAmountInput) airtimeAmountInput.placeholder = `Minimum ₦${SITE_SETTINGS.minWithdrawalAirtime}`;
-  const bankMinCopy = $("withdrawBankMinCopy");
-  if (bankMinCopy) bankMinCopy.textContent = `₦${SITE_SETTINGS.minWithdrawalBank}`;
-  const airtimeMinCopy = $("withdrawAirtimeMinCopy");
-  if (airtimeMinCopy) airtimeMinCopy.textContent = `₦${SITE_SETTINGS.minWithdrawalAirtime}`;
   const referralRewardCopy = $("referralRewardCopy");
   if (referralRewardCopy) referralRewardCopy.textContent = `₦${SITE_SETTINGS.referralReward}`;
+
+  const bankMethodBtn = $("withdrawMethodBank");
+  const bankMethodSub = $("withdrawBankMethodSub");
+  if (bankMethodBtn && bankMethodSub) {
+    const enabled = SITE_SETTINGS.bankWithdrawalsEnabled !== false;
+    bankMethodBtn.disabled = !enabled;
+    bankMethodBtn.classList.toggle("disabled", !enabled);
+    bankMethodSub.innerHTML = enabled
+      ? `Nigerian banks · Min <span id="withdrawBankMinCopy">₦${SITE_SETTINGS.minWithdrawalBank}</span>`
+      : "Temporarily closed";
+  }
+  const airtimeMethodBtn = $("withdrawMethodAirtime");
+  const airtimeMethodSub = $("withdrawAirtimeMethodSub");
+  if (airtimeMethodBtn && airtimeMethodSub) {
+    const enabled = SITE_SETTINGS.airtimeWithdrawalsEnabled !== false;
+    airtimeMethodBtn.disabled = !enabled;
+    airtimeMethodBtn.classList.toggle("disabled", !enabled);
+    airtimeMethodSub.innerHTML = enabled
+      ? `MTN, Glo, Airtel, 9mobile · Min <span id="withdrawAirtimeMinCopy">₦${SITE_SETTINGS.minWithdrawalAirtime}</span>`
+      : "Temporarily closed";
+  }
 
   const signupBtn = $("signupSubmitBtn");
   const signupsClosedNotice = $("signupsClosedNotice");
@@ -1381,7 +1429,8 @@ function buildDefaultProfile(user, nameOverride, referredByOverride) {
     name,
     email: user.email || "",
     photoURL: user.photoURL || null,
-    balance: bonus,
+    cashBalance: bonus,
+    airtimeBalance: 0,
     todayEarnings: bonus,
     totalEarned: bonus,
     referralCode: username,
@@ -1417,7 +1466,7 @@ async function resolveReferrerUid(rawCode) {
 }
 
 async function finalizeNewUserExtras(user, profile) {
-  const bonus = Number(profile.balance) || 0;
+  const bonus = Number(profile.cashBalance) || 0;
   if (bonus > 0) {
     try {
       await addDoc(collection(db, "transactions"), {
@@ -1728,10 +1777,12 @@ $("activityViewAll").addEventListener("click", (e) => { e.preventDefault(); hapt
 
 /* ---------------- balance visibility ---------------- */
 let balanceHidden = false;
-let lastBalance = { balance: 0, today: 0, total: 0 };
+let lastBalance = { balance: 0, cash: 0, airtime: 0, today: 0, total: 0 };
 function applyBalanceVisibility() {
   const mask = "••••••";
   $("balanceValue").textContent = balanceHidden ? mask : formatMoney(lastBalance.balance);
+  $("cashBalanceValue").textContent = balanceHidden ? mask : formatMoney(lastBalance.cash);
+  $("airtimeBalanceValue").textContent = balanceHidden ? mask : formatMoney(lastBalance.airtime);
   $("todayEarnings").textContent = balanceHidden ? mask : formatMoney(lastBalance.today);
   $("totalEarned").textContent = balanceHidden ? mask : formatMoney(lastBalance.total);
 }
@@ -1850,7 +1901,7 @@ function renderTasksPage() {
     return `
     <div class="task-card" data-task-id="${t.id}" data-slug="${slug}">
       <div class="task-card-head">
-        <div class="task-card-icon" style="background:${t.color || '#111'}"><svg data-lucide="${t.icon || 'star'}"></svg></div>
+        <div class="task-card-icon" style="background:${t.color || '#111'}">${t.imageUrl ? `<img src="${t.imageUrl}" alt="" loading="lazy">` : `<svg data-lucide="${t.icon || 'star'}"></svg>`}</div>
         <div class="task-card-title">
           <h4>${t.name}</h4>
           <div class="task-card-meta-row"><span>${t.time || ""}</span><span class="dot"></span><span>${t.difficulty || "Easy"}</span></div>
@@ -2116,7 +2167,9 @@ function renderDashboard(user, profile) {
   $("popoverEmail").textContent = email;
   renderAvatar(name, email, photoURL);
 
-  lastBalance = { balance: profile?.balance || 0, today: profile?.todayEarnings || 0, total: profile?.totalEarned || 0 };
+  const cash = profile?.cashBalance || 0;
+  const airtime = profile?.airtimeBalance || 0;
+  lastBalance = { balance: cash + airtime, cash, airtime, today: profile?.todayEarnings || 0, total: profile?.totalEarned || 0 };
   applyBalanceVisibility();
 
   const username = profile?.referralCode || slugify(name) || user.uid.slice(0, 6);
@@ -2527,7 +2580,11 @@ function withdrawStatusMeta(status) {
 }
 
 function renderWithdrawPage() {
-  $("withdrawAvailBalance").textContent = formatMoney(currentProfile?.balance || 0);
+  const wCash = currentProfile?.cashBalance || 0;
+  const wAirtime = currentProfile?.airtimeBalance || 0;
+  $("withdrawAvailBalance").textContent = formatMoney(wCash + wAirtime);
+  $("withdrawCashBalance").textContent = formatMoney(wCash);
+  $("withdrawAirtimeBalance").textContent = formatMoney(wAirtime);
 
   const container = $("withdrawRequestsList");
   if (!myWithdrawals.length) {
@@ -2579,11 +2636,17 @@ $$("#airtimeNetworkChips .network-chip").forEach((chip) => {
 });
 
 async function submitWithdrawal(method, amount, details, btn) {
-  const available = currentProfile?.balance || 0;
-  if (amount > available) { toast("You don't have enough balance for this withdrawal.", "error"); return; }
+  const methodEnabled = method === "bank" ? SITE_SETTINGS.bankWithdrawalsEnabled !== false : SITE_SETTINGS.airtimeWithdrawalsEnabled !== false;
+  if (!methodEnabled) { toast("This withdrawal method is temporarily closed.", "error"); return; }
+  const balanceField = method === "bank" ? "cashBalance" : "airtimeBalance";
+  const available = currentProfile?.[balanceField] || 0;
+  if (amount > available) {
+    toast(`You don't have enough ${method === "bank" ? "cash" : "airtime"} balance for this withdrawal.`, "error");
+    return;
+  }
   setLoading(btn, true);
   try {
-    await updateDoc(doc(db, "users", currentUser.uid), { balance: increment(-amount) });
+    await updateDoc(doc(db, "users", currentUser.uid), { [balanceField]: increment(-amount) });
     await addDoc(collection(db, "withdrawals"), {
       userId: currentUser.uid,
       userEmail: currentProfile?.email || currentUser.email || "",
@@ -2605,7 +2668,7 @@ async function submitWithdrawal(method, amount, details, btn) {
       description: desc,
       createdAt: serverTimestamp(),
     });
-    currentProfile.balance = available - amount;
+    currentProfile[balanceField] = available - amount;
     renderDashboard(currentUser, currentProfile);
     await Promise.all([loadWithdrawals(), loadTransactions()]);
     renderWithdrawPage();
@@ -2653,7 +2716,8 @@ async function refundRejectedWithdrawals() {
   for (const w of myWithdrawals) {
     if (w.status !== "rejected" || w.refunded) continue;
     try {
-      await updateDoc(doc(db, "users", currentUser.uid), { balance: increment(w.amount) });
+      const balanceField = w.method === "bank" ? "cashBalance" : "airtimeBalance";
+      await updateDoc(doc(db, "users", currentUser.uid), { [balanceField]: increment(w.amount) });
       await addDoc(collection(db, "transactions"), {
         userId: currentUser.uid,
         type: "withdrawal_refund",
@@ -2690,7 +2754,7 @@ async function creditApprovedTaskRewards() {
     if (amount <= 0) continue;
     try {
       await updateDoc(doc(db, "users", currentUser.uid), {
-        balance: increment(amount),
+        airtimeBalance: increment(amount),
         totalEarned: increment(amount),
         todayEarnings: increment(amount),
       });
@@ -2727,7 +2791,7 @@ async function creditEligibleReferralRewards() {
     if (r.rewardCredited || (r.approvedTaskCount || 0) < 3) continue;
     try {
       await updateDoc(doc(db, "users", currentUser.uid), {
-        balance: increment(reward),
+        cashBalance: increment(reward),
         totalEarned: increment(reward),
         todayEarnings: increment(reward),
       });

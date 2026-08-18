@@ -91,6 +91,12 @@
   .switch-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:var(--shadow-sm);transition:transform .15s var(--ease);}
   .switch input:checked ~ .switch-thumb{transform:translateX(20px);}
 
+  .file-drop{display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:12px;border:1.5px dashed var(--border-strong);background:var(--bg);cursor:pointer;transition:border-color .15s var(--ease), background .15s var(--ease), transform .15s var(--ease);}
+  .file-drop:hover{border-color:var(--primary);background:var(--primary-light);}
+  .file-drop:active{transform:scale(.99);}
+  .file-drop svg{width:18px;height:18px;color:var(--text-muted);flex-shrink:0;}
+  .file-drop span{font-size:13px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
   #toastRoot{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;width:min(380px,92vw);}
   .toast{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:var(--text);color:#fff;font-size:13.5px;font-weight:500;box-shadow:var(--shadow-lg);animation:toastIn .25s var(--ease);}
   .toast.success{background:var(--primary-dark);}
@@ -174,6 +180,15 @@
   .lightbox-overlay.show{opacity:1;pointer-events:auto;}
   .lightbox-overlay img{max-width:100%;max-height:100%;border-radius:8px;}
 
+  .detail-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);}
+  .detail-row:last-child{border-bottom:none;}
+  .detail-row .dr-label{font-size:12px;color:var(--text-muted);margin-bottom:3px;}
+  .detail-row .dr-value{font-size:14.5px;font-weight:700;word-break:break-word;}
+  .copy-btn{width:32px;height:32px;border-radius:9px;background:var(--bg);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s var(--ease), background .15s var(--ease);}
+  .copy-btn:active{transform:scale(.9);}
+  .copy-btn.copied{background:var(--primary-light);border-color:var(--primary);color:var(--primary-dark);}
+  .copy-btn svg{width:15px;height:15px;}
+
   .search-wrap{position:relative;margin-bottom:16px;}
   .search-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text-muted);}
   .search-wrap input{width:100%;padding:12px 14px 12px 42px;border-radius:12px;border:1.5px solid var(--border-strong);background:#fff;font-size:14.5px;}
@@ -202,7 +217,7 @@
   .confirm-body h4{font-size:16px;font-weight:800;margin-bottom:8px;}
   .confirm-body p{font-size:13.5px;color:var(--text-muted);line-height:1.55;}
 
-  .detail-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 18px;}
+  .detail-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:14px 0 18px;}
   .detail-stat{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 6px;text-align:center;}
   .detail-stat .value{font-size:14.5px;font-weight:800;color:var(--primary-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .detail-stat .label{font-size:10px;color:var(--text-muted);margin-top:2px;}
@@ -387,6 +402,14 @@
           <div><div class="switch-label">New signups allowed</div><div class="switch-sub">Turn off to temporarily close registration.</div></div>
           <label class="switch"><input type="checkbox" id="setSignupsEnabled"><div class="switch-track"></div><div class="switch-thumb"></div></label>
         </div>
+        <div class="switch-row">
+          <div><div class="switch-label">Bank Transfer withdrawals open</div><div class="switch-sub">Turn off to pause bank withdrawals only.</div></div>
+          <label class="switch"><input type="checkbox" id="setBankWithdrawalsEnabled"><div class="switch-track"></div><div class="switch-thumb"></div></label>
+        </div>
+        <div class="switch-row">
+          <div><div class="switch-label">Airtime withdrawals open</div><div class="switch-sub">Turn off to pause airtime withdrawals only.</div></div>
+          <label class="switch"><input type="checkbox" id="setAirtimeWithdrawalsEnabled"><div class="switch-track"></div><div class="switch-thumb"></div></label>
+        </div>
         <div class="field" style="margin-top:14px;">
           <label for="setAnnouncement">Announcement banner</label>
           <div class="input-wrap no-icon"><textarea id="setAnnouncement" placeholder="Leave blank to hide the banner"></textarea></div>
@@ -469,6 +492,18 @@
         <label for="taskTime">Time estimate</label>
         <div class="input-wrap no-icon"><input type="text" id="taskTime" placeholder="2 min"></div>
       </div>
+      <div class="field">
+        <label for="taskImageInput">Task image (optional)</label>
+        <label class="file-drop" for="taskImageInput" id="taskImageDrop">
+          <svg data-lucide="image"></svg>
+          <span id="taskImageLabel">Upload an image (shows on the left, like an icon)</span>
+        </label>
+        <input type="file" id="taskImageInput" accept="image/*" hidden>
+        <div id="taskImagePreviewWrap" hidden style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+          <img id="taskImagePreview" src="" alt="" style="width:44px;height:44px;border-radius:12px;object-fit:cover;border:1px solid var(--border);">
+          <button type="button" class="btn btn-ghost btn-xs" id="taskImageRemoveBtn">Remove image</button>
+        </div>
+      </div>
       <div class="switch-row">
         <div><div class="switch-label">Active</div><div class="switch-sub">Inactive tasks are hidden from users.</div></div>
         <label class="switch"><input type="checkbox" id="taskActive" checked><div class="switch-track"></div><div class="switch-thumb"></div></label>
@@ -493,7 +528,8 @@
         <div id="userDetailBanBadge" style="margin-top:8px;" hidden><span class="badge danger"><svg data-lucide="ban" style="width:12px;height:12px;"></svg>Banned</span></div>
       </div>
       <div class="detail-stats">
-        <div class="detail-stat"><div class="value" id="userDetailBalance">₦0</div><div class="label">Balance</div></div>
+        <div class="detail-stat"><div class="value" id="userDetailCashBalance">₦0</div><div class="label">Cash Balance</div></div>
+        <div class="detail-stat"><div class="value" id="userDetailAirtimeBalance">₦0</div><div class="label">Airtime Balance</div></div>
         <div class="detail-stat"><div class="value" id="userDetailTasks">0</div><div class="label">Tasks done</div></div>
         <div class="detail-stat"><div class="value" id="userDetailReferrals">0</div><div class="label">Referrals</div></div>
       </div>
@@ -516,6 +552,13 @@
         <button type="button" class="amount-toggle debit" data-mode="debit" id="balanceModeDebit">− Deduct</button>
       </div>
       <div class="field">
+        <label>Balance</label>
+        <div class="amount-btns">
+          <button type="button" class="amount-toggle credit active" data-pool="cash" id="balancePoolCash">Cash</button>
+          <button type="button" class="amount-toggle credit" data-pool="airtime" id="balancePoolAirtime">Airtime</button>
+        </div>
+      </div>
+      <div class="field">
         <label for="balanceAmount">Amount (₦)</label>
         <div class="input-wrap no-icon"><input type="number" id="balanceAmount" min="1" placeholder="0"></div>
         <div class="field-error" id="balanceAmountError"></div>
@@ -529,6 +572,18 @@
     <div class="sheet-foot">
       <button type="button" class="btn btn-ghost" id="balanceSheetCancel">Cancel</button>
       <button type="button" class="btn btn-primary" id="balanceSheetConfirm"><span class="btn-label">Confirm</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- WITHDRAWAL DETAIL SHEET -->
+<div class="sheet-overlay" id="withdrawalDetailSheet">
+  <div class="sheet">
+    <div class="sheet-head"><h3>Withdrawal Details</h3><button type="button" class="sheet-close" id="withdrawalDetailClose"><svg data-lucide="x"></svg></button></div>
+    <div class="sheet-body" id="withdrawalDetailBody"></div>
+    <div class="sheet-foot">
+      <button type="button" class="btn btn-ghost" data-wd-reject>Reject</button>
+      <button type="button" class="btn btn-primary" data-wd-approve>Approve</button>
     </div>
   </div>
 </div>
@@ -583,6 +638,7 @@ const $ = (id) => document.getElementById(id);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 function refreshIcons() { if (window.lucide) window.lucide.createIcons(); }
+function haptic(ms = 10) { try { if ("vibrate" in navigator) navigator.vibrate(ms); } catch (e) {} }
 
 function toast(message, type = "default") {
   const root = $("toastRoot");
@@ -793,7 +849,7 @@ function renderTasksAdmin() {
     const meta = TASK_TYPE_META[t.type] || TASK_TYPE_META.other;
     return `
     <div class="row-card">
-      <div class="row-icon" style="background:${t.color || meta.color}"><svg data-lucide="${t.icon || meta.icon}"></svg></div>
+      <div class="row-icon" style="background:${t.color || meta.color};overflow:hidden;">${t.imageUrl ? `<img src="${t.imageUrl}" alt="" style="width:100%;height:100%;object-fit:cover;">` : `<svg data-lucide="${t.icon || meta.icon}"></svg>`}</div>
       <div class="row-info">
         <h4>${t.name || ""}</h4>
         <p>₦${t.reward || 0} · ${t.difficulty || "Easy"} · ${t.active === false ? "Inactive" : "Active"}</p>
@@ -831,7 +887,72 @@ function renderTasksAdmin() {
   $$("[data-delete-task]").forEach((el) => el.addEventListener("click", () => deleteTaskFlow(el.dataset.deleteTask)));
 }
 
+// Railway backend (server/) — proxies ImgBB uploads, same one index.html uses for proof screenshots.
+const IMAGE_UPLOAD_API = "https://rareearners-production.up.railway.app";
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Could not read file."));
+    reader.readAsDataURL(file);
+  });
+}
+async function uploadTaskImage(file) {
+  if (!IMAGE_UPLOAD_API) return null;
+  try {
+    const dataUrl = await readFileAsDataUrl(file);
+    const base64 = dataUrl.split(",")[1] || "";
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    const res = await fetch(`${IMAGE_UPLOAD_API}/api/upload-image`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: base64 }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.url || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 let editingTaskId = null;
+let currentTaskImageUrl = null;
+let pendingTaskImageFile = null;
+let pendingTaskImageRemoved = false;
+
+function updateTaskImagePreviewUI() {
+  const wrap = $("taskImagePreviewWrap");
+  const img = $("taskImagePreview");
+  if (pendingTaskImageFile) {
+    img.src = URL.createObjectURL(pendingTaskImageFile);
+    wrap.hidden = false;
+  } else if (currentTaskImageUrl && !pendingTaskImageRemoved) {
+    img.src = currentTaskImageUrl;
+    wrap.hidden = false;
+  } else {
+    wrap.hidden = true;
+  }
+}
+$("taskImageInput").addEventListener("change", () => {
+  const file = $("taskImageInput").files[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) { toast("Please choose an image file.", "error"); $("taskImageInput").value = ""; return; }
+  pendingTaskImageFile = file;
+  pendingTaskImageRemoved = false;
+  updateTaskImagePreviewUI();
+});
+$("taskImageRemoveBtn").addEventListener("click", () => {
+  pendingTaskImageFile = null;
+  pendingTaskImageRemoved = true;
+  currentTaskImageUrl = null;
+  $("taskImageInput").value = "";
+  updateTaskImagePreviewUI();
+});
+
 function openTaskSheet(taskId) {
   editingTaskId = taskId || null;
   clearFormErrors(["taskTitle", "taskDesc", "taskReward", "taskLink"]);
@@ -845,6 +966,11 @@ function openTaskSheet(taskId) {
   $("taskDifficulty").value = task?.difficulty || "Easy";
   $("taskTime").value = task?.time || "2 min";
   $("taskActive").checked = task ? task.active !== false : true;
+  currentTaskImageUrl = task?.imageUrl || null;
+  pendingTaskImageFile = null;
+  pendingTaskImageRemoved = false;
+  $("taskImageInput").value = "";
+  updateTaskImagePreviewUI();
   $("taskSheet").classList.add("show");
 }
 function closeTaskSheet() { $("taskSheet").classList.remove("show"); }
@@ -876,6 +1002,13 @@ $("taskSheetSave").addEventListener("click", async () => {
   const btn = $("taskSheetSave");
   setLoading(btn, true);
   try {
+    if (pendingTaskImageFile) {
+      const url = await uploadTaskImage(pendingTaskImageFile);
+      if (!url) { toast("Could not upload the task image. Try again, or save without it.", "error"); return; }
+      payload.imageUrl = url;
+    } else if (pendingTaskImageRemoved) {
+      payload.imageUrl = null;
+    }
     if (editingTaskId) {
       await updateDoc(doc(db, "tasks", editingTaskId), payload);
       await logAdminAction("task_edited", { targetType: "task", targetId: editingTaskId, taskName: name });
@@ -979,7 +1112,7 @@ async function approveSubmission(subId) {
       if (data.status !== "pending") throw new Error("This submission was already reviewed.");
       const reward = Number(data.reward) || 0;
       const userRef = doc(db, "users", data.userId);
-      tx.update(userRef, { balance: increment(reward), totalEarned: increment(reward), todayEarnings: increment(reward) });
+      tx.update(userRef, { airtimeBalance: increment(reward), totalEarned: increment(reward), todayEarnings: increment(reward) });
       tx.update(subRef, { status: "approved", reviewedAt: serverTimestamp(), reviewedBy: currentAdmin?.email || "" });
       const txRef = doc(collection(db, "transactions"));
       tx.set(txRef, {
@@ -1058,7 +1191,7 @@ function renderUsersAdmin() {
       <div class="row-icon" style="background:var(--primary-dark);">${(u.name || u.email || "?").slice(0, 1).toUpperCase()}</div>
       <div class="row-info">
         <h4>${u.name || "—"}${u.banned ? ' <span class="badge danger" style="margin-left:4px;">Banned</span>' : ""}</h4>
-        <p>${u.email || "—"} · ₦${formatMoney(u.balance)}</p>
+        <p>${u.email || "—"} · ₦${formatMoney(u.cashBalance)} cash · ₦${formatMoney(u.airtimeBalance)} airtime</p>
       </div>
       <svg data-lucide="chevron-right" style="width:18px;height:18px;color:var(--text-muted);flex-shrink:0;"></svg>
     </div>`).join("");
@@ -1075,7 +1208,8 @@ async function openUserDetail(uid) {
   $("userDetailName").textContent = u.name || "—";
   $("userDetailEmail").textContent = u.email || "—";
   $("userDetailJoined").textContent = `Joined ${formatDate(u.createdAt)}`;
-  $("userDetailBalance").textContent = `₦${formatMoney(u.balance)}`;
+  $("userDetailCashBalance").textContent = `₦${formatMoney(u.cashBalance)}`;
+  $("userDetailAirtimeBalance").textContent = `₦${formatMoney(u.airtimeBalance)}`;
   $("userDetailBanBadge").hidden = !u.banned;
   $("userBanBtn").innerHTML = u.banned ? `<svg data-lucide="check-circle"></svg>Unban User` : `<svg data-lucide="ban"></svg>Ban User`;
   $("userDetailTasks").textContent = "…";
@@ -1101,6 +1235,7 @@ $("userSheet").addEventListener("click", (e) => { if (e.target === $("userSheet"
 
 /* balance adjust */
 let balanceMode = "credit";
+let balancePool = "cash";
 $("balanceModeCredit").addEventListener("click", () => setBalanceMode("credit"));
 $("balanceModeDebit").addEventListener("click", () => setBalanceMode("debit"));
 function setBalanceMode(mode) {
@@ -1108,8 +1243,16 @@ function setBalanceMode(mode) {
   $("balanceModeCredit").classList.toggle("active", mode === "credit");
   $("balanceModeDebit").classList.toggle("active", mode === "debit");
 }
+$("balancePoolCash").addEventListener("click", () => setBalancePool("cash"));
+$("balancePoolAirtime").addEventListener("click", () => setBalancePool("airtime"));
+function setBalancePool(pool) {
+  balancePool = pool;
+  $("balancePoolCash").classList.toggle("active", pool === "cash");
+  $("balancePoolAirtime").classList.toggle("active", pool === "airtime");
+}
 $("userAddBalanceBtn").addEventListener("click", () => {
   setBalanceMode("credit");
+  setBalancePool("cash");
   clearFormErrors(["balanceAmount", "balanceReason"]);
   $("balanceAmount").value = "";
   $("balanceReason").value = "";
@@ -1130,6 +1273,7 @@ $("balanceSheetConfirm").addEventListener("click", async () => {
 
   const uid = currentDetailUserId;
   const btn = $("balanceSheetConfirm");
+  const balanceField = balancePool === "cash" ? "cashBalance" : "airtimeBalance";
   setLoading(btn, true);
   try {
     const userRef = doc(db, "users", uid);
@@ -1137,9 +1281,9 @@ $("balanceSheetConfirm").addEventListener("click", async () => {
     await runTransaction(db, async (tx) => {
       const snap = await tx.get(userRef);
       if (!snap.exists()) throw new Error("User not found.");
-      const current = Number(snap.data().balance) || 0;
-      if (balanceMode === "debit" && amount > current) throw new Error("Amount exceeds the user's current balance.");
-      const update = { balance: increment(delta) };
+      const current = Number(snap.data()[balanceField]) || 0;
+      if (balanceMode === "debit" && amount > current) throw new Error(`Amount exceeds the user's current ${balancePool} balance.`);
+      const update = { [balanceField]: increment(delta) };
       if (balanceMode === "credit") { update.totalEarned = increment(amount); update.todayEarnings = increment(amount); }
       tx.update(userRef, update);
       const txRef = doc(collection(db, "transactions"));
@@ -1147,7 +1291,7 @@ $("balanceSheetConfirm").addEventListener("click", async () => {
         userId: uid,
         type: balanceMode === "credit" ? "admin_credit" : "admin_debit",
         amount: delta,
-        description: `${balanceMode === "credit" ? "Admin credit" : "Admin deduction"} — ${reason}`,
+        description: `${balanceMode === "credit" ? "Admin credit" : "Admin deduction"} (${balancePool === "cash" ? "Cash" : "Airtime"}) — ${reason}`,
         createdAt: serverTimestamp(),
       });
       const logRef = doc(collection(db, "adminLogs"));
@@ -1158,11 +1302,12 @@ $("balanceSheetConfirm").addEventListener("click", async () => {
         targetType: "user",
         targetId: uid,
         amount,
+        pool: balancePool,
         reason,
         createdAt: serverTimestamp(),
       });
     });
-    toast(`Balance ${balanceMode === "credit" ? "added" : "deducted"} successfully.`, "success");
+    toast(`${balancePool === "cash" ? "Cash" : "Airtime"} balance ${balanceMode === "credit" ? "added" : "deducted"} successfully.`, "success");
     $("balanceSheet").classList.remove("show");
     await loadUsersAdmin();
     const u = ADMIN_USERS.find((x) => x.id === uid);
@@ -1244,24 +1389,102 @@ function renderWithdrawalsAdmin() {
   }
   container.innerHTML = ADMIN_WITHDRAWALS.map((w) => {
     const detail = w.method === "bank"
-      ? `${w.details?.bankName || ""} · ${w.details?.accountNumber || ""} · ${w.details?.accountName || ""}`
+      ? `${w.details?.bankName || ""} · ${w.details?.accountNumber || ""}`
       : `${w.details?.network || ""} · ${w.details?.phone || ""}`;
     return `
-    <div class="row-card" style="flex-wrap:wrap;">
+    <div class="row-card" data-open-withdrawal="${w.id}" style="cursor:pointer;">
       <div class="row-icon" style="background:${w.method === "bank" ? "#166534" : "#2563EB"}"><svg data-lucide="${w.method === "bank" ? "landmark" : "smartphone"}"></svg></div>
       <div class="row-info">
         <h4>₦${formatMoney(w.amount)} — ${w.userName || w.userEmail || "Unknown user"}</h4>
         <p>${detail}</p>
       </div>
-      <div class="row-actions">
-        <button type="button" class="btn btn-ghost btn-xs" data-reject-withdrawal="${w.id}">Reject</button>
-        <button type="button" class="btn btn-primary btn-xs" data-approve-withdrawal="${w.id}">Approve</button>
-      </div>
+      <svg data-lucide="chevron-right" style="width:18px;height:18px;color:var(--text-muted);flex-shrink:0;"></svg>
     </div>`;
   }).join("");
   refreshIcons();
-  $$("[data-approve-withdrawal]").forEach((el) => el.addEventListener("click", () => approveWithdrawal(el.dataset.approveWithdrawal)));
-  $$("[data-reject-withdrawal]").forEach((el) => el.addEventListener("click", () => rejectWithdrawal(el.dataset.rejectWithdrawal)));
+  $$("[data-open-withdrawal]").forEach((el) => el.addEventListener("click", () => openWithdrawalDetail(el.dataset.openWithdrawal)));
+}
+
+function copyRowHtml(label, value, copyValue) {
+  return `
+    <div class="detail-row">
+      <div><div class="dr-label">${label}</div><div class="dr-value">${value || "—"}</div></div>
+      ${value ? `<button type="button" class="copy-btn" data-copy="${(copyValue ?? value).replace(/"/g, "&quot;")}" title="Copy"><svg data-lucide="copy"></svg></button>` : ""}
+    </div>`;
+}
+
+let currentDetailWithdrawalId = null;
+function openWithdrawalDetail(wId) {
+  const w = ADMIN_WITHDRAWALS.find((x) => x.id === wId);
+  if (!w) return;
+  currentDetailWithdrawalId = wId;
+  const rows = [
+    copyRowHtml("Amount", `₦${formatMoney(w.amount)}`, String(w.amount)),
+    copyRowHtml("User", w.userName || "—"),
+    copyRowHtml("Email", w.userEmail || "—"),
+    copyRowHtml("Method", w.method === "bank" ? "Bank Transfer" : "Airtime"),
+  ];
+  if (w.method === "bank") {
+    rows.push(
+      copyRowHtml("Bank", w.details?.bankName || "—"),
+      copyRowHtml("Account Number", w.details?.accountNumber || "—"),
+      copyRowHtml("Account Name", w.details?.accountName || "—"),
+    );
+  } else {
+    rows.push(
+      copyRowHtml("Network", w.details?.network || "—"),
+      copyRowHtml("Phone Number", w.details?.phone || "—"),
+    );
+  }
+  rows.push(copyRowHtml("Requested", formatDate(w.createdAt)));
+  $("withdrawalDetailBody").innerHTML = rows.join("");
+  refreshIcons();
+  $$("#withdrawalDetailBody [data-copy]").forEach((btn) => {
+    btn.addEventListener("click", () => copyToClipboard(btn.dataset.copy, btn));
+  });
+  $("withdrawalDetailSheet").classList.add("show");
+}
+$("withdrawalDetailClose").addEventListener("click", () => $("withdrawalDetailSheet").classList.remove("show"));
+$("withdrawalDetailSheet").addEventListener("click", (e) => { if (e.target === $("withdrawalDetailSheet")) $("withdrawalDetailSheet").classList.remove("show"); });
+$("withdrawalDetailSheet").querySelector("[data-wd-approve]").addEventListener("click", async () => {
+  $("withdrawalDetailSheet").classList.remove("show");
+  if (currentDetailWithdrawalId) await approveWithdrawal(currentDetailWithdrawalId);
+});
+$("withdrawalDetailSheet").querySelector("[data-wd-reject]").addEventListener("click", async () => {
+  $("withdrawalDetailSheet").classList.remove("show");
+  if (currentDetailWithdrawalId) await rejectWithdrawal(currentDetailWithdrawalId);
+});
+
+function copyToClipboard(text, btn) {
+  const done = () => {
+    haptic();
+    if (!btn) return;
+    const original = btn.innerHTML;
+    btn.classList.add("copied");
+    btn.innerHTML = `<svg data-lucide="check"></svg>`;
+    refreshIcons();
+    setTimeout(() => { btn.classList.remove("copied"); btn.innerHTML = original; refreshIcons(); }, 1200);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else {
+    fallbackCopy(text, done);
+  }
+}
+function fallbackCopy(text, cb) {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    cb();
+  } catch (e) {
+    toast("Could not copy.", "error");
+  }
 }
 
 async function approveWithdrawal(wId) {
@@ -1303,7 +1526,8 @@ async function rejectWithdrawal(wId) {
       const data = wSnap.data();
       if (data.status !== "pending") throw new Error("This withdrawal was already processed.");
       const userRef = doc(db, "users", data.userId);
-      tx.update(userRef, { balance: increment(data.amount) });
+      const balanceField = data.method === "bank" ? "cashBalance" : "airtimeBalance";
+      tx.update(userRef, { [balanceField]: increment(data.amount) });
       tx.update(wRef, { status: "rejected", refunded: true, processedAt: serverTimestamp(), processedBy: currentAdmin?.email || "" });
       const txRef = doc(collection(db, "transactions"));
       tx.set(txRef, {
@@ -1342,6 +1566,8 @@ async function loadSettingsAdmin() {
     $("setMinAirtime").value = s.minWithdrawalAirtime ?? 100;
     $("setWelcomeBonus").value = s.welcomeBonus ?? 0;
     $("setSignupsEnabled").checked = s.signupsEnabled !== false;
+    $("setBankWithdrawalsEnabled").checked = s.bankWithdrawalsEnabled !== false;
+    $("setAirtimeWithdrawalsEnabled").checked = s.airtimeWithdrawalsEnabled !== false;
     $("setAnnouncement").value = s.announcementBanner || "";
   } catch (e) {
     toast("Could not load settings.", "error");
@@ -1426,6 +1652,8 @@ $("saveSettingsBtn").addEventListener("click", async () => {
     minWithdrawalAirtime: Number($("setMinAirtime").value) || 0,
     welcomeBonus: Number($("setWelcomeBonus").value) || 0,
     signupsEnabled: $("setSignupsEnabled").checked,
+    bankWithdrawalsEnabled: $("setBankWithdrawalsEnabled").checked,
+    airtimeWithdrawalsEnabled: $("setAirtimeWithdrawalsEnabled").checked,
     announcementBanner: $("setAnnouncement").value.trim(),
     updatedAt: serverTimestamp(),
     updatedBy: currentAdmin?.email || "",
