@@ -433,6 +433,10 @@
           <p class="field-hint">Users must also complete any task marked "Required for withdrawal" (set per-task when editing it).</p>
         </div>
         <div class="switch-row">
+          <div><div class="switch-label">🔧 Maintenance mode</div><div class="switch-sub">Turn ON to show every user the maintenance screen. Turn OFF to open the site. Takes effect within 10 minutes.</div></div>
+          <label class="switch"><input type="checkbox" id="setMaintenanceMode"><div class="switch-track"></div><div class="switch-thumb"></div></label>
+        </div>
+        <div class="switch-row">
           <div><div class="switch-label">New signups allowed</div><div class="switch-sub">Turn off to temporarily close registration.</div></div>
           <label class="switch"><input type="checkbox" id="setSignupsEnabled"><div class="switch-track"></div><div class="switch-thumb"></div></label>
         </div>
@@ -922,6 +926,58 @@ async function publishAppConfig() {
     return false;
   }
 }
+
+/* ============ MAINTENANCE MODE ============
+   Lives in config/status, which the user app checks on a 10 minute
+   cache. Flipping this switch opens or closes the site for everyone
+   without anyone editing or redeploying a single file. */
+const MAINTENANCE_DEFAULT_UNTIL = Date.parse("2026-08-20T07:00:00Z"); // 8:00 AM WAT
+
+async function loadMaintenanceState() {
+  const box = $("setMaintenanceMode");
+  if (!box) return;
+  try {
+    const snap = await getDoc(doc(db, "config", "status"));
+    if (snap.exists()) {
+      const d = snap.data();
+      const until = Number(d.maintenanceUntil || 0);
+      box.checked = d.maintenanceMode === true && !(until && Date.now() >= until);
+    } else {
+      // No document yet: the app stays closed until the scheduled lift.
+      box.checked = Date.now() < MAINTENANCE_DEFAULT_UNTIL;
+    }
+  } catch (e) {
+    box.checked = false;
+  }
+}
+
+async function setMaintenanceMode(on) {
+  await setDoc(doc(db, "config", "status"), {
+    maintenanceMode: !!on,
+    // Clear any scheduled lift once a human takes manual control.
+    maintenanceUntil: 0,
+    maintenanceMessage: "We're upgrading our systems to serve you better. We'll be back online shortly!",
+    updatedAt: serverTimestamp(),
+    updatedBy: currentAdmin?.email || "",
+  }, { merge: true });
+}
+
+document.addEventListener("change", async (e) => {
+  const box = e.target.closest("#setMaintenanceMode");
+  if (!box) return;
+  const on = box.checked;
+  box.disabled = true;
+  try {
+    await setMaintenanceMode(on);
+    await logAdminAction(on ? "maintenance_on" : "maintenance_off", { targetType: "settings", targetId: "status" });
+    toast(on ? "Maintenance mode ON — users now see the maintenance screen." : "Maintenance mode OFF — the site is live. Users see it within 10 minutes.", "success");
+  } catch (err) {
+    box.checked = !on;
+    toast("Could not change maintenance mode. Try again.", "error");
+  } finally {
+    box.disabled = false;
+  }
+});
 
 async function loadTasksAdmin({ publish = true } = {}) {
   let ok = false;
@@ -1917,6 +1973,7 @@ async function loadSettingsAdmin() {
     $("setWelcomeBonus").value = s.welcomeBonus ?? 0;
     $("setMinTasksForWithdrawal").value = s.minTasksForWithdrawal ?? 6;
     $("setSignupsEnabled").checked = s.signupsEnabled !== false;
+    loadMaintenanceState();
     $("setBankWithdrawalsEnabled").checked = s.bankWithdrawalsEnabled !== false;
     $("setAirtimeWithdrawalsEnabled").checked = s.airtimeWithdrawalsEnabled !== false;
     $("setAnnouncement").value = s.announcementBanner || "";

@@ -1,67 +1,81 @@
-# Going live after maintenance
+# Maintenance mode & going live
 
-`main` currently serves the maintenance page. All the real code is here too:
+**You never need a laptop or any commands for this.** Maintenance mode is
+now a switch inside the admin panel.
 
 | File | What it is |
 |---|---|
-| `index.html` | What visitors see right now — the maintenance page |
-| `app.html` | The real Tasklily app (optimised for the Firestore free tier) |
-| `admin.html` | Admin panel |
-| `maintenance.html` | Spare copy of the maintenance page |
+| `index.html` | The real Tasklily app, with the maintenance screen built in |
+| `admin.html` | Admin panel — has the maintenance switch |
+| `maintenance.html` | Spare standalone maintenance page (emergency only) |
 
-## Before flipping the switch
+## Right now
 
-1. **Paste the Firestore rules** from `FIRESTORE-RULES.txt` into
-   Firebase Console → Firestore → Rules → Publish.
-   Without the `config/app` rule the app falls back to reading every
-   task document on every login, which is what blew the quota.
+The site is **closed** and shows the maintenance screen. It opens by
+itself at **8:00 AM Wednesday 20 August (Nigeria time)** even if you do
+nothing.
 
-2. **Open the admin panel once.** It publishes `config/app`
-   automatically on load. Check Firestore shows a `config` collection
-   with an `app` document containing your tasks.
+## To open or close the site from your phone
 
-## Flip live
+1. Open the admin panel and sign in.
+2. Go to **Settings**.
+3. Top switch: **🔧 Maintenance mode**
+   - **ON** → everyone sees the maintenance screen
+   - **OFF** → the site is live
 
-```
-cp app.html index.html
-git add -A && git commit -m "Go live" && git push origin main
-```
+It saves the moment you flip it — there is no Save button to press for
+this one. Users see the change **within 10 minutes**.
 
-## Go back to maintenance
+Flipping it manually also cancels the automatic 8:00 AM opening, so
+whichever position you leave it in is the one that sticks.
 
-```
-cp maintenance.html index.html
-git add -A && git commit -m "Maintenance mode" && git push origin main
-```
+## One thing to check after the site opens
+
+Open the admin panel once and confirm Firestore has a **`config`**
+collection containing an **`app`** document with your tasks in it. The
+admin panel writes this automatically every time it loads.
+
+It matters because the app reads that one document instead of reading
+every task separately. If it is missing, the app still works — it just
+falls back to the expensive path that caused the original quota crash.
+
+## Firestore rules
+
+Paste `FIRESTORE-RULES.txt` into Firebase Console → Firestore → Rules →
+Publish. The `config` rule covers both `config/app` and `config/status`,
+so the maintenance switch needs no extra rule.
 
 ## Budget this is built to
 
 At 20,000 users each completing 20 tasks a day:
 
-- **Reads ~30k/day** — one user document per login, plus one shared
-  config document per user per week, plus one referral query per user
-  per 3 days.
+- **Reads ~25k/day** — one user document per device per 12 hours, one
+  shared config document per user per week, one referral query per user
+  per 3 days, plus the cached maintenance check.
 - **Writes ~14k/day** — each user's document is written at most once
-  every 36 hours (`SYNC_MIN_HOURS` in `app.html`), plus withdrawals.
+  every 36 hours, plus withdrawals.
 
-Completing a task costs nothing at all: it is credited in memory and
-saved to the browser, and reaches Firestore folded into that user's
-next periodic sync.
+Completing a task costs nothing at all. It is credited in memory and
+saved in the browser, and reaches Firestore folded into that user's next
+periodic sync.
 
-### Knobs
+### Knobs (all near the top of `index.html`)
 
-- `SYNC_MIN_HOURS` (default 36) — lower it to back users up more often,
-  at roughly `20000 * 24 / SYNC_MIN_HOURS` writes per day.
-- `REFERRALS_TTL_MS` (default 72h) — how stale the referral list may get.
-- `CONFIG_TTL_MS` (default 7 days) — how long until task edits reach
-  users who never clear their cache.
+| Setting | Default | What it does |
+|---|---|---|
+| `SYNC_MIN_HOURS` | 36 | How often one user costs a write. Lower = safer backups, more writes (about `20000 x 24 / value` per day). |
+| `USER_DOC_TTL_MS` | 12h | How long a cached profile is trusted before re-reading the server. |
+| `REFERRALS_TTL_MS` | 72h | How stale the referral list may get. |
+| `CONFIG_TTL_MS` | 7 days | How long until task edits reach users. |
+| `STATUS_TTL_MS` | 10 min | How fast the maintenance switch reaches users. |
 
 ### Known trade-offs
 
 - Task proofs are auto-approved; the admin panel no longer reviews them.
+  The screenshot is never uploaded or stored — it is discarded on the spot.
 - `taskSubmissions` and `transactions` are no longer written. Per-user
   history lives in each user document (last 60 entries).
-- A user's balance can take up to `SYNC_MIN_HOURS` to appear on another
-  device. A withdrawal forces an immediate sync, so money is always
-  correct at the point it matters. If a user clears their browser data
-  before a sync, unsynced earnings are lost.
+- A balance can take up to 36 hours to appear on a **different** device.
+  A withdrawal forces an immediate sync, so money is always correct at
+  the point it matters. If a user clears their browser data before a
+  sync, unsynced earnings are lost.
