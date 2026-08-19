@@ -2097,12 +2097,13 @@ function wireTaskCardEvents(container) {
 // Railway backend (server/) — proxies ImgBB uploads so proof screenshots are stored as a
 // short hosted URL instead of a big base64 blob per Firestore document. Falls back to
 // storing the compressed image inline if this isn't configured or the upload fails.
-const IMAGE_UPLOAD_API = "";
+const IMAGE_UPLOAD_API = "https://rareearners.vercel.app";
 
 async function uploadScreenshot(dataUrl) {
   if (!IMAGE_UPLOAD_API) return null;
   try {
     const base64 = dataUrl.split(",")[1] || "";
+    if (!base64) throw new Error("Could not extract image data");
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15000);
     const res = await fetch(`${IMAGE_UPLOAD_API}/api/upload-image`, {
@@ -2112,10 +2113,14 @@ async function uploadScreenshot(dataUrl) {
       signal: controller.signal,
     });
     clearTimeout(timer);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Upload failed: ${res.status}`);
+    }
     const data = await res.json();
     return data.url || null;
   } catch (e) {
+    console.error("Screenshot upload error:", e);
     return null;
   }
 }
