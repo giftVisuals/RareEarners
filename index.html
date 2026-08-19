@@ -1327,19 +1327,16 @@ window.addEventListener('beforeunload', () => batchQueue.forceFlush());
 /* ========== OPTIMIZED DATA LOADING ========== */
 async function loadAllUserDataOnLogin(userId) {
   try {
-    const [userSnap, tasksSnap, submissionsSnap, referralsSnap, referredSnap, withdrawalsSnap, transactionsSnap] = await Promise.all([
+    const [userSnap, tasksSnap, referralsSnap, referredSnap, withdrawalsSnap, transactionsSnap] = await Promise.all([
       getDoc(doc(db, "users", userId)),
       getDocs(collection(db, "tasks")),
-      getDocs(query(collection(db, "taskSubmissions"), where("userId", "==", userId))),
       getDocs(query(collection(db, "referrals"), where("referrerId", "==", userId))),
       getDocs(query(collection(db, "referrals"), where("referredUserId", "==", userId))),
       getDocs(query(collection(db, "withdrawals"), where("userId", "==", userId))),
-      getDocs(query(collection(db, "transactions"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(50))),
+      getDocs(query(collection(db, "transactions"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(20))),
     ]);
     const tasksData = tasksSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(t => t.active !== false);
-    const submissions = {}; submissionsSnap.forEach(d => { submissions[d.data().taskId] = d.data().status; });
     cache.set('tasks', tasksData, CACHE_TTL.tasks);
-    cache.set('my_submissions', submissions, CACHE_TTL.tasks);
     cache.set('my_referrals', referralsSnap.docs.map(d => ({ id: d.id, ...d.data() })), CACHE_TTL.referrals);
     cache.set('referral_to_me', referredSnap.docs.length ? { id: referredSnap.docs[0].id, ...referredSnap.docs[0].data() } : null, CACHE_TTL.referrals);
     cache.set('my_withdrawals', withdrawalsSnap.docs.map(d => ({ id: d.id, ...d.data() })), CACHE_TTL.withdrawals);
