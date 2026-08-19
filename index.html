@@ -1367,6 +1367,15 @@ const Store = {
       /* pendingCredits is written only by the admin panel. Never send it
          back, or an admin refund made since our last read would be lost. */
       delete payload.pendingCredits;
+      /* Server-owned and set-once fields. createdAt matters especially:
+         it is a Firestore Timestamp, and a round trip through
+         localStorage turns it into a plain {seconds,nanoseconds} object.
+         Writing that back changes the field's type, which the security
+         rules reject — taking the whole sync down with it. */
+      delete payload.createdAt;
+      delete payload.banned;
+      delete payload.email;
+      delete payload.signupIp;
       payload.lastSyncAt = Date.now();
       await setDoc(doc(db, "users", currentUser.uid), payload, { merge: true });
       currentProfile.lastSyncAt = payload.lastSyncAt;
@@ -2341,17 +2350,21 @@ function compressImageToDataUrl(file, { maxWidth = 1280, quality = 0.7 } = {}) {
 }
 
 async function handleSubmitProof(taskId, fileInput, submitBtn) {
+  /* The screenshot is never read, resized, uploaded or stored — it goes
+     nowhere. Decoding it was the only thing that could fail here (HEIC
+     photos, huge files, corrupt data all rejected the old compressor),
+     which is why submissions were erroring out. Now the file is simply
+     accepted and the reward is credited on the spot, at zero
+     Firestore reads and zero writes. */
   const file = fileInput?.files?.[0];
   if (!file) { toast("Please choose a screenshot first.", "error"); return; }
-  if (!file.type.startsWith("image/")) { toast("Please upload an image file.", "error"); return; }
 
   setLoading(submitBtn, true);
   try {
-    await compressImageToDataUrl(file);
     const task = TASKS.find((t) => t.id === taskId);
     const reward = task ? task.reward : 0;
 
-    if (!currentProfile) return;
+    if (!currentProfile) { toast("Please sign in again.", "error"); return; }
     if (mySubmissions[taskId] === "approved") { toast("You already completed this task.", "error"); return; }
 
     /* Approve and credit entirely in memory + localStorage.
@@ -2375,7 +2388,7 @@ async function handleSubmitProof(taskId, fileInput, submitBtn) {
     renderTasksPage();
   } catch (e) {
     haptic([10, 30, 10]);
-    toast("Could not process screenshot. Try again.", "error");
+    toast("Could not submit. Please try again.", "error");
   } finally {
     setLoading(submitBtn, false);
   }
@@ -2424,9 +2437,10 @@ function timeAgo(date) {
 }
 function txDate(t) {
   const c = t?.createdAt;
-  if (c?.toDate) return c.toDate();          // legacy Firestore Timestamp
-  if (typeof c === "number") return new Date(c); // ledger entries store plain ms
+  if (c?.toDate) return c.toDate();               // live Firestore Timestamp
+  if (typeof c === "number") return new Date(c);  // ledger entries store plain ms
   if (typeof c === "string") { const d = new Date(c); if (!isNaN(d)) return d; }
+  if (c && typeof c.seconds === "number") return new Date(c.seconds * 1000); // Timestamp via localStorage
   return new Date();
 }
 function formatFullDate(date) {
@@ -2503,7 +2517,7 @@ function renderDashboard(user, profile) {
   $("referralLinkPreview").textContent = currentReferralLink;
   if ($("referralLinkPreviewPage")) $("referralLinkPreviewPage").textContent = currentReferralLink;
 
-  profileCreatedDate = profile?.createdAt?.toDate ? profile.createdAt.toDate() : new Date();
+  profileCreatedDate = txDate({ createdAt: profile?.createdAt });
   renderActivity();
 }
 
@@ -2551,6 +2565,7 @@ async function loadReferrals(force = false) {
   if (!force && cached && Date.now() - cached.at < REFERRALS_TTL_MS) {
     myReferralsAsReferrer = cached.mine || [];
     myReferralAsReferred = cached.toMe || null;
+    markCreditedReferrals();
     return;
   }
 
@@ -2563,11 +2578,24 @@ async function loadReferrals(force = false) {
   }
   myReferralAsReferred = cached?.toMe || null;
   lsSet(key, { at: Date.now(), mine: myReferralsAsReferrer, toMe: myReferralAsReferred });
+  markCreditedReferrals();
+}
+
+/* Referral documents are never written back any more — whether a referral
+   has been paid is recorded in the user's own document. Without this the
+   list would keep saying "Pending" even though the money already landed
+   and the transaction history shows it as credited. */
+function markCreditedReferrals() {
+  const paid = new Set(currentProfile?.creditedReferrals || []);
+  for (const r of myReferralsAsReferrer) {
+    if (paid.has(r.id)) { r.rewardCredited = true; r.status = "approved"; }
+  }
 }
 function renderReferralsPage() {
   $("referredDuplicateWarning").hidden = !(myReferralAsReferred?.duplicateIp && !myReferralAsReferred?.rewardCredited);
   $("refStatTotal").textContent = String(myReferralsAsReferrer.length);
-  const earned = myReferralsAsReferrer.filter((r) => r.rewardCredited).length * 100;
+  markCreditedReferrals();
+  const earned = myReferralsAsReferrer.filter((r) => r.rewardCredited).length * (Number(SITE_SETTINGS.referralReward) || 0);
   $("refStatEarned").textContent = `₦${formatMoney(earned)}`;
 
   const container = $("referralsList");
@@ -2577,7 +2605,6 @@ function renderReferralsPage() {
     return;
   }
   container.innerHTML = myReferralsAsReferrer.map((r) => {
-    const count = Math.min(r.approvedTaskCount || 0, 3);
     const flagged = r.duplicateIp && !r.rewardCredited;
     const statusIcon = r.rewardCredited ? "check-circle" : flagged ? "shield-alert" : "clock";
     const statusLabel = r.rewardCredited ? "Approved" : flagged ? "Under review" : "Pending";
@@ -2586,7 +2613,7 @@ function renderReferralsPage() {
       <div class="activity-icon"><svg data-lucide="user-round"></svg></div>
       <div class="activity-info">
         <h5>${r.referredUserName || "A friend"}</h5>
-        <p>Joined ${timeAgo(txDate(r))} • ${count}/3 tasks completed</p>
+        <p>Joined ${timeAgo(txDate(r))}${r.rewardCredited ? " • Reward credited" : ""}</p>
         ${flagged ? `<p style="color:#C2410C;font-weight:600;">Reward on hold — signed up from the same network as your account, being reviewed by admin.</p>` : ""}
       </div>
       <div class="task-card-status${r.rewardCredited ? "" : " pending"}"><svg data-lucide="${statusIcon}"></svg>${statusLabel}</div>
@@ -3349,6 +3376,19 @@ onAuthStateChanged(auth, async (user) => {
 
     await runCreditingPipeline();
     await Store.sync(); // respects SYNC_MIN_HOURS — usually a no-op
+
+    /* Auto-credit referrals in the background. Bounded by the same 72h
+       cache the Referrals page uses, so it cannot cost more than one
+       query per user per 3 days no matter how often it is called. */
+    loadReferrals().then(() => {
+      if (creditEligibleReferralRewards()) {
+        hydrateFromProfile();
+        renderDashboard(currentUser, currentProfile);
+        renderActivity();
+        renderHistoryPage();
+        renderReferralsPage();
+      }
+    }).catch(() => {});
 
     renderDashboard(user, currentProfile);
     renderActivity();
