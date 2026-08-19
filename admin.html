@@ -2027,35 +2027,13 @@ async function refreshOverview() {
   loadFlaggedReferralsAdmin().catch(() => {});
 }
 async function renderOverviewQuick() {
-  try {
-    const [usersSnap, subSnap, tasksSnap, wSnap, flagSnap] = await Promise.all([
-      getDocs(query(collection(db, "users"))),
-      getDocs(query(collection(db, "taskSubmissions"), where("status", "==", "pending"))),
-      getDocs(query(collection(db, "tasks"))),
-      getDocs(query(collection(db, "withdrawals"), where("status", "==", "pending"))),
-      getDocs(query(collection(db, "flaggedReferrals"))),
-    ]);
-    const userCount = usersSnap.size;
-    const subCount = subSnap.size;
-    const taskCount = tasksSnap.docs.filter((d) => d.data().active !== false).length;
-    const withdrawCount = wSnap.size;
-    const withdrawAmount = wSnap.docs.reduce((sum, d) => sum + (Number(d.data().amount) || 0), 0);
-    const flagCount = flagSnap.size;
-    $("statUsers").textContent = userCount;
-    $("statPendingSubmissions").textContent = subCount;
-    $("statTasks").textContent = taskCount;
-    $("statPendingWithdrawals").textContent = withdrawCount;
-    $("statPendingAmount").textContent = formatMoney(withdrawAmount);
-    $("statFlaggedReferrals").textContent = flagCount;
-  } catch (e) {
-    console.error("renderOverviewQuick error:", e);
-    $("statUsers").textContent = "—";
-    $("statPendingSubmissions").textContent = "—";
-    $("statTasks").textContent = "—";
-    $("statPendingWithdrawals").textContent = "—";
-    $("statPendingAmount").textContent = "—";
-    $("statFlaggedReferrals").textContent = "—";
-  }
+  $("statUsers").textContent = ADMIN_USERS.length || "—";
+  $("statPendingSubmissions").textContent = ADMIN_SUBMISSIONS.length || "—";
+  $("statTasks").textContent = ADMIN_TASKS.filter((t) => t.active !== false).length || "—";
+  $("statPendingWithdrawals").textContent = ADMIN_WITHDRAWALS.length || "—";
+  const pendingAmount = ADMIN_WITHDRAWALS.reduce((sum, w) => sum + (Number(w.amount) || 0), 0);
+  $("statPendingAmount").textContent = pendingAmount ? formatMoney(pendingAmount) : "—";
+  $("statFlaggedReferrals").textContent = ADMIN_FLAGGED_REFERRALS.length || "—";
 }
 function renderOverview() {
   $("statUsers").textContent = ADMIN_USERS.length;
