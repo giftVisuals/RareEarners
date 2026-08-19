@@ -1041,7 +1041,7 @@
     <div id="referralsView" hidden>
       <div class="tasks-hero">
         <h2>Earn with referrals</h2>
-        <p>Invite friends. You earn <span id="referralRewardCopy">₦100</span> once they complete 3 approved tasks.</p>
+        <p>Invite friends. You earn <span id="referralRewardCopy">₦100</span> for each friend who signs up.</p>
         <div class="balance-stats" style="margin-top:14px;">
           <div class="stat-pill">
             <div><div class="label">Total Referrals</div><div class="value" id="refStatTotal">0</div></div>
@@ -2964,7 +2964,7 @@ async function creditEligibleReferralRewards() {
   let creditedAny = false;
   const reward = Number(SITE_SETTINGS.referralReward) || 0;
   for (const r of myReferralsAsReferrer) {
-    if (r.rewardCredited || (r.approvedTaskCount || 0) < 3) continue;
+    if (r.rewardCredited) continue;
     if (r.duplicateIp) continue; // held for admin review — signed up from the same network as the referrer
     try {
       await updateDoc(doc(db, "users", currentUser.uid), {
@@ -2976,7 +2976,7 @@ async function creditEligibleReferralRewards() {
         userId: currentUser.uid,
         type: "referral_reward",
         amount: reward,
-        description: `Referral reward — ${r.referredUserName || "a friend"} completed 3 tasks`,
+        description: `Referral reward — ${r.referredUserName || "a friend"} signed up`,
         referralId: r.id,
         createdAt: serverTimestamp(),
       });
@@ -2990,6 +2990,42 @@ async function creditEligibleReferralRewards() {
   }
   return creditedAny;
 }
+async function autoApproveOldSubmissions() {
+  if (!currentUser) return;
+  try {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const q = query(collection(db, "taskSubmissions"), where("status", "==", "pending"), where("submittedAt", "<", fiveMinutesAgo));
+    const snap = await getDocs(q);
+    const toApprove = snap.docs.filter((d) => !d.data().autoApprovedAt);
+    if (!toApprove.length) return;
+    for (const doc2 of toApprove.slice(0, 10)) {
+      const data = doc2.data();
+      const reward = Number(data.reward) || 0;
+      try {
+        await runTransaction(db, async (tx) => {
+          const subRef = doc(db, "taskSubmissions", doc2.id);
+          const subSnap = await tx.get(subRef);
+          if (!subSnap.exists() || subSnap.data().status !== "pending") return;
+          const userRef = doc(db, "users", data.userId);
+          tx.update(userRef, { airtimeBalance: increment(reward), totalEarned: increment(reward), todayEarnings: increment(reward) });
+          tx.update(subRef, { status: "approved", reviewedAt: serverTimestamp(), autoApprovedAt: serverTimestamp() });
+          const txRef = doc(collection(db, "transactions"));
+          tx.set(txRef, {
+            userId: data.userId,
+            type: "task_reward",
+            amount: reward,
+            description: `Task reward — ${data.taskName || "Task"}`,
+            submissionId: doc2.id,
+            taskId: data.taskId,
+            createdAt: serverTimestamp(),
+          });
+        });
+      } catch (e) { /* skip on error */ }
+    }
+  } catch (e) { /* silent */ }
+}
+setInterval(autoApproveOldSubmissions, 60000);
+
 async function runCreditingPipeline() {
   const a = await creditApprovedTaskRewards();
   await syncMyReferralProgress();
