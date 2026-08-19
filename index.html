@@ -1299,6 +1299,54 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
+/* ========== CACHE MANAGER ========== */
+const CACHE_TTL = {
+  userData: 24 * 60 * 60 * 1000, tasks: 24 * 60 * 60 * 1000, referrals: 6 * 60 * 60 * 1000,
+  withdrawals: 1 * 60 * 60 * 1000, transactions: 30 * 60 * 1000, settings: 24 * 60 * 60 * 1000,
+};
+class CacheManager {
+  set(key, value, ttlMs = 24 * 60 * 60 * 1000) {
+    try { const now = Date.now(); localStorage.setItem(`cache_${key}`, JSON.stringify({ value, timestamp: now, expiresAt: now + ttlMs })); } catch (e) {}
+  }
+  get(key) { try { const stored = localStorage.getItem(`cache_${key}`); if (!stored) return null; const data = JSON.parse(stored); return Date.now() > data.expiresAt ? (localStorage.removeItem(`cache_${key}`), null) : data.value; } catch (e) { return null; } }
+  isExpired(key) { try { const stored = localStorage.getItem(`cache_${key}`); if (!stored) return true; const data = JSON.parse(stored); return Date.now() > data.expiresAt; } catch (e) { return true; } }
+  clear(key) { localStorage.removeItem(`cache_${key}`); }
+  clearAll() { Object.keys(localStorage).filter(k => k.startsWith('cache_')).forEach(k => localStorage.removeItem(k)); }
+}
+const cache = new CacheManager();
+class BatchWriteQueue {
+  constructor(flushIntervalMs = 30000) { this.queue = []; this.flushIntervalMs = flushIntervalMs; this.timerId = null; this.isProcessing = false; }
+  add(op) { this.queue.push(op); if (!this.timerId) this.scheduleFlush(); }
+  scheduleFlush() { this.timerId = setTimeout(() => this.flush(), this.flushIntervalMs); }
+  async flush() { if (this.isProcessing || this.queue.length === 0) return; this.isProcessing = true; clearTimeout(this.timerId); this.timerId = null; const opsToProcess = [...this.queue]; this.queue = []; try { await runTransaction(db, async (tx) => { for (const op of opsToProcess) { const ref = doc(db, op.path); if (op.type === 'update') tx.update(ref, op.data); else if (op.type === 'set') tx.set(ref, op.data, { merge: true }); } }); } catch (e) { this.queue.unshift(...opsToProcess); } finally { this.isProcessing = false; if (this.queue.length > 0) this.scheduleFlush(); } }
+  async forceFlush() { return this.flush(); }
+}
+const batchQueue = new BatchWriteQueue(30000);
+window.addEventListener('beforeunload', () => batchQueue.forceFlush());
+
+/* ========== OPTIMIZED DATA LOADING ========== */
+async function loadAllUserDataOnLogin(userId) {
+  try {
+    const [userSnap, tasksSnap, submissionsSnap, referralsSnap, referredSnap, withdrawalsSnap, transactionsSnap] = await Promise.all([
+      getDoc(doc(db, "users", userId)),
+      getDocs(collection(db, "tasks")),
+      getDocs(query(collection(db, "taskSubmissions"), where("userId", "==", userId))),
+      getDocs(query(collection(db, "referrals"), where("referrerId", "==", userId))),
+      getDocs(query(collection(db, "referrals"), where("referredUserId", "==", userId))),
+      getDocs(query(collection(db, "withdrawals"), where("userId", "==", userId))),
+      getDocs(query(collection(db, "transactions"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(50))),
+    ]);
+    const tasksData = tasksSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(t => t.active !== false);
+    const submissions = {}; submissionsSnap.forEach(d => { submissions[d.data().taskId] = d.data().status; });
+    cache.set('tasks', tasksData, CACHE_TTL.tasks);
+    cache.set('my_submissions', submissions, CACHE_TTL.tasks);
+    cache.set('my_referrals', referralsSnap.docs.map(d => ({ id: d.id, ...d.data() })), CACHE_TTL.referrals);
+    cache.set('referral_to_me', referredSnap.docs.length ? { id: referredSnap.docs[0].id, ...referredSnap.docs[0].data() } : null, CACHE_TTL.referrals);
+    cache.set('my_withdrawals', withdrawalsSnap.docs.map(d => ({ id: d.id, ...d.data() })), CACHE_TTL.withdrawals);
+    cache.set('my_transactions', transactionsSnap.docs.map(d => ({ id: d.id, ...d.data() })), CACHE_TTL.transactions);
+  } catch (e) { console.error('Login load failed:', e); }
+}
+
 /* ---------------- site settings (admin-configurable, safe fallbacks) ---------------- */
 const SITE_SETTINGS = {
   referralReward: 100,
@@ -2100,8 +2148,29 @@ function wireTaskCardEvents(container) {
 const IMAGE_UPLOAD_API = "https://rareearners-production.up.railway.app";
 
 async function uploadScreenshot(dataUrl) {
-  // Fake upload - no external API calls, saves costs
-  return "verified_" + Date.now();
+  if (!IMAGE_UPLOAD_API) return null;
+  try {
+    const base64 = dataUrl.split(",")[1] || "";
+    if (!base64) throw new Error("Could not extract image data");
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    const res = await fetch(`${IMAGE_UPLOAD_API}/api/upload-image`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: base64 }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Upload failed: ${res.status}`);
+    }
+    const data = await res.json();
+    return data.url || null;
+  } catch (e) {
+    console.error("Screenshot upload error:", e);
+    return null;
+  }
 }
 
 // Best-effort IP lookup used to flag likely self-referrals (signing up from the same
@@ -2152,48 +2221,24 @@ async function handleSubmitProof(taskId, fileInput, submitBtn) {
   try {
     const dataUrl = await compressImageToDataUrl(file);
     const hostedUrl = await uploadScreenshot(dataUrl);
+    if (!hostedUrl && dataUrl.length > 700000) {
+      toast("That screenshot is too large. Try a smaller image.", "error");
+      return;
+    }
     const task = TASKS.find((t) => t.id === taskId);
-    const reward = task ? task.reward : 0;
-
-    mySubmissions[taskId] = "approved";
+    await addDoc(collection(db, "taskSubmissions"), {
+      taskId,
+      taskName: task ? task.name : "",
+      reward: task ? task.reward : 0,
+      userId: currentUser.uid,
+      userName: currentUser.displayName || currentUser.email || "",
+      screenshot: hostedUrl || dataUrl,
+      status: "pending",
+      submittedAt: serverTimestamp(),
+    });
+    mySubmissions[taskId] = "pending";
     haptic(15);
-    toast("Screenshot verified! Your reward will be credited in 3 minutes.", "success");
-
-    // Auto-credit after 3 minutes
-    setTimeout(async () => {
-      if (!currentUser) return;
-      try {
-        await runTransaction(db, async (tx) => {
-          const userRef = doc(db, "users", currentUser.uid);
-          const userSnap = await tx.get(userRef);
-          if (!userSnap.exists()) return;
-          tx.update(userRef, {
-            airtimeBalance: increment(reward),
-            totalEarned: increment(reward),
-            todayEarnings: increment(reward)
-          });
-          const txRef = doc(collection(db, "transactions"));
-          tx.set(txRef, {
-            userId: currentUser.uid,
-            type: "task_reward",
-            amount: reward,
-            description: `Task reward — ${task?.name || "Task"}`,
-            taskId: taskId,
-            createdAt: serverTimestamp(),
-          });
-        });
-        if (currentProfile) {
-          currentProfile.airtimeBalance = (currentProfile.airtimeBalance || 0) + reward;
-          currentProfile.totalEarned = (currentProfile.totalEarned || 0) + reward;
-          currentProfile.todayEarnings = (currentProfile.todayEarnings || 0) + reward;
-        }
-        await loadTransactions();
-        renderActivity();
-      } catch (e) {
-        console.error("Auto-credit error:", e);
-      }
-    }, 3 * 60 * 1000);
-
+    toast("Proof submitted! We'll review it shortly.", "success");
     renderTasksPage();
   } catch (e) {
     haptic([10, 30, 10]);
@@ -3252,9 +3297,10 @@ onAuthStateChanged(auth, async (user) => {
 
     if (isNewProfile) await finalizeNewUserExtras(user, profile);
 
+    await loadAllUserDataOnLogin(user.uid);
     await Promise.all([loadTasks(), loadReferrals(), loadWithdrawals()]);
     const credited = await runCreditingPipeline();
-    await approvePendingReferralsForAllUsers().catch(() => {});
+    approvePendingReferralsForAllUsers().catch(() => {});
     await loadReferrals();
     if (credited) {
       try {
