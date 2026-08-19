@@ -1322,6 +1322,7 @@ const googleProvider = new GoogleAuthProvider();
 
 const SYNC_MIN_HOURS = 36;   // upper bound on how often one user costs a write
 const CONFIG_TTL_MS  = 7 * 24 * 60 * 60 * 1000;
+const FALLBACK_TTL_MS = 30 * 24 * 60 * 60 * 1000; // used only if config/app is missing
 const LEDGER_MAX     = 60;   // transactions retained in the user doc
 const WITHDRAW_MAX   = 20;
 
@@ -1400,27 +1401,95 @@ function flushOnExit() {
 window.addEventListener("pagehide", flushOnExit);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushOnExit(); });
 
+/* ================== MAINTENANCE GATE ==================
+   Read from config/status so the admin panel can switch the site on and
+   off without anyone touching the code. Cached for 10 minutes, so a
+   toggle reaches everyone within 10 minutes and costs almost nothing.
+
+   With no config/status document at all the site stays in maintenance
+   until MAINTENANCE_DEFAULT_UNTIL and then opens by itself, so it comes
+   back up on schedule even if nobody touches the toggle. */
+const STATUS_TTL_MS = 10 * 60 * 1000;
+const MAINTENANCE_DEFAULT_UNTIL = Date.parse("2026-08-20T07:00:00Z"); // 8:00 AM WAT
+let MAINTENANCE_ACTIVE = false;
+
+async function loadStatus() {
+  const cached = lsGet("tl_status");
+  if (cached && Date.now() - cached.at < STATUS_TTL_MS) return cached.data;
+  try {
+    const snap = await getDoc(doc(db, "config", "status"));
+    const data = snap.exists() ? snap.data() : null;
+    lsSet("tl_status", { at: Date.now(), data });
+    return data;
+  } catch (e) {
+    return cached?.data || null;
+  }
+}
+
+function maintenanceActive(status) {
+  if (!status) return Date.now() < MAINTENANCE_DEFAULT_UNTIL;
+  if (status.maintenanceMode !== true) return false;
+  const until = Number(status.maintenanceUntil || 0);
+  if (until && Date.now() >= until) return false; // scheduled lift has passed
+  return true;
+}
+
+function showMaintenanceScreen(message) {
+  document.body.innerHTML = `
+    <div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+                background:linear-gradient(135deg,#DC2F45 0%,#00A651 100%);color:#fff;
+                font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+                text-align:center;padding:40px 20px;z-index:99999;">
+      <div style="max-width:500px;">
+        <div style="font-size:80px;margin-bottom:20px;">🔧</div>
+        <h1 style="font-size:32px;margin-bottom:12px;font-weight:700;">Maintenance in Progress</h1>
+        <p style="font-size:16px;line-height:1.6;opacity:.95;margin-bottom:30px;">
+          ${message || "We're upgrading our systems to serve you better. We'll be back online shortly!"}
+        </p>
+        <p style="font-size:14px;opacity:.9;">Thank you for your patience.</p>
+        <div style="font-size:12px;opacity:.8;margin-top:40px;">Tasklily © 2026</div>
+      </div>
+    </div>`;
+  document.body.style.overflow = "hidden";
+}
+
+/* Runs before anything else touches Firestore, so a visitor arriving
+   during maintenance costs zero reads beyond this cached status check. */
+const maintenanceGate = (async () => {
+  try {
+    const status = await loadStatus();
+    if (maintenanceActive(status)) {
+      MAINTENANCE_ACTIVE = true;
+      showMaintenanceScreen(status?.maintenanceMessage);
+    }
+  } catch (e) { /* if the check fails, let the app through */ }
+})();
+
 /* ========== SHARED APP CONFIG (tasks + settings in ONE doc) ==========
    Replaces a 20+ document read of the `tasks` collection plus the
    settings doc on every single login. Cached for a week. */
 async function loadAppConfig() {
   const cached = lsGet("tl_config");
-  if (cached && Date.now() - cached.at < CONFIG_TTL_MS) return cached.data;
+  const ttl = cached?.fallback ? FALLBACK_TTL_MS : CONFIG_TTL_MS;
+  if (cached && Date.now() - cached.at < ttl) return cached.data;
   try {
     const snap = await getDoc(doc(db, "config", "app"));
     if (snap.exists()) {
       const data = snap.data();
-      lsSet("tl_config", { at: Date.now(), data });
+      lsSet("tl_config", { at: Date.now(), data, fallback: false });
       return data;
     }
   } catch (e) { /* fall through to whatever we already had */ }
 
-  /* Fallback for before the admin panel has published config/app.
-     Cached for the full week too, so it can't become a per-login cost. */
+  /* Safety net for when config/app has not been published yet. Reading
+     the tasks collection costs one read PER TASK, so at 20+ tasks and
+     20k users this path is only affordable on a long cache — hence 30
+     days rather than 7. As soon as the admin panel publishes config/app
+     the cheap single-document path takes over again. */
   try {
     const snap = await getDocs(collection(db, "tasks"));
     const data = { tasks: snap.docs.map((d) => ({ id: d.id, ...d.data() })), settings: {} };
-    lsSet("tl_config", { at: Date.now(), data });
+    lsSet("tl_config", { at: Date.now(), data, fallback: true });
     return data;
   } catch (e) {
     return cached?.data || null;
@@ -3319,15 +3388,34 @@ $("policyModalClose").addEventListener("click", () => { $("policyModal").hidden 
 $("policyModal").addEventListener("click", (e) => { if (e.target === $("policyModal")) $("policyModal").hidden = true; });
 
 /* ---------------- auth state ---------------- */
+/* How long a locally cached profile is trusted before we re-read the
+   server copy. Without this every page load cost a read, so a user who
+   opened the app three times a day cost three. */
+const USER_DOC_TTL_MS = 12 * 60 * 60 * 1000;
+
 onAuthStateChanged(auth, async (user) => {
+  await maintenanceGate;
+  if (MAINTENANCE_ACTIVE) return; // site is closed — touch nothing
   if (user) {
     let profile = null;
     let isNewProfile = false;
-    try {
-      const snap = await getDoc(doc(db, "users", user.uid));
-      profile = snap.exists() ? snap.data() : null;
-    } catch (e) {
-      toast("Could not load your profile. Some data may be missing.", "error");
+    let serverProfile = null;
+    const readKey = `tl_read_${user.uid}`;
+    const localSnap = Store.loadLocal(user.uid);
+    const lastRead = Number(lsGet(readKey) || 0);
+
+    if (localSnap && Date.now() - lastRead < USER_DOC_TTL_MS) {
+      profile = localSnap; // still fresh — no read at all
+    } else {
+      try {
+        const snap = await getDoc(doc(db, "users", user.uid));
+        serverProfile = snap.exists() ? snap.data() : null;
+        profile = serverProfile;
+        lsSet(readKey, Date.now());
+      } catch (e) {
+        profile = localSnap || null;
+        if (!profile) toast("Could not load your profile. Some data may be missing.", "error");
+      }
     }
     if (!profile) {
       const signupIp = await fetchMyIp();
@@ -3348,10 +3436,8 @@ onAuthStateChanged(auth, async (user) => {
 
     /* The browser owns the newer copy whenever this device has earned
        something the server hasn't backed up yet. `rev` decides. */
-    const serverProfile = profile;
-    const local = Store.loadLocal(user.uid);
-    if (local && Number(local.rev || 0) > Number(serverProfile?.rev || 0)) {
-      profile = local;
+    if (localSnap && Number(localSnap.rev || 0) > Number(serverProfile?.rev || 0)) {
+      profile = localSnap;
       Store.dirty = true;
     }
 

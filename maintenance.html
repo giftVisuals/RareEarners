@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tasklily — Maintenance</title>
+<link rel="icon" href="https://i.postimg.cc/mkTG5xt3/file-0000000095c081f4a26eb331b9113b67.png">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; width: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #DC2F45 0%, #00A651 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    overflow: hidden;
+  }
+  .container {
+    text-align: center;
+    padding: 40px 20px;
+    max-width: 500px;
+  }
+  .icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  h1 {
+    font-size: 32px;
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+  p {
+    font-size: 16px;
+    line-height: 1.6;
+    opacity: 0.95;
+    margin-bottom: 30px;
+  }
+  .status {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    margin-bottom: 30px;
+  }
+  .status strong { display: block; margin-bottom: 8px; }
+  .footer {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 40px;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  @media (max-width: 600px) {
+    h1 { font-size: 24px; }
+    p { font-size: 14px; }
+    .icon { font-size: 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="icon">🔧</div>
+  <h1>Maintenance in Progress</h1>
+  <p>We're upgrading our systems to serve you better. We'll be back online shortly!</p>
+  <div class="status">
+    <strong>⏱️ Estimated time:</strong>
+    Within the next few hours
+  </div>
+  <p style="font-size: 14px; margin-bottom: 0;">Thank you for your patience. We're working hard to get everything back up and running.</p>
+  <div class="footer">Tasklily © 2024</div>
+</div>
+</body>
+</html>
