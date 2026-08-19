@@ -359,7 +359,10 @@
 
     <!-- SUBMISSIONS -->
     <div id="submissionsTab" class="tab-view" hidden>
-      <div class="page-head"><div><h2>Task Submissions</h2><p>Review proof screenshots and approve or reject.</p></div></div>
+      <div class="page-head">
+        <div><h2>Task Submissions</h2><p>Review proof screenshots and approve or reject.</p></div>
+        <button type="button" class="btn btn-primary btn-sm" id="approveAllTasksBtn"><svg data-lucide="check-circle-2"></svg>Approve All</button>
+      </div>
       <div id="submissionsList"><div class="empty-state"><svg data-lucide="loader-2"></svg><p>Loading…</p></div></div>
     </div>
 
@@ -1249,6 +1252,74 @@ async function rejectSubmission(subId) {
     toast("Could not reject submission.", "error");
   }
 }
+
+async function approveAllSubmissions() {
+  const pending = ADMIN_SUBMISSIONS.filter((s) => s.status === "pending");
+  if (!pending.length) {
+    toast("No pending submissions to approve.", "info");
+    return;
+  }
+  const totalPayout = pending.reduce((sum, s) => sum + (Number(s.reward) || 0), 0);
+  const ok = await openConfirm({
+    title: "Approve all pending submissions?",
+    message: `You are about to approve ${pending.length} task(s) and pay out ₦${formatMoney(totalPayout)} total to ${new Set(pending.map((s) => s.userId)).size} user(s).`,
+    okLabel: `Approve All & Pay ₦${formatMoney(totalPayout)}`,
+    danger: false,
+  });
+  if (!ok) return;
+  setLoading($("approveAllTasksBtn"), true);
+  try {
+    let approved = 0;
+    let failed = 0;
+    for (const s of pending) {
+      try {
+        await runTransaction(db, async (tx) => {
+          const subRef = doc(db, "taskSubmissions", s.id);
+          const subSnap = await tx.get(subRef);
+          if (!subSnap.exists()) return;
+          const data = subSnap.data();
+          if (data.status !== "pending") return;
+          const reward = Number(data.reward) || 0;
+          const userRef = doc(db, "users", data.userId);
+          tx.update(userRef, { airtimeBalance: increment(reward), totalEarned: increment(reward), todayEarnings: increment(reward) });
+          tx.update(subRef, { status: "approved", reviewedAt: serverTimestamp(), reviewedBy: currentAdmin?.email || "" });
+          const txRef = doc(collection(db, "transactions"));
+          tx.set(txRef, {
+            userId: data.userId,
+            type: "task_reward",
+            amount: reward,
+            description: `Task reward — ${data.taskName || "Task"}`,
+            submissionId: s.id,
+            taskId: data.taskId,
+            createdAt: serverTimestamp(),
+          });
+          const logRef = doc(collection(db, "adminLogs"));
+          tx.set(logRef, {
+            adminUid: currentAdmin?.uid || "",
+            adminEmail: currentAdmin?.email || "",
+            action: "submission_approved",
+            targetType: "submission",
+            targetId: s.id,
+            amount: reward,
+            targetEmail: data.userName || "",
+            createdAt: serverTimestamp(),
+          });
+        });
+        approved++;
+      } catch (e) {
+        failed++;
+      }
+    }
+    await loadSubmissionsAdmin();
+    toast(`Approved ${approved} submission(s). Paid out ₦${formatMoney(totalPayout)}.${failed ? ` (${failed} failed)` : ""}`, "success");
+  } catch (e) {
+    toast("Could not approve all submissions.", "error");
+  } finally {
+    setLoading($("approveAllTasksBtn"), false);
+  }
+}
+
+$("approveAllTasksBtn").addEventListener("click", approveAllSubmissions);
 
 /* ================= USERS ================= */
 let ADMIN_USERS = [];
