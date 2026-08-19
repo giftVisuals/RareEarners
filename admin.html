@@ -1143,9 +1143,10 @@ let ADMIN_SUBMISSIONS = [];
 
 async function loadSubmissionsAdmin() {
   try {
-    const q = query(collection(db, "taskSubmissions"), where("status", "==", "pending"), orderBy("submittedAt", "asc"), limit(5000));
+    const q = query(collection(db, "taskSubmissions"), where("status", "==", "pending"));
     const snap = await getDocs(q);
     ADMIN_SUBMISSIONS = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    ADMIN_SUBMISSIONS.sort((a, b) => (a.submittedAt?.toMillis?.() || 0) - (b.submittedAt?.toMillis?.() || 0));
   } catch (e) {
     ADMIN_SUBMISSIONS = [];
     toast("Could not load submissions.", "error");
