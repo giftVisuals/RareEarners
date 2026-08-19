@@ -687,7 +687,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc,
-  collection, getDocs, query, where, serverTimestamp, increment, runTransaction,
+  collection, getDocs, query, where, serverTimestamp, increment, runTransaction, arrayUnion,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -896,15 +896,47 @@ const TASK_TYPE_META = {
 };
 let ADMIN_TASKS = [];
 
-async function loadTasksAdmin() {
+/* ============ PUBLISH THE SHARED APP CONFIG ============
+   The user app reads ONE document (config/app) instead of scanning the
+   tasks collection on every login, and caches it for a week. With 20k
+   users that is the difference between ~400k reads/day and ~3k. Every
+   task or settings change must republish, or users keep serving stale
+   tasks from their cache for up to 7 days. */
+async function publishAppConfig() {
+  try {
+    let settings = {};
+    try {
+      const s = await getDoc(doc(db, "settings", "site"));
+      if (s.exists()) settings = s.data();
+    } catch (e) { /* publish tasks even if settings are unreadable */ }
+
+    await setDoc(doc(db, "config", "app"), {
+      tasks: ADMIN_TASKS.map((t) => ({ ...t })),
+      settings,
+      publishedAt: serverTimestamp(),
+      publishedBy: currentAdmin?.email || "",
+    });
+    return true;
+  } catch (e) {
+    toast("Tasks saved, but publishing to users failed. Press 'Publish to users' again.", "error");
+    return false;
+  }
+}
+
+async function loadTasksAdmin({ publish = true } = {}) {
+  let ok = false;
   try {
     const snap = await getDocs(collection(db, "tasks"));
     ADMIN_TASKS = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    ok = true;
   } catch (e) {
     ADMIN_TASKS = [];
     toast("Could not load tasks.", "error");
   }
   renderTasksAdmin();
+  /* Runs after every add/edit/delete (they all call this) and on load,
+     so config/app can never drift behind the tasks collection. */
+  if (ok && publish) await publishAppConfig();
 }
 
 function renderTasksAdmin() {
@@ -943,6 +975,7 @@ function renderTasksAdmin() {
       try {
         await updateDoc(doc(db, "tasks", id), { active: nextActive });
         task.active = nextActive;
+        await publishAppConfig();
         await logAdminAction(nextActive ? "task_activated" : "task_deactivated", { targetType: "task", targetId: id, taskName: task.name });
         toast(`Task ${nextActive ? "activated" : "deactivated"}.`, "success");
         renderTasksAdmin();
@@ -1713,6 +1746,10 @@ async function approveWithdrawal(wId) {
       if (!wSnap.exists()) throw new Error("Withdrawal not found.");
       if (wSnap.data().status !== "pending") throw new Error("ALREADY_CLAIMED");
       tx.update(wRef, { status: "completed", processedAt: serverTimestamp(), processedBy: currentAdmin?.email || "" });
+      /* Status-only note (no money) so the user's list stops saying "pending". */
+      tx.update(doc(db, "users", wSnap.data().userId), {
+        pendingCredits: arrayUnion({ id: `wc_${wId}`, amount: 0, statusOnly: true, withdrawalId: wId, status: "completed", at: Date.now() }),
+      });
     });
     await logAdminAction("withdrawal_approved", { targetType: "withdrawal", targetId: wId, amount: w?.amount || 0, targetEmail: w?.userEmail || "" });
     toast("Withdrawal approved.", "success");
@@ -1797,6 +1834,13 @@ async function approveAirtimeWithdrawal(wId, w) {
       processedBy: currentAdmin?.email || "",
       providerReference: result.reference ? String(result.reference) : "",
     });
+    if (w?.userId) {
+      try {
+        await updateDoc(doc(db, "users", w.userId), {
+          pendingCredits: arrayUnion({ id: `wc_${wId}`, amount: 0, statusOnly: true, withdrawalId: wId, status: "completed", at: Date.now() }),
+        });
+      } catch (e) { /* status note is best effort — the money already moved */ }
+    }
     await logAdminAction("withdrawal_approved", { targetType: "withdrawal", targetId: wId, amount: w?.amount || 0, targetEmail: w?.userEmail || "" });
     toast("Airtime sent and withdrawal completed.", "success");
     await loadWithdrawalsAdmin();
@@ -1822,16 +1866,23 @@ async function rejectWithdrawal(wId) {
       if (data.status !== "pending") throw new Error("This withdrawal was already processed.");
       const userRef = doc(db, "users", data.userId);
       const balanceField = data.method === "bank" ? "cashBalance" : "airtimeBalance";
-      tx.update(userRef, { [balanceField]: increment(data.amount) });
-      tx.update(wRef, { status: "rejected", refunded: true, processedAt: serverTimestamp(), processedBy: currentAdmin?.email || "" });
-      const txRef = doc(collection(db, "transactions"));
-      tx.set(txRef, {
-        userId: data.userId,
-        type: "withdrawal_refund",
-        amount: data.amount,
-        description: "Withdrawal rejected — refunded",
-        createdAt: serverTimestamp(),
+      /* The user's browser holds the newer copy of their balance, so an
+         increment here would be overwritten by their next sync. Queue the
+         refund in an admin-owned field instead — the app applies it once,
+         by id, and never writes this field back. */
+      tx.update(userRef, {
+        pendingCredits: arrayUnion({
+          id: `wr_${wId}`,
+          field: balanceField,
+          amount: data.amount,
+          type: "withdrawal_refund",
+          reason: "Withdrawal rejected — refunded",
+          withdrawalId: wId,
+          status: "rejected",
+          at: Date.now(),
+        }),
       });
+      tx.update(wRef, { status: "rejected", refunded: true, processedAt: serverTimestamp(), processedBy: currentAdmin?.email || "" });
       const logRef = doc(collection(db, "adminLogs"));
       tx.set(logRef, {
         adminUid: currentAdmin?.uid || "",
@@ -1987,6 +2038,7 @@ $("saveSettingsBtn").addEventListener("click", async () => {
   setLoading(btn, true);
   try {
     await setDoc(doc(db, "settings", "site"), payload, { merge: true });
+    await publishAppConfig(); // push the new settings out to users
     await logAdminAction("settings_updated", { targetType: "settings", targetId: "site" });
     toast("Settings saved.", "success");
   } catch (e) {

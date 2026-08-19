@@ -1,0 +1,3418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tasklily — Complete tasks, earn rewards</title>
+<meta name="description" content="Tasklily — complete simple tasks, invite friends, and earn real rewards.">
+<link rel="icon" href="https://i.postimg.cc/mkTG5xt3/file-0000000095c081f4a26eb331b9113b67.png">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+<style>
+  :root{
+    --primary:#DC2F45;
+    --primary-dark:#A01F32;
+    --primary-light:#F5D4D8;
+    --accent-green:#00A651;
+    --accent-green-light:#D4F4E8;
+    --bg:#F8FAFC;
+    --text:#0F172A;
+    --text-muted:#64748B;
+    --white:#FFFFFF;
+    --border:rgba(15,23,42,.08);
+    --border-strong:rgba(15,23,42,.14);
+    --glass-bg:rgba(255,255,255,.66);
+    --glass-border:rgba(255,255,255,.55);
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06);
+    --shadow-md:0 8px 24px rgba(15,23,42,.08);
+    --shadow-lg:0 20px 48px rgba(15,23,42,.12);
+    --danger:#DC2626;
+    --radius:16px;
+    --radius-sm:10px;
+    --ease:cubic-bezier(.22,.8,.28,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  img{max-width:100%;display:block;}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+  input{font-family:inherit;}
+  a{color:inherit;text-decoration:none;}
+  [hidden]{display:none !important;}
+  ::selection{background:var(--primary-light);color:var(--primary-dark);}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms !important;transition-duration:.001ms !important;}
+  }
+
+  /* ---------- shared ---------- */
+  .glass{
+    background:var(--glass-bg);
+    -webkit-backdrop-filter:blur(20px) saturate(160%);
+    backdrop-filter:blur(20px) saturate(160%);
+    border:1px solid var(--glass-border);
+    box-shadow:var(--shadow-md);
+  }
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:12px 20px;border-radius:12px;font-size:15px;font-weight:600;
+    transition:transform .15s var(--ease), box-shadow .15s var(--ease), background .15s var(--ease), opacity .15s;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+  }
+  .btn:active{transform:translateY(1px) scale(.97);}
+  .btn-primary{
+    background:linear-gradient(180deg,var(--primary),var(--primary-dark));
+    color:#fff;
+    box-shadow:0 1px 0 rgba(255,255,255,.25) inset, 0 6px 16px rgba(22,163,74,.28);
+  }
+  .btn-primary:hover{box-shadow:0 1px 0 rgba(255,255,255,.25) inset, 0 8px 20px rgba(22,163,74,.36);}
+  .btn-primary:active{box-shadow:0 1px 0 rgba(255,255,255,.15) inset, 0 3px 8px rgba(22,163,74,.3);}
+  .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+  .btn-ghost{
+    background:#fff;color:var(--text);border:1px solid var(--border-strong);
+  }
+  .btn-ghost:hover{background:#F8FAFC;}
+  .btn-google{background:#fff;color:var(--text);border:1.5px solid var(--border-strong);}
+  .btn-google:hover{background:#F8FAFC;}
+  .btn-google svg{flex-shrink:0;}
+  .btn-sm{padding:8px 14px;font-size:13px;border-radius:10px;}
+  .btn-block{width:100%;}
+  .spinner{
+    width:16px;height:16px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.5);border-top-color:#fff;
+    animation:spin .7s linear infinite;
+  }
+  .btn-ghost .spinner,.btn-google .spinner{border-color:rgba(15,23,42,.2);border-top-color:var(--text);}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0;font-size:12px;color:var(--text-muted);}
+  .auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:var(--border-strong);}
+
+  .field{margin-bottom:16px;text-align:left;}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;}
+  .input-wrap{position:relative;display:flex;align-items:center;}
+  .input-wrap svg{position:absolute;left:14px;width:18px;height:18px;color:var(--text-muted);pointer-events:none;}
+  .input-wrap.no-icon input{padding-left:14px;}
+  .field input{
+    width:100%;padding:12px 14px 12px 42px;border-radius:12px;
+    border:1.5px solid var(--border-strong);background:#fff;
+    font-size:15px;color:var(--text);
+    transition:border-color .15s var(--ease), box-shadow .15s var(--ease);
+  }
+  .field input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-light);}
+  .field input.error{border-color:var(--danger);}
+  .field input.error:focus{box-shadow:0 0 0 4px rgba(220,38,38,.12);}
+  .toggle-pw{position:absolute;right:10px;padding:6px;border-radius:8px;color:var(--text-muted);}
+  .toggle-pw:hover{background:#F1F5F9;}
+  .field-error{display:none;font-size:12.5px;color:var(--danger);margin-top:6px;}
+  .field-error.show{display:block;}
+
+  /* ---------- toasts ---------- */
+  #toastRoot{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;width:min(380px,92vw);}
+  .toast{
+    display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;
+    background:var(--text);color:#fff;font-size:13.5px;font-weight:500;
+    box-shadow:var(--shadow-lg);
+    animation:toastIn .25s var(--ease);
+  }
+  .toast.success{background:var(--primary-dark);}
+  .toast.error{background:var(--danger);}
+  .toast svg{width:18px;height:18px;flex-shrink:0;}
+  @keyframes toastIn{from{opacity:0;transform:translateY(-10px) scale(.96);}to{opacity:1;transform:none;}}
+
+  /* ---------- splash ---------- */
+  #splashScreen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(1000px 500px at 15% -5%, var(--primary-light) 0%, transparent 60%),
+      radial-gradient(800px 500px at 105% 15%, #EFFDF4 0%, transparent 55%),
+      var(--bg);
+  }
+  .splash-inner{display:flex;flex-direction:column;align-items:center;gap:22px;padding:0 24px;text-align:center;}
+  .splash-logo{width:112px;height:112px;object-fit:contain;animation:splashPulse 1.6s ease-in-out infinite;}
+  .splash-wordmark{font-size:19px;font-weight:900;letter-spacing:.02em;color:var(--primary-dark);}
+  @keyframes splashPulse{0%,100%{opacity:.55;transform:scale(.94);}50%{opacity:1;transform:scale(1);}}
+  .splash-spinner{width:40px;height:40px;border-radius:50%;border:4px solid var(--border-strong);border-top-color:var(--primary);animation:spin .8s linear infinite;}
+
+  /* ================= AUTH ================= */
+  #authScreen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:24px;position:relative;
+    background:
+      radial-gradient(1000px 500px at 15% -5%, var(--primary-light) 0%, transparent 60%),
+      radial-gradient(800px 500px at 105% 15%, #EFFDF4 0%, transparent 55%),
+      var(--bg);
+  }
+  .auth-card{
+    width:100%;max-width:420px;border-radius:24px;padding:36px 32px;position:relative;
+  }
+  .auth-brand{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:24px;}
+  .auth-brand img{width:52px;height:52px;object-fit:contain;}
+  .auth-brand span{font-weight:900;font-size:23px;letter-spacing:-.01em;}
+  .auth-heading{text-align:center;margin-bottom:22px;}
+  .auth-heading h1{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px;}
+  .auth-heading p{font-size:14px;color:var(--text-muted);}
+  .auth-switch{text-align:center;margin-top:18px;font-size:14px;color:var(--text-muted);}
+  .auth-switch button{color:var(--primary-dark);font-weight:700;}
+  .auth-switch button:hover{text-decoration:underline;}
+  .forgot-link{display:block;text-align:right;font-size:13px;color:var(--primary-dark);font-weight:600;margin:-8px 0 16px;}
+  .forgot-link:hover{text-decoration:underline;}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;color:var(--text-muted);font-weight:600;margin-bottom:18px;}
+  .back-link:hover{color:var(--text);}
+  .back-link svg{width:16px;height:16px;}
+
+  /* ================= DASHBOARD ================= */
+  #dashboardScreen{min-height:100vh;display:flex;}
+
+  /* desktop sidebar */
+  .sidebar{
+    display:none;width:250px;flex-direction:column;padding:24px 18px;
+    position:sticky;top:0;height:100vh;border-right:1px solid var(--border);
+    background:rgba(255,255,255,.7);
+  }
+  .sidebar-brand{display:flex;align-items:center;gap:10px;padding:6px 8px 26px;}
+  .sidebar-brand img{width:40px;height:40px;}
+  .sidebar-brand span{font-weight:900;font-size:16.5px;letter-spacing:.01em;}
+  .nav-list{display:flex;flex-direction:column;gap:2px;flex:1;}
+  .nav-item{
+    display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;
+    font-size:14.5px;font-weight:600;color:var(--text-muted);
+    transition:background .15s var(--ease), color .15s var(--ease), transform .15s var(--ease);
+  }
+  .nav-item svg{width:19px;height:19px;}
+  .nav-item:hover{background:#F1F5F9;color:var(--text);}
+  .nav-item:active{transform:scale(.97);}
+  .nav-item.active{background:var(--primary-light);color:var(--primary-dark);}
+  .invite-card{
+    margin-top:14px;padding:18px;border-radius:16px;text-align:left;
+    background:linear-gradient(165deg,#fff,var(--primary-light));
+    border:1px solid var(--border);
+  }
+  .invite-card svg{width:26px;height:26px;color:var(--primary-dark);margin-bottom:10px;}
+  .invite-card h4{font-size:14px;font-weight:700;margin-bottom:4px;}
+  .invite-card p{font-size:12.5px;color:var(--text-muted);line-height:1.5;margin-bottom:12px;}
+  .sidebar-footer{font-size:11.5px;color:var(--text-muted);padding:14px 8px 4px;}
+
+  /* mobile drawer */
+  .drawer-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:90;opacity:0;pointer-events:none;transition:opacity .25s var(--ease);}
+  .drawer-overlay.show{opacity:1;pointer-events:auto;}
+  .mobile-drawer{
+    position:fixed;top:0;left:0;bottom:0;width:280px;max-width:82vw;z-index:95;
+    display:flex;flex-direction:column;padding:22px 16px;
+    background:rgba(255,255,255,.85);-webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border-right:1px solid var(--glass-border);box-shadow:var(--shadow-lg);
+    transform:translateX(-100%);transition:transform .28s var(--ease);
+  }
+  .mobile-drawer.open{transform:translateX(0);}
+  .drawer-close{position:absolute;top:18px;right:16px;width:34px;height:34px;border-radius:10px;background:#fff;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;transition:transform .15s var(--ease);}
+  .drawer-close:active{transform:scale(.9);}
+  .drawer-close svg{width:16px;height:16px;}
+  @media (min-width:1024px){
+    .menu-btn,.mobile-drawer,.drawer-overlay{display:none !important;}
+  }
+
+  .main-content{flex:1;min-width:0;padding:20px 16px 110px;max-width:1200px;}
+  .topbar-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .topbar-left{display:flex;align-items:center;gap:10px;min-width:0;}
+  .topbar-brand{display:flex;align-items:center;gap:9px;min-width:0;}
+  .topbar-brand img{width:36px;height:36px;object-fit:contain;flex-shrink:0;}
+  .topbar-brand span{font-size:12.5px;font-weight:900;line-height:1.2;letter-spacing:.01em;white-space:nowrap;}
+  .topbar-greet{margin-top:18px;margin-bottom:20px;}
+  .topbar-greet h1{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:3px;}
+  .topbar-greet p{font-size:13.5px;color:var(--text-muted);}
+  .topbar-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  @media (min-width:1024px){
+    .topbar-brand{display:none;}
+    .topbar-greet{margin-top:0;}
+  }
+
+  .icon-btn{
+    width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:#fff;border:1px solid var(--border-strong);position:relative;flex-shrink:0;
+    transition:transform .15s var(--ease), background .15s;
+  }
+  .icon-btn:hover{background:#F8FAFC;}
+  .icon-btn:active{transform:scale(.94);}
+  .icon-btn svg{width:19px;height:19px;}
+  .profile-btn{
+    display:flex;align-items:center;gap:9px;padding:6px 10px 6px 6px;border-radius:14px;
+    background:#fff;border:1px solid var(--border-strong);
+    transition:transform .15s var(--ease), background .15s;
+  }
+  .profile-btn:hover{background:#F8FAFC;}
+  .profile-btn:active{transform:scale(.96);}
+  .avatar{
+    width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;
+    background:linear-gradient(160deg,var(--primary),var(--primary-dark));color:#fff;font-weight:700;font-size:13px;flex-shrink:0;
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+  .profile-avatar-lg{
+    width:84px;height:84px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;overflow:hidden;
+    background:linear-gradient(160deg,var(--primary),var(--primary-dark));color:#fff;font-weight:800;font-size:28px;
+  }
+  .profile-avatar-lg img{width:100%;height:100%;object-fit:cover;display:block;}
+  .profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;}
+  .profile-stat{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 6px;text-align:center;min-width:0;}
+  .profile-stat .value{font-size:15px;font-weight:800;color:var(--primary-dark);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .profile-stat .label{font-size:10.5px;color:var(--text-muted);line-height:1.3;}
+
+  /* ---------- withdraw ---------- */
+  .withdraw-method-list{display:flex;flex-direction:column;gap:10px;}
+  .withdraw-method{
+    display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid var(--border);
+    background:#fff;text-align:left;width:100%;
+    transition:transform .15s var(--ease), box-shadow .15s var(--ease), border-color .15s;
+  }
+  .withdraw-method:hover{border-color:transparent;box-shadow:var(--shadow-sm);transform:translateY(-1px);}
+  .withdraw-method:active{transform:scale(.98);}
+  .withdraw-method.disabled{opacity:.5;cursor:not-allowed;}
+  .wm-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;}
+  .wm-icon.bank{background:#166534;}
+  .wm-icon.airtime{background:#2563EB;}
+  .wm-icon.data{background:#7C3AED;}
+  .wm-icon svg{width:20px;height:20px;}
+  .wm-info{flex:1;min-width:0;}
+  .wm-info h4{font-size:14.5px;font-weight:700;margin-bottom:2px;}
+  .wm-info p{font-size:12px;color:var(--text-muted);}
+  .wm-chevron{width:18px;height:18px;color:var(--text-muted);flex-shrink:0;}
+  .withdraw-method-header{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+  .withdraw-method-header h3{font-size:17px;font-weight:800;}
+  .network-chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .network-chip{
+    padding:10px 16px;border-radius:11px;border:1.5px solid var(--border-strong);font-size:13.5px;font-weight:700;
+    background:#fff;color:var(--text);transition:background .15s var(--ease), color .15s var(--ease), border-color .15s var(--ease), transform .15s var(--ease);
+  }
+  .network-chip.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .network-chip:active{transform:scale(.94);}
+  .activity-amount-inline.debit{color:var(--danger);}
+
+  /* ---------- bank select + picker ---------- */
+  .bank-select-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+    padding:12px 14px;border-radius:12px;border:1px solid var(--border-strong);background:#fff;
+    transition:border-color .15s var(--ease), transform .15s var(--ease);
+  }
+  .bank-select-row:active{transform:scale(.98);}
+  .bank-select-row.has-bank{border-color:var(--primary);}
+  .bank-select-row-left{display:flex;align-items:center;gap:10px;min-width:0;}
+  .bank-select-placeholder{font-size:14px;color:var(--text-muted);}
+  .bank-badge,.bank-badge-wrap{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
+  .bank-badge{color:#fff;font-size:11px;font-weight:800;letter-spacing:-.02em;}
+  .bank-badge-wrap{background:#fff;border:1px solid var(--border);}
+  .bank-badge-wrap .bank-logo-img{width:100%;height:100%;object-fit:contain;padding:3px;display:block;}
+  .bank-select-row-left .bank-name{font-size:14px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .bank-verify-pill{
+    display:flex;align-items:center;gap:9px;padding:12px 14px;border-radius:12px;
+    background:var(--primary-light);border:1px solid rgba(22,163,74,.25);margin:-4px 0 16px;
+  }
+  .bank-verify-pill svg{width:18px;height:18px;color:var(--primary-dark);flex-shrink:0;}
+  .bvp-name{font-size:14px;font-weight:700;color:var(--primary-dark);}
+
+  .bank-picker-overlay{
+    position:fixed;inset:0;z-index:120;background:rgba(15,23,42,.45);
+    opacity:0;pointer-events:none;transition:opacity .2s var(--ease);
+  }
+  .bank-picker-overlay.show{opacity:1;pointer-events:auto;}
+  .bank-picker-sheet{
+    position:absolute;left:0;right:0;bottom:0;top:0;background:var(--bg);
+    display:flex;flex-direction:column;transform:translateY(16px);opacity:0;transition:transform .22s var(--ease), opacity .22s var(--ease);
+  }
+  .bank-picker-overlay.show .bank-picker-sheet{transform:translateY(0);opacity:1;}
+  @media (min-width:640px){
+    .bank-picker-sheet{top:5%;bottom:5%;left:50%;right:auto;width:min(440px,92vw);transform:translate(-50%,16px);border-radius:20px;box-shadow:var(--shadow-lg);overflow:hidden;}
+    .bank-picker-overlay.show .bank-picker-sheet{transform:translate(-50%,0);}
+  }
+  .bank-picker-head{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--border);background:#fff;flex-shrink:0;}
+  .bank-picker-head h3{font-size:16px;font-weight:800;flex:1;}
+  .bank-picker-close{width:34px;height:34px;border-radius:10px;background:var(--bg);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s var(--ease);}
+  .bank-picker-close:active{transform:scale(.9);}
+  .bank-picker-close svg{width:16px;height:16px;}
+  .bank-picker-search{padding:12px 16px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .bank-picker-search .input-wrap{margin:0;}
+  .bank-picker-body{flex:1;overflow-y:auto;padding:16px;position:relative;}
+  .bank-section-label{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em;margin:4px 0 10px;}
+  .bank-frequent-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;}
+  .bank-frequent-item{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 6px;border-radius:14px;background:#fff;border:1px solid var(--border);text-align:center;transition:transform .15s var(--ease), border-color .15s;}
+  .bank-frequent-item:active{transform:scale(.95);}
+  .bank-frequent-item .bank-badge,.bank-frequent-item .bank-badge-wrap{width:38px;height:38px;font-size:12.5px;}
+  .bank-frequent-item span{font-size:11px;font-weight:600;color:var(--text);line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+  .bank-list-item{display:flex;align-items:center;gap:12px;width:100%;padding:10px 4px;text-align:left;border-bottom:1px solid var(--border);}
+  .bank-list-item:active{background:var(--primary-light);}
+  .bank-list-item .bank-name{font-size:13.5px;font-weight:600;color:var(--text);}
+  .bank-letter-group{scroll-margin-top:8px;}
+  .bank-letter-heading{font-size:12px;font-weight:800;color:var(--primary-dark);padding:10px 4px 4px;}
+  .bank-index-sidebar{
+    position:absolute;right:2px;top:16px;bottom:16px;display:flex;flex-direction:column;justify-content:center;
+    gap:1px;padding:4px 3px;
+  }
+  .bank-index-letter{font-size:9px;font-weight:700;color:var(--text-muted);line-height:1.35;padding:0 3px;cursor:pointer;user-select:none;}
+  .bank-index-letter:active{color:var(--primary-dark);}
+  .bank-picker-empty{text-align:center;padding:40px 16px;color:var(--text-muted);font-size:13px;}
+  .profile-btn span{font-size:13.5px;font-weight:600;}
+  .profile-btn svg{width:15px;height:15px;color:var(--text-muted);}
+
+  .telegram-prompt-overlay{
+    position:fixed;inset:0;z-index:150;background:rgba(15,23,42,.55);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    opacity:0;pointer-events:none;transition:opacity .2s var(--ease);
+  }
+  .telegram-prompt-overlay.show{opacity:1;pointer-events:auto;}
+  .telegram-prompt-card{
+    background:#fff;border-radius:20px;max-width:360px;width:100%;padding:28px 22px 22px;
+    text-align:center;transform:translateY(12px) scale(.98);opacity:0;position:relative;
+    transition:transform .22s var(--ease), opacity .22s var(--ease);box-shadow:var(--shadow-lg);
+  }
+  .telegram-prompt-overlay.show .telegram-prompt-card{transform:translateY(0) scale(1);opacity:1;}
+  .telegram-prompt-close{
+    position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:9px;
+    background:var(--bg);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;
+  }
+  .telegram-prompt-close svg{width:15px;height:15px;color:var(--text-muted);}
+  .telegram-prompt-icon{width:56px;height:56px;border-radius:16px;background:#229ED9;display:flex;align-items:center;justify-content:center;margin:6px auto 16px;}
+  .telegram-prompt-icon svg{width:28px;height:28px;color:#fff;}
+  .telegram-prompt-card h3{font-size:17px;font-weight:800;margin-bottom:8px;}
+  .telegram-prompt-card p{font-size:13.5px;color:var(--text-muted);line-height:1.5;margin-bottom:20px;}
+  .telegram-prompt-skip{display:block;width:100%;margin-top:12px;font-size:12.5px;color:var(--text-muted);font-weight:600;padding:6px;}
+
+  .popover{
+    position:absolute;top:calc(100% + 8px);right:0;width:230px;max-width:calc(100vw - 32px);border-radius:14px;padding:8px;z-index:60;
+    background:#fff;border:1px solid var(--border-strong);box-shadow:var(--shadow-lg);
+    animation:popIn .16s var(--ease);
+  }
+  @keyframes popIn{from{opacity:0;transform:translateY(-6px) scale(.97);}to{opacity:1;transform:none;}}
+  .popover-user{padding:10px 10px 12px;border-bottom:1px solid var(--border);margin-bottom:6px;}
+  .popover-user .name{font-size:13.5px;font-weight:700;}
+  .popover-user .email{font-size:12px;color:var(--text-muted);word-break:break-all;}
+  .popover-item{
+    display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;width:100%;font-size:13.5px;font-weight:600;
+    transition:background .15s;
+  }
+  .popover-item svg{width:16px;height:16px;}
+  .popover-item:hover{background:#F1F5F9;}
+  .popover-item.danger{color:var(--danger);}
+  .popover-empty{padding:16px 10px;text-align:center;font-size:13px;color:var(--text-muted);}
+  .dropdown-wrap{position:relative;}
+
+  .balance-card{
+    position:relative;overflow:hidden;border-radius:22px;padding:26px 24px;margin-bottom:16px;color:#fff;
+    background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);
+    box-shadow:0 16px 40px rgba(22,101,52,.28);
+  }
+  .balance-card::after{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(420px 220px at 88% -10%, rgba(255,255,255,.16), transparent 60%);
+    pointer-events:none;
+  }
+  .balance-top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;position:relative;z-index:1;}
+  .balance-label{display:flex;align-items:center;gap:6px;font-size:13.5px;opacity:.85;font-weight:600;margin-bottom:6px;}
+  .eye-toggle{width:22px;height:22px;display:flex;align-items:center;justify-content:center;opacity:.85;color:#fff;transition:transform .15s var(--ease);}
+  .eye-toggle:active{transform:scale(.88);}
+  .eye-toggle svg{width:15px;height:15px;}
+  .balance-amount{font-size:34px;font-weight:800;letter-spacing:-.02em;}
+  .balance-card .btn-ghost{background:#fff;color:var(--primary-dark);border:none;}
+  .balance-stats{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;position:relative;z-index:1;}
+  .balance-split-hint{font-size:11px;color:rgba(255,255,255,.75);margin-top:10px;line-height:1.4;position:relative;z-index:1;}
+  .stat-pill{
+    flex:1;min-width:140px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);
+    border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  }
+  .stat-pill .label{font-size:12px;opacity:.85;margin-bottom:4px;}
+  .stat-pill .value{font-size:17px;font-weight:700;}
+  .stat-pill .stat-icon{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .stat-pill svg{width:16px;height:16px;}
+
+  .quick-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;}
+  .qa-card{
+    background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;
+    display:flex;align-items:center;gap:12px;text-align:left;
+    transition:transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s;
+  }
+  .qa-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:transparent;}
+  .qa-card:active{transform:translateY(0) scale(.98);}
+  .qa-icon{width:42px;height:42px;border-radius:12px;background:var(--primary-light);color:var(--primary-dark);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .qa-icon svg{width:20px;height:20px;}
+  .qa-card h4{font-size:14px;font-weight:700;margin-bottom:2px;}
+  .qa-card p{font-size:12px;color:var(--text-muted);line-height:1.3;}
+
+  .panel{background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px;}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;}
+  .panel-head h3{font-size:15.5px;font-weight:800;}
+  .link-more{font-size:13px;font-weight:700;color:var(--primary-dark);}
+  .link-more:hover{text-decoration:underline;}
+
+  .task-toolbar{display:flex;gap:10px;margin-bottom:14px;}
+  .search-wrap{position:relative;flex:1;}
+  .search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-muted);}
+  .search-wrap input{
+    width:100%;padding:10px 12px 10px 36px;border-radius:11px;border:1.5px solid var(--border-strong);font-size:13.5px;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .search-wrap input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-light);}
+
+  .empty-state{text-align:center;padding:32px 14px;color:var(--text-muted);}
+  .empty-state svg{width:34px;height:34px;margin-bottom:10px;opacity:.5;}
+  .empty-state p{font-size:13.5px;}
+
+  /* ---------- dedicated tasks page ---------- */
+  .tasks-hero{
+    position:relative;overflow:hidden;border-radius:22px;padding:26px 24px;margin-bottom:16px;color:#fff;
+    background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);
+    box-shadow:0 16px 40px rgba(22,101,52,.28);
+  }
+  .tasks-hero::after{content:"";position:absolute;inset:0;background:radial-gradient(420px 220px at 88% -10%, rgba(255,255,255,.16), transparent 60%);pointer-events:none;}
+  .tasks-hero h2{font-size:22px;font-weight:800;margin-bottom:6px;position:relative;z-index:1;}
+  .tasks-hero p{font-size:13.5px;opacity:.9;margin-bottom:18px;position:relative;z-index:1;max-width:420px;}
+  .tasks-hero-progress{display:flex;align-items:center;gap:12px;position:relative;z-index:1;}
+  .tasks-hero-pill{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.28);font-weight:700;font-size:13.5px;flex-shrink:0;}
+  .tasks-hero-pill svg{width:15px;height:15px;}
+  .tasks-hero-bar{flex:1;height:8px;border-radius:6px;background:rgba(255,255,255,.22);overflow:hidden;}
+  .tasks-hero-bar-fill{height:100%;border-radius:6px;background:#fff;transition:width .6s var(--ease);}
+
+  .task-card-list{display:flex;flex-direction:column;gap:14px;}
+  .task-card{
+    background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px;
+    transition:box-shadow .2s var(--ease), transform .2s var(--ease);
+  }
+  .task-card:hover{box-shadow:var(--shadow-md);}
+  .task-card-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;}
+  .task-card-icon{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;overflow:hidden;}
+  .task-card-icon svg{width:21px;height:21px;}
+  .task-card-icon img{width:100%;height:100%;object-fit:cover;display:block;}
+  .task-card-title{flex:1;min-width:0;}
+  .task-card-title h4{font-size:15px;font-weight:800;margin-bottom:2px;}
+  .task-card-meta-row{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-muted);}
+  .task-card-reward{font-size:16px;font-weight:800;color:var(--primary-dark);flex-shrink:0;white-space:nowrap;}
+
+  .task-card-desc{font-size:13px;color:var(--text-muted);line-height:1.55;margin-bottom:4px;}
+  .task-card-desc.clamped{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .read-more-btn{font-size:12.5px;font-weight:700;color:var(--primary-dark);margin-bottom:12px;}
+  .read-more-btn:hover{text-decoration:underline;}
+
+  .task-card-status{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;background:var(--primary-light);color:var(--primary-dark);font-size:12.5px;font-weight:700;}
+  .task-card-status svg{width:14px;height:14px;}
+  .task-card-status.pending{background:#FEF3C7;color:#92400E;}
+  .task-card-status.rejected{background:#FEE2E2;color:#991B1B;}
+
+  .task-expand{
+    margin-top:14px;padding-top:14px;border-top:1px solid var(--border);
+    animation:expandIn .25s var(--ease);
+  }
+  @keyframes expandIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+  .task-instructions{
+    display:flex;gap:10px;padding:12px;border-radius:12px;background:#FFF7ED;border:1px solid #FED7AA;
+    font-size:12.5px;color:#9A3412;line-height:1.5;margin-bottom:14px;
+  }
+  .task-instructions svg{width:17px;height:17px;flex-shrink:0;margin-top:1px;color:#C2410C;}
+  .announcement-banner{
+    display:flex;align-items:flex-start;gap:10px;padding:13px 14px;border-radius:14px;
+    background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;font-size:13px;line-height:1.5;
+    font-weight:600;margin-bottom:16px;
+  }
+  .announcement-banner svg{width:18px;height:18px;flex-shrink:0;margin-top:1px;color:#C2410C;}
+  .file-drop{
+    display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:12px;
+    border:1.5px dashed var(--border-strong);background:#F8FAFC;cursor:pointer;margin-bottom:12px;
+    transition:border-color .15s var(--ease), background .15s var(--ease), transform .15s var(--ease);
+  }
+  .file-drop:hover{border-color:var(--primary);background:var(--primary-light);}
+  .file-drop:active{transform:scale(.99);}
+  .file-drop svg{width:18px;height:18px;color:var(--text-muted);flex-shrink:0;}
+  .file-drop span{font-size:13px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  .progress-row-flex{display:flex;align-items:center;justify-content:space-between;gap:14px;}
+  .progress-title{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:800;margin-bottom:6px;}
+  .progress-title svg{width:17px;height:17px;color:var(--primary-dark);}
+  .progress-sub{font-size:12.5px;color:var(--text-muted);}
+  .progress-ring-wrap{position:relative;width:60px;height:60px;flex-shrink:0;}
+  .progress-ring{width:60px;height:60px;transform:rotate(-90deg);}
+  .ring-track{fill:none;stroke:#F1F5F9;stroke-width:6;}
+  .ring-fill{fill:none;stroke:var(--primary);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .6s var(--ease);}
+  .ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;color:var(--primary-dark);}
+
+  .referral-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .referral-icon{width:44px;height:44px;border-radius:12px;background:var(--primary-light);color:var(--primary-dark);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .referral-icon svg{width:20px;height:20px;}
+  .referral-text{flex:1;min-width:180px;}
+  .referral-text h4{font-size:14px;font-weight:800;margin-bottom:3px;}
+  .referral-text p{font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:6px;}
+  .referral-link-preview{display:block;font-size:11.5px;color:var(--primary-dark);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+  .referral-row .btn{flex-shrink:0;}
+
+  .activity-list{display:flex;flex-direction:column;gap:2px;}
+  .activity-row{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--border);}
+  .activity-row:last-child{border-bottom:none;}
+  .activity-icon{width:36px;height:36px;border-radius:10px;background:var(--primary-light);color:var(--primary-dark);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .activity-icon svg{width:16px;height:16px;}
+  .activity-info{flex:1;min-width:0;}
+  .activity-info h5{font-size:13px;font-weight:700;}
+  .activity-info p{font-size:11.5px;color:var(--text-muted);}
+  .activity-time{font-size:11px;font-weight:600;color:var(--text-muted);flex-shrink:0;}
+  .activity-trailing{text-align:right;flex-shrink:0;}
+  .activity-amount-inline{font-size:13.5px;font-weight:800;color:var(--accent-green);}
+
+  /* coming soon */
+  .coming-soon-wrap{display:flex;align-items:center;justify-content:center;min-height:50vh;padding:20px 0;}
+  .coming-soon-card{width:100%;max-width:380px;text-align:center;background:#fff;border:1px solid var(--border);border-radius:22px;padding:40px 28px;}
+  .coming-soon-icon{width:60px;height:60px;border-radius:50%;background:var(--primary-light);color:var(--primary-dark);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+  .coming-soon-icon svg{width:26px;height:26px;}
+  .coming-soon-card h2{font-size:19px;font-weight:800;margin-bottom:8px;letter-spacing:-.01em;}
+  .coming-soon-card p{font-size:13.5px;color:var(--text-muted);line-height:1.5;margin-bottom:22px;}
+
+  .bottom-nav{
+    position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:50;
+    display:flex;align-items:flex-end;gap:2px;padding:8px;border-radius:20px;width:min(420px,92vw);
+    background:rgba(255,255,255,.75);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);
+    border:1px solid var(--glass-border);box-shadow:var(--shadow-lg);
+  }
+  .bn-item{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:14px;
+    color:var(--text-muted);transition:background .15s var(--ease), color .15s var(--ease), transform .15s var(--ease);
+  }
+  .bn-item svg{width:20px;height:20px;}
+  .bn-item span{font-size:10px;font-weight:700;}
+  .bn-item.active{color:var(--primary-dark);background:var(--primary-light);}
+  .bn-item:active{transform:scale(.92);}
+  .bn-fab{padding-top:0;}
+  .bn-fab-circle{
+    width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(160deg,var(--primary),var(--primary-dark));color:#fff;
+    transform:translateY(-14px);box-shadow:0 8px 20px rgba(22,163,74,.4);border:3px solid var(--bg);
+    transition:transform .15s var(--ease);
+  }
+  .bn-fab-circle svg{width:20px;height:20px;}
+  .bn-fab:active .bn-fab-circle{transform:translateY(-14px) scale(.9);}
+
+  @media (max-width:480px){
+    .balance-amount{font-size:30px;}
+    .balance-label{font-size:14px;}
+    .stat-pill .value{font-size:18px;}
+    .stat-pill .label{font-size:12.5px;}
+    .activity-info h5{font-size:13.5px;}
+    .activity-info p{font-size:12.5px;}
+    .activity-time{font-size:12px;}
+    .referral-text p{font-size:12.5px;}
+    .referral-link-preview{font-size:12px;}
+    .bn-item span{font-size:11px;}
+    .qa-card{padding:17px;}
+    .qa-card h4{font-size:14.5px;}
+    .qa-card p{font-size:12.5px;}
+    .panel{padding:20px;}
+  }
+
+  @media (min-width:1024px){
+    .sidebar{display:flex;}
+    .bottom-nav{display:none;}
+    .main-content{padding:28px 32px 40px;}
+    .quick-actions{grid-template-columns:repeat(4,1fr);}
+    .balance-amount{font-size:40px;}
+  }
+  @media (max-width:1023px){
+    .main-content{padding-bottom:120px;}
+  }
+  @media (min-width:640px) and (max-width:1023px){
+    .quick-actions{grid-template-columns:repeat(4,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<div id="toastRoot"></div>
+
+<!-- TELEGRAM CHANNEL PROMPT -->
+<div class="telegram-prompt-overlay" id="telegramPromptOverlay">
+  <div class="telegram-prompt-card">
+    <button type="button" class="telegram-prompt-close" id="telegramPromptClose"><svg data-lucide="x"></svg></button>
+    <div class="telegram-prompt-icon"><svg data-lucide="send"></svg></div>
+    <h3>Join our channels</h3>
+    <p>Stay updated with the latest news, task alerts, and important announcements — don't miss out!</p>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <a href="https://t.me/tasklilyoff" target="_blank" rel="noopener" class="btn btn-block" id="telegramPromptJoinBtn" style="flex:1;background:linear-gradient(180deg,#0088cc,#006ba3);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.25) inset, 0 6px 16px rgba(0,136,204,.28);display:flex;align-items:center;justify-content:center;gap:8px;"><svg data-lucide="send" style="width:16px;height:16px;"></svg>Telegram</a>
+      <a href="https://whatsapp.com/channel/0029VbDOWHD8V0tieDWiFI16" target="_blank" rel="noopener" class="btn btn-block" id="whatsappPromptJoinBtn" style="flex:1;background:linear-gradient(180deg,#25D366,#1FAD56);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.25) inset, 0 6px 16px rgba(37,211,102,.28);display:flex;align-items:center;justify-content:center;gap:8px;"><svg data-lucide="message-circle" style="width:16px;height:16px;"></svg>WhatsApp</a>
+    </div>
+    <button type="button" class="telegram-prompt-skip" id="telegramPromptSkipBtn">Maybe later</button>
+  </div>
+</div>
+
+<!-- POLICY MODALS -->
+<div class="policy-modal" id="policyModal" hidden>
+  <div class="policy-modal-overlay"></div>
+  <div class="policy-modal-content">
+    <button type="button" class="policy-modal-close" id="policyModalClose"><svg data-lucide="x"></svg></button>
+    <div id="policyModalBody" style="overflow-y:auto;max-height:70vh;"></div>
+  </div>
+</div>
+
+<style>
+  .policy-modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:1000;}
+  .policy-modal:not([hidden]){display:flex;}
+  .policy-modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.5);}
+  .policy-modal-content{position:relative;background:#fff;border-radius:16px;width:min(90vw,600px);max-height:80vh;padding:24px;overflow-y:auto;box-shadow:0 20px 48px rgba(15,23,42,.12);z-index:1001;}
+  .policy-modal-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:8px;background:#f8fafc;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0f172a;}
+  .policy-modal-close svg{width:18px;height:18px;}
+  .policy-modal h2{font-size:18px;font-weight:800;margin-bottom:14px;color:#0f172a;}
+  .policy-modal p{font-size:13.5px;line-height:1.6;color:#64748b;margin-bottom:12px;}
+  .policy-modal ul{margin-left:18px;margin-bottom:12px;}
+  .policy-modal li{font-size:13.5px;line-height:1.6;color:#64748b;margin-bottom:8px;}
+</style>
+
+<!-- ================= SPLASH / SKELETON LOADING ================= -->
+<div id="splashScreen">
+  <div class="splash-inner">
+    <img class="splash-logo" src="https://i.postimg.cc/mkTG5xt3/file-0000000095c081f4a26eb331b9113b67.png" alt="Tasklily">
+    <div class="splash-wordmark">TASKLILY</div>
+    <div class="splash-spinner"></div>
+  </div>
+</div>
+
+<!-- ================= AUTH SCREEN ================= -->
+<div id="authScreen" hidden>
+  <div class="auth-card glass">
+
+    <div class="auth-brand">
+      <img src="https://i.postimg.cc/mkTG5xt3/file-0000000095c081f4a26eb331b9113b67.png" alt="Tasklily">
+      <span>TASKLILY</span>
+    </div>
+
+    <!-- LOGIN VIEW -->
+    <div id="loginView" hidden>
+      <div class="auth-heading">
+        <h1>Welcome back</h1>
+        <p>Log in to continue earning</p>
+      </div>
+      <button type="button" class="btn btn-google btn-block" id="googleBtnLogin">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
+          <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
+          <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
+          <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+        </svg>
+        <span class="btn-label">Continue with Google</span>
+      </button>
+      <div class="auth-divider">or continue with email</div>
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <div class="input-wrap">
+            <svg data-lucide="mail"></svg>
+            <input type="email" id="loginEmail" autocomplete="email" placeholder="you@example.com">
+          </div>
+          <div class="field-error" id="loginEmailError"></div>
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <div class="input-wrap">
+            <svg data-lucide="lock"></svg>
+            <input type="password" id="loginPassword" autocomplete="current-password" placeholder="Enter your password">
+            <button type="button" class="toggle-pw" data-toggle="loginPassword"><svg data-lucide="eye"></svg></button>
+          </div>
+          <div class="field-error" id="loginPasswordError"></div>
+        </div>
+        <a href="#" class="forgot-link" id="forgotLink">Forgot password?</a>
+        <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">
+          <span class="btn-label">Log in</span>
+        </button>
+      </form>
+      <p class="auth-switch">Don't have an account? <button type="button" id="goSignup">Sign up</button></p>
+    </div>
+
+    <!-- SIGNUP VIEW -->
+    <div id="signupView">
+      <div class="auth-heading">
+        <h1>Create your account</h1>
+        <p>Start completing tasks and earning today</p>
+      </div>
+      <button type="button" class="btn btn-google btn-block" id="googleBtnSignup">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
+          <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
+          <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
+          <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+        </svg>
+        <span class="btn-label">Continue with Google</span>
+      </button>
+      <div class="auth-divider">or continue with email</div>
+      <form id="signupForm" novalidate>
+        <div class="field">
+          <label for="signupName">Full name</label>
+          <div class="input-wrap">
+            <svg data-lucide="user"></svg>
+            <input type="text" id="signupName" autocomplete="name" placeholder="Your full name">
+          </div>
+          <div class="field-error" id="signupNameError"></div>
+        </div>
+        <div class="field">
+          <label for="signupEmail">Email</label>
+          <div class="input-wrap">
+            <svg data-lucide="mail"></svg>
+            <input type="email" id="signupEmail" autocomplete="email" placeholder="you@example.com">
+          </div>
+          <div class="field-error" id="signupEmailError"></div>
+        </div>
+        <div class="field">
+          <label for="signupPassword">Password</label>
+          <div class="input-wrap">
+            <svg data-lucide="lock"></svg>
+            <input type="password" id="signupPassword" autocomplete="new-password" placeholder="At least 6 characters">
+            <button type="button" class="toggle-pw" data-toggle="signupPassword"><svg data-lucide="eye"></svg></button>
+          </div>
+          <div class="field-error" id="signupPasswordError"></div>
+        </div>
+        <div class="field">
+          <label for="signupConfirm">Confirm password</label>
+          <div class="input-wrap">
+            <svg data-lucide="lock"></svg>
+            <input type="password" id="signupConfirm" autocomplete="new-password" placeholder="Re-enter your password">
+            <button type="button" class="toggle-pw" data-toggle="signupConfirm"><svg data-lucide="eye"></svg></button>
+          </div>
+          <div class="field-error" id="signupConfirmError"></div>
+        </div>
+        <div class="field">
+          <label for="signupReferral">Referral code <span style="font-weight:400;">(optional)</span></label>
+          <div class="input-wrap">
+            <svg data-lucide="gift"></svg>
+            <input type="text" id="signupReferral" autocomplete="off" placeholder="Enter a referral code">
+          </div>
+        </div>
+        <p class="field-error show" id="signupsClosedNotice" hidden style="text-align:center;margin-bottom:12px;">New signups are temporarily closed. Please check back soon.</p>
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;">
+          <input type="checkbox" id="signupTermsAgree" style="margin-top:4px;flex-shrink:0;">
+          <label for="signupTermsAgree" style="font-size:12.5px;color:var(--text-muted);line-height:1.4;cursor:pointer;">I agree to the <button type="button" class="policy-link" data-policy="terms" style="color:var(--primary);text-decoration:underline;background:none;border:none;cursor:pointer;font-family:inherit;font-size:inherit;">Terms & Conditions</button>, <button type="button" class="policy-link" data-policy="privacy" style="color:var(--primary);text-decoration:underline;background:none;border:none;cursor:pointer;font-family:inherit;font-size:inherit;">Privacy Policy</button>, and <button type="button" class="policy-link" data-policy="cookies" style="color:var(--primary);text-decoration:underline;background:none;border:none;cursor:pointer;font-family:inherit;font-size:inherit;">Cookies Policy</button></label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="signupSubmitBtn">
+          <span class="btn-label">Create account</span>
+        </button>
+      </form>
+      <p class="auth-switch">Already have an account? <button type="button" id="goLogin">Log in</button></p>
+    </div>
+
+    <!-- RESET PASSWORD VIEW -->
+    <div id="resetView" hidden>
+      <button type="button" class="back-link" id="backToLogin"><svg data-lucide="arrow-left"></svg>Back to login</button>
+      <div class="auth-heading">
+        <h1>Reset password</h1>
+        <p>Enter your email and we'll send you a reset link</p>
+      </div>
+      <form id="resetForm" novalidate>
+        <div class="field">
+          <label for="resetEmail">Email</label>
+          <div class="input-wrap">
+            <svg data-lucide="mail"></svg>
+            <input type="email" id="resetEmail" autocomplete="email" placeholder="you@example.com">
+          </div>
+          <div class="field-error" id="resetEmailError"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="resetSubmitBtn">
+          <span class="btn-label">Send reset link</span>
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= DASHBOARD SCREEN ================= -->
+<div id="dashboardScreen" hidden>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="mobile-drawer" id="mobileDrawer">
+    <button type="button" class="drawer-close" id="drawerCloseBtn"><svg data-lucide="x"></svg></button>
+    <div class="sidebar-brand">
+      <img src="https://i.postimg.cc/mkTG5xt3/file-0000000095c081f4a26eb331b9113b67.png" alt="Tasklily">
+      <span>TASKLILY</span>
+    </div>
+    <nav class="nav-list">
+      <a href="#" class="nav-item active" data-view="home"><svg data-lucide="home"></svg>Home</a>
+      <a href="#" class="nav-item" data-view="tasks" data-feature="Tasks"><svg data-lucide="list-checks"></svg>Tasks</a>
+      <a href="#" class="nav-item" data-view="earn" data-feature="Earn"><svg data-lucide="zap"></svg>Earn</a>
+      <a href="#" class="nav-item" data-view="referrals" data-feature="Referrals"><svg data-lucide="users"></svg>Referrals</a>
+      <a href="#" class="nav-item" data-view="profile" data-feature="Profile"><svg data-lucide="user-round"></svg>Profile</a>
+    </nav>
+    <div class="invite-card">
+      <svg data-lucide="gift"></svg>
+      <h4>Invite friends</h4>
+      <p>Earn more when your friends join and complete tasks.</p>
+      <button type="button" class="btn btn-primary btn-sm btn-block" id="inviteBtnDrawer"><svg data-lucide="user-plus" style="width:15px;height:15px"></svg>Invite Friends</button>
+    </div>
+    <div class="sidebar-footer">© 2026 Tasklily<br><span style="font-size:11px;">Developed by <a href="https://t.me/Giftupdateofficial" target="_blank" style="color:var(--primary);text-decoration:none;">Gift</a></span><br><span style="font-size:10px;color:var(--text-muted);">📞 +2349161376561 | 📧 giftupdate01@gmail.com</span></div>
+  </aside>
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="https://i.postimg.cc/mkTG5xt3/file-0000000095c081f4a26eb331b9113b67.png" alt="Tasklily">
+      <span>TASKLILY</span>
+    </div>
+    <nav class="nav-list">
+      <a href="#" class="nav-item active" data-view="home"><svg data-lucide="home"></svg>Home</a>
+      <a href="#" class="nav-item" data-view="tasks" data-feature="Tasks"><svg data-lucide="list-checks"></svg>Tasks</a>
+      <a href="#" class="nav-item" data-view="earn" data-feature="Earn"><svg data-lucide="zap"></svg>Earn</a>
+      <a href="#" class="nav-item" data-view="referrals" data-feature="Referrals"><svg data-lucide="users"></svg>Referrals</a>
+      <a href="#" class="nav-item" data-view="profile" data-feature="Profile"><svg data-lucide="user-round"></svg>Profile</a>
+    </nav>
+    <div class="invite-card">
+      <svg data-lucide="gift"></svg>
+      <h4>Invite friends</h4>
+      <p>Earn more when your friends join and complete tasks.</p>
+      <button type="button" class="btn btn-primary btn-sm btn-block" id="inviteBtnSidebar"><svg data-lucide="user-plus" style="width:15px;height:15px"></svg>Invite Friends</button>
+    </div>
+    <div class="sidebar-footer">© 2026 Tasklily<br><span style="font-size:11px;">Developed by <a href="https://t.me/Giftupdateofficial" target="_blank" style="color:var(--primary);text-decoration:none;">Gift</a></span><br><span style="font-size:10px;color:var(--text-muted);">📞 +2349161376561 | 📧 giftupdate01@gmail.com</span></div>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar-row">
+      <div class="topbar-left">
+        <button type="button" class="icon-btn menu-btn" id="menuBtn"><svg data-lucide="menu"></svg></button>
+        <div class="topbar-brand">
+          <img src="https://i.postimg.cc/mkTG5xt3/file-0000000095c081f4a26eb331b9113b67.png" alt="Tasklily">
+          <span>TASKLILY</span>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="dropdown-wrap">
+          <button type="button" class="icon-btn" id="bellBtn"><svg data-lucide="bell"></svg></button>
+          <div class="popover" id="bellPopover" hidden>
+            <div class="popover-empty">No new notifications</div>
+          </div>
+        </div>
+        <div class="dropdown-wrap">
+          <button type="button" class="profile-btn" id="profileBtn">
+            <span class="avatar" id="avatarBox">?</span>
+            <span id="profileName">Loading…</span>
+            <svg data-lucide="chevron-down"></svg>
+          </button>
+          <div class="popover" id="profilePopover" hidden>
+            <div class="popover-user">
+              <div class="name" id="popoverName">—</div>
+              <div class="email" id="popoverEmail">—</div>
+            </div>
+            <button type="button" class="popover-item danger" id="logoutBtn"><svg data-lucide="log-out"></svg>Log out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topbar-greet">
+      <h1 id="greeting">Good evening</h1>
+      <p>Complete tasks, earn rewards, and achieve your goals.</p>
+    </div>
+
+    <!-- HOME VIEW -->
+    <div id="homeView">
+      <div class="announcement-banner" id="announcementBanner" hidden>
+        <svg data-lucide="megaphone"></svg><span></span>
+      </div>
+      <div class="balance-card">
+        <div class="balance-top">
+          <div>
+            <div class="balance-label">Available Balance
+              <button type="button" class="eye-toggle" id="balanceEyeBtn"><svg data-lucide="eye"></svg></button>
+            </div>
+            <div class="balance-amount">₦<span id="balanceValue">0.00</span></div>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="withdrawBtn"><svg data-lucide="wallet" style="width:15px;height:15px"></svg>Withdraw</button>
+        </div>
+        <div class="balance-stats">
+          <div class="stat-pill">
+            <div>
+              <div class="label">Cash Balance</div>
+              <div class="value">₦<span id="cashBalanceValue">0.00</span></div>
+            </div>
+            <div class="stat-icon"><svg data-lucide="banknote"></svg></div>
+          </div>
+          <div class="stat-pill">
+            <div>
+              <div class="label">Airtime Balance</div>
+              <div class="value">₦<span id="airtimeBalanceValue">0.00</span></div>
+            </div>
+            <div class="stat-icon"><svg data-lucide="smartphone"></svg></div>
+          </div>
+        </div>
+        <p class="balance-split-hint">Task rewards go to Airtime Balance · Referral rewards go to Cash Balance (bank withdrawable)</p>
+        <div class="balance-stats" style="margin-top:10px;">
+          <div class="stat-pill">
+            <div>
+              <div class="label">Today's Earnings</div>
+              <div class="value">₦<span id="todayEarnings">0.00</span></div>
+            </div>
+            <div class="stat-icon"><svg data-lucide="trending-up"></svg></div>
+          </div>
+          <div class="stat-pill">
+            <div>
+              <div class="label">Total Earned</div>
+              <div class="value">₦<span id="totalEarned">0.00</span></div>
+            </div>
+            <div class="stat-icon"><svg data-lucide="layers"></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <button type="button" class="qa-card" id="qaTasks">
+          <div class="qa-icon"><svg data-lucide="clipboard-check"></svg></div>
+          <div><h4>Tasks</h4><p>Browse and complete tasks</p></div>
+        </button>
+        <button type="button" class="qa-card" id="qaWithdraw">
+          <div class="qa-icon"><svg data-lucide="landmark"></svg></div>
+          <div><h4>Withdraw</h4><p>Withdraw your earnings</p></div>
+        </button>
+        <button type="button" class="qa-card" id="qaReferrals">
+          <div class="qa-icon"><svg data-lucide="user-plus"></svg></div>
+          <div><h4>Referrals</h4><p>Invite friends and earn more</p></div>
+        </button>
+        <button type="button" class="qa-card" id="qaHistory">
+          <div class="qa-icon"><svg data-lucide="history"></svg></div>
+          <div><h4>History</h4><p>View your earnings history</p></div>
+        </button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+          <section class="panel">
+            <div class="progress-row-flex">
+              <div>
+                <div class="progress-title"><svg data-lucide="bar-chart-3"></svg>Today's Progress</div>
+                <div class="progress-sub" id="progressLabel">0 of 0 tasks completed</div>
+              </div>
+              <div class="progress-ring-wrap">
+                <svg class="progress-ring" viewBox="0 0 60 60">
+                  <circle class="ring-track" cx="30" cy="30" r="26"></circle>
+                  <circle class="ring-fill" id="ringFill" cx="30" cy="30" r="26"></circle>
+                </svg>
+                <span class="ring-pct" id="progressPct">0%</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" id="referralPanel">
+            <div class="referral-row">
+              <div class="referral-icon"><svg data-lucide="gift"></svg></div>
+              <div class="referral-text">
+                <h4>Earn more with referrals</h4>
+                <p>Invite friends and earn rewards when they join and complete eligible activities.</p>
+                <span class="referral-link-preview" id="referralLinkPreview"></span>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" id="inviteBtnMain">Invite <svg data-lucide="chevron-right" style="width:15px;height:15px"></svg></button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h3>Recent Activity</h3>
+              <a href="#" class="link-more" id="activityViewAll">View all</a>
+            </div>
+            <div class="activity-list" id="activityList"></div>
+          </section>
+      </div>
+    </div>
+
+    <!-- TASKS VIEW -->
+    <div id="tasksView" hidden>
+      <div class="tasks-hero">
+        <h2>Tasks that pay</h2>
+        <p>Complete simple actions and earn straight into your balance.</p>
+        <div class="tasks-hero-progress">
+          <span class="tasks-hero-pill"><svg data-lucide="check"></svg><span id="tasksHeroCount">0/0</span></span>
+          <div class="tasks-hero-bar"><div class="tasks-hero-bar-fill" id="tasksHeroBarFill" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="task-toolbar">
+        <div class="search-wrap">
+          <svg data-lucide="search"></svg>
+          <input type="text" id="tasksPageSearch" placeholder="Search tasks...">
+        </div>
+      </div>
+      <div class="task-card-list" id="tasksPageList"></div>
+    </div>
+
+    <!-- HISTORY VIEW -->
+    <div id="historyView" hidden>
+      <section class="panel">
+        <div class="panel-head"><h3>Transaction History</h3></div>
+        <div class="activity-list" id="historyList"></div>
+      </section>
+    </div>
+
+    <!-- REFERRALS VIEW -->
+    <div id="referralsView" hidden>
+      <div class="tasks-hero">
+        <h2>Earn with referrals</h2>
+        <p>Invite friends. You earn <span id="referralRewardCopy">₦100</span> for each friend who signs up.</p>
+        <div class="balance-stats" style="margin-top:14px;">
+          <div class="stat-pill">
+            <div><div class="label">Total Referrals</div><div class="value" id="refStatTotal">0</div></div>
+            <div class="stat-icon"><svg data-lucide="users"></svg></div>
+          </div>
+          <div class="stat-pill">
+            <div><div class="label">Earned from referrals</div><div class="value" id="refStatEarned">₦0</div></div>
+            <div class="stat-icon"><svg data-lucide="gift"></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="announcement-banner" id="referredDuplicateWarning" hidden>
+        <svg data-lucide="shield-alert"></svg>
+        <span>Your account was flagged because you signed up from the same network as the person who referred you. Their referral reward for you is on hold until admin reviews it.</span>
+      </div>
+
+      <section class="panel" style="margin-bottom:16px;">
+        <div class="referral-row">
+          <div class="referral-icon"><svg data-lucide="link"></svg></div>
+          <div class="referral-text">
+            <h4>Your referral link</h4>
+            <p>Share this link — anyone who signs up with it becomes your referral.</p>
+            <span class="referral-link-preview" id="referralLinkPreviewPage"></span>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="inviteBtnReferralsPage">Invite <svg data-lucide="chevron-right" style="width:15px;height:15px"></svg></button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h3>Your Referrals</h3></div>
+        <div id="referralsList"></div>
+      </section>
+    </div>
+
+    <!-- PROFILE VIEW -->
+    <div id="profileView" hidden>
+      <section class="panel" style="text-align:center;padding:32px 24px;">
+        <div class="profile-avatar-lg" id="profileAvatarLg">?</div>
+        <div id="profileNameLg" style="font-size:19px;font-weight:800;margin-top:14px;">—</div>
+        <div id="profileEmailLg" style="font-size:13px;color:var(--text-muted);margin-top:2px;">—</div>
+        <div id="profileMemberSince" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
+      </section>
+
+      <div class="profile-stats">
+        <div class="profile-stat"><div class="value" id="profileStatEarned">₦0</div><div class="label">Total Earned</div></div>
+        <div class="profile-stat"><div class="value" id="profileStatTasks">0</div><div class="label">Tasks Done</div></div>
+        <div class="profile-stat"><div class="value" id="profileStatReferrals">0</div><div class="label">Referrals</div></div>
+      </div>
+
+      <section class="panel" style="margin-top:16px;">
+        <div class="panel-head"><h3>Edit Profile</h3></div>
+        <div class="field">
+          <label for="profileNameInput">Full name</label>
+          <div class="input-wrap"><svg data-lucide="user"></svg><input type="text" id="profileNameInput"></div>
+        </div>
+        <button type="button" class="btn btn-primary" id="profileSaveBtn"><span class="btn-label">Save Changes</span></button>
+      </section>
+
+      <section class="panel" style="margin-top:16px;">
+        <div class="panel-head"><h3>Account</h3></div>
+        <button type="button" class="popover-item" id="profileResetPasswordBtn"><svg data-lucide="lock"></svg>Send password reset email</button>
+        <button type="button" class="popover-item danger" id="profileLogoutBtn"><svg data-lucide="log-out"></svg>Log out</button>
+      </section>
+    </div>
+
+    <!-- WITHDRAW VIEW -->
+    <div id="withdrawView" hidden>
+      <div class="balance-card" style="margin-bottom:16px;">
+        <div class="balance-label">Available Balance</div>
+        <div class="balance-amount">₦<span id="withdrawAvailBalance">0.00</span></div>
+        <div class="balance-stats">
+          <div class="stat-pill">
+            <div><div class="label">Cash (Bank)</div><div class="value">₦<span id="withdrawCashBalance">0.00</span></div></div>
+            <div class="stat-icon"><svg data-lucide="banknote"></svg></div>
+          </div>
+          <div class="stat-pill">
+            <div><div class="label">Airtime</div><div class="value">₦<span id="withdrawAirtimeBalance">0.00</span></div></div>
+            <div class="stat-icon"><svg data-lucide="smartphone"></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="announcement-banner" id="withdrawEligibilityNotice" hidden>
+        <svg data-lucide="lock"></svg>
+        <span id="withdrawEligibilityText"></span>
+      </div>
+
+      <div id="withdrawMethodsStep">
+        <section class="panel">
+          <div class="panel-head"><h3>Choose a withdrawal method</h3></div>
+          <div class="withdraw-method-list">
+            <button type="button" class="withdraw-method" data-method="bank" id="withdrawMethodBank">
+              <div class="wm-icon bank"><svg data-lucide="landmark"></svg></div>
+              <div class="wm-info"><h4>Bank Transfer</h4><p id="withdrawBankMethodSub">Nigerian banks · Min <span id="withdrawBankMinCopy">₦500</span></p></div>
+              <svg data-lucide="chevron-right" class="wm-chevron"></svg>
+            </button>
+            <button type="button" class="withdraw-method" data-method="airtime" id="withdrawMethodAirtime">
+              <div class="wm-icon airtime"><svg data-lucide="smartphone"></svg></div>
+              <div class="wm-info"><h4>Airtime</h4><p id="withdrawAirtimeMethodSub">MTN, Glo, Airtel, 9mobile · Min <span id="withdrawAirtimeMinCopy">₦100</span></p></div>
+              <svg data-lucide="chevron-right" class="wm-chevron"></svg>
+            </button>
+            <button type="button" class="withdraw-method disabled" disabled>
+              <div class="wm-icon data"><svg data-lucide="wifi"></svg></div>
+              <div class="wm-info"><h4>Data</h4><p>Coming soon</p></div>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <div id="withdrawBankStep" hidden>
+        <button type="button" class="back-link" data-withdraw-back><svg data-lucide="arrow-left"></svg>Back</button>
+        <section class="panel">
+          <div class="withdraw-method-header">
+            <div class="wm-icon bank"><svg data-lucide="landmark"></svg></div>
+            <h3>Transfer to Bank Account</h3>
+          </div>
+          <div class="field">
+            <label for="withdrawBankAccount">Account Number</label>
+            <div class="input-wrap no-icon"><input type="text" id="withdrawBankAccount" placeholder="10-digit account number" maxlength="10" inputmode="numeric"></div>
+            <div class="field-error" id="withdrawBankAccountError"></div>
+          </div>
+          <div class="field">
+            <label>Select Bank</label>
+            <button type="button" class="bank-select-row" id="bankSelectTrigger">
+              <span class="bank-select-row-left" id="bankSelectRowLeft"><span class="bank-select-placeholder">Choose your bank</span></span>
+              <svg data-lucide="chevron-right" class="wm-chevron"></svg>
+            </button>
+            <div class="field-error" id="withdrawBankCodeError"></div>
+          </div>
+          <div class="bank-verify-pill" id="bankVerifyPill" hidden>
+            <svg data-lucide="check-circle-2"></svg>
+            <p class="bvp-name" id="bankVerifyText"></p>
+          </div>
+          <div class="field" id="withdrawBankAccountNameField" hidden>
+            <label for="withdrawBankAccountName">Account Name</label>
+            <div class="input-wrap"><svg data-lucide="user"></svg><input type="text" id="withdrawBankAccountName" placeholder="Enter the name on this bank account"></div>
+            <div class="field-error" id="withdrawBankAccountNameError"></div>
+          </div>
+          <div class="field">
+            <label for="withdrawBankAmount">Amount (₦)</label>
+            <div class="input-wrap"><svg data-lucide="wallet"></svg><input type="number" id="withdrawBankAmount" placeholder="Minimum ₦500" min="500"></div>
+            <div class="field-error" id="withdrawBankAmountError"></div>
+            <p class="field-hint" id="withdrawBankFeeInfo" hidden></p>
+          </div>
+          <button type="button" class="btn btn-primary btn-block" id="withdrawBankSubmit"><span class="btn-label">Request Withdrawal</span></button>
+        </section>
+      </div>
+
+      <div class="bank-picker-overlay" id="bankPickerOverlay">
+        <div class="bank-picker-sheet">
+          <div class="bank-picker-head">
+            <h3>Select Bank</h3>
+            <button type="button" class="bank-picker-close" id="bankPickerClose"><svg data-lucide="x"></svg></button>
+          </div>
+          <div class="bank-picker-search">
+            <div class="input-wrap"><svg data-lucide="search"></svg><input type="text" id="bankPickerSearch" placeholder="Search bank name"></div>
+          </div>
+          <div class="bank-picker-body" id="bankPickerBody">
+            <div id="bankFrequentSection">
+              <p class="bank-section-label">Frequently Used Bank</p>
+              <div class="bank-frequent-grid" id="bankFrequentGrid"></div>
+            </div>
+            <p class="bank-section-label">All Banks</p>
+            <div id="bankFullList"></div>
+            <div class="bank-picker-empty" id="bankPickerEmpty" hidden>No bank found matching your search.</div>
+            <div class="bank-index-sidebar" id="bankIndexSidebar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="withdrawAirtimeStep" hidden>
+        <button type="button" class="back-link" data-withdraw-back><svg data-lucide="arrow-left"></svg>Back</button>
+        <section class="panel">
+          <div class="withdraw-method-header">
+            <div class="wm-icon airtime"><svg data-lucide="smartphone"></svg></div>
+            <h3>Airtime</h3>
+          </div>
+          <div class="field">
+            <label>Network</label>
+            <div class="network-chips" id="airtimeNetworkChips">
+              <button type="button" class="network-chip" data-network="MTN">MTN</button>
+              <button type="button" class="network-chip" data-network="Glo">Glo</button>
+              <button type="button" class="network-chip" data-network="Airtel">Airtel</button>
+              <button type="button" class="network-chip" data-network="9mobile">9mobile</button>
+            </div>
+            <div class="field-error" id="withdrawAirtimeNetworkError"></div>
+          </div>
+          <div class="field">
+            <label for="withdrawAirtimePhone">Phone Number</label>
+            <div class="input-wrap"><svg data-lucide="phone"></svg><input type="tel" id="withdrawAirtimePhone" placeholder="e.g. 08012345678" maxlength="11" inputmode="numeric"></div>
+            <div class="field-error" id="withdrawAirtimePhoneError"></div>
+          </div>
+          <div class="field">
+            <label for="withdrawAirtimeAmount">Amount (₦)</label>
+            <div class="input-wrap"><svg data-lucide="wallet"></svg><input type="number" id="withdrawAirtimeAmount" placeholder="Minimum ₦100" min="100"></div>
+            <div class="field-error" id="withdrawAirtimeAmountError"></div>
+            <p class="field-hint" id="withdrawAirtimeFeeInfo" hidden></p>
+          </div>
+          <button type="button" class="btn btn-primary btn-block" id="withdrawAirtimeSubmit"><span class="btn-label">Request Withdrawal</span></button>
+        </section>
+      </div>
+
+      <section class="panel" style="margin-top:16px;">
+        <div class="panel-head"><h3>Your Withdrawal Requests</h3></div>
+        <div id="withdrawRequestsList"></div>
+      </section>
+    </div>
+
+    <!-- COMING SOON VIEW -->
+    <div id="comingSoonView" hidden>
+      <div class="coming-soon-wrap">
+        <div class="coming-soon-card">
+          <div class="coming-soon-icon"><svg data-lucide="sparkles"></svg></div>
+          <h2><span id="comingSoonFeature">This</span> — Coming Soon</h2>
+          <p>We're building this now. Check back soon — your homepage has everything that's ready today.</p>
+          <button type="button" class="btn btn-primary" id="backToHomeBtn"><svg data-lucide="arrow-left" style="width:15px;height:15px"></svg>Back to Home</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="#" class="bn-item active" data-view="home"><svg data-lucide="home"></svg><span>Home</span></a>
+    <a href="#" class="bn-item" data-view="tasks" data-feature="Tasks"><svg data-lucide="list-checks"></svg><span>Tasks</span></a>
+    <a href="#" class="bn-item bn-fab" data-view="earn" data-feature="Earn"><span class="bn-fab-circle"><svg data-lucide="zap"></svg></span></a>
+    <a href="#" class="bn-item" data-view="referrals" data-feature="Referrals"><svg data-lucide="users"></svg><span>Referrals</span></a>
+    <a href="#" class="bn-item" data-view="profile" data-feature="Profile"><svg data-lucide="user-round"></svg><span>Profile</span></a>
+  </nav>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+import {
+  getAuth, setPersistence, browserLocalPersistence,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  onAuthStateChanged, signOut, sendPasswordResetEmail, updateProfile,
+  GoogleAuthProvider, signInWithPopup
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, addDoc, query, where, increment
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCx3IdRjDUPN9B-MFjvdZo5XJoptseFq3Q",
+  authDomain: "rareearners.firebaseapp.com",
+  projectId: "rareearners",
+  storageBucket: "rareearners.firebasestorage.app",
+  messagingSenderId: "141222061047",
+  appId: "1:141222061047:web:9c044716391c58d09dc4f2"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
+
+/* ================== OFFLINE-FIRST STORE ==================
+   Firestore free-tier budget at 20,000 users x 20 tasks/day:
+
+     READS  1 user doc per login
+            + 1 shared config doc per 7 days (amortised)
+            ~= 20k + 3k = 23k reads/day
+
+     WRITES 1 user doc per user, at most once every SYNC_MIN_HOURS
+            ~= 20k * (24/36) = 13.3k writes/day
+
+   Everything user-scoped (task submissions, transaction ledger,
+   withdrawal list, referral credit state) lives INSIDE the single
+   users/{uid} document. No per-task, per-transaction or
+   per-submission documents are ever written — those collections are
+   what blew the quota, because Firestore bills per document, not
+   per batch.
+
+   The browser is the source of truth during a session: every change
+   lands in localStorage instantly (free) and bumps a `rev` counter.
+   Firestore is only a backup that we flush to occasionally.       */
+
+const SYNC_MIN_HOURS = 36;   // upper bound on how often one user costs a write
+const CONFIG_TTL_MS  = 7 * 24 * 60 * 60 * 1000;
+const LEDGER_MAX     = 60;   // transactions retained in the user doc
+const WITHDRAW_MAX   = 20;
+
+function lsGet(key) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch (e) { return false; } }
+
+const Store = {
+  dirty: false,
+  syncing: false,
+
+  snapKey(uid) { return `tl_snap_${uid}`; },
+
+  /* Persist the whole profile to localStorage. Costs nothing. */
+  saveLocal() {
+    if (!currentUser || !currentProfile) return;
+    lsSet(this.snapKey(currentUser.uid), currentProfile);
+  },
+
+  loadLocal(uid) { return lsGet(this.snapKey(uid)); },
+
+  /* Record a change. Bumps `rev` so this copy always beats an older
+     server copy, then saves locally straight away. */
+  touch() {
+    if (!currentProfile) return;
+    currentProfile.rev = (currentProfile.rev || 0) + 1;
+    this.dirty = true;
+    this.saveLocal();
+  },
+
+  dueForSync() {
+    const last = Number(currentProfile?.lastSyncAt || 0);
+    return Date.now() - last >= SYNC_MIN_HOURS * 60 * 60 * 1000;
+  },
+
+  /* The ONLY function in the app that writes a user document. */
+  async sync(force = false) {
+    if (!currentUser || !currentProfile || this.syncing || !this.dirty) return false;
+    if (!force && !this.dueForSync()) return false;
+    this.syncing = true;
+    try {
+      const payload = { ...currentProfile };
+      delete payload.id;
+      /* pendingCredits is written only by the admin panel. Never send it
+         back, or an admin refund made since our last read would be lost. */
+      delete payload.pendingCredits;
+      /* Server-owned and set-once fields. createdAt matters especially:
+         it is a Firestore Timestamp, and a round trip through
+         localStorage turns it into a plain {seconds,nanoseconds} object.
+         Writing that back changes the field's type, which the security
+         rules reject — taking the whole sync down with it. */
+      delete payload.createdAt;
+      delete payload.banned;
+      delete payload.email;
+      delete payload.signupIp;
+      payload.lastSyncAt = Date.now();
+      await setDoc(doc(db, "users", currentUser.uid), payload, { merge: true });
+      currentProfile.lastSyncAt = payload.lastSyncAt;
+      this.dirty = false;
+      this.saveLocal();
+      return true;
+    } catch (e) {
+      return false;
+    } finally {
+      this.syncing = false;
+    }
+  },
+};
+
+/* Flush on the way out — still bounded by SYNC_MIN_HOURS unless the
+   session earned something it has never backed up at all. */
+function flushOnExit() {
+  if (!Store.dirty) return;
+  const neverSynced = !Number(currentProfile?.lastSyncAt || 0);
+  Store.sync(neverSynced);
+}
+window.addEventListener("pagehide", flushOnExit);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushOnExit(); });
+
+/* ========== SHARED APP CONFIG (tasks + settings in ONE doc) ==========
+   Replaces a 20+ document read of the `tasks` collection plus the
+   settings doc on every single login. Cached for a week. */
+async function loadAppConfig() {
+  const cached = lsGet("tl_config");
+  if (cached && Date.now() - cached.at < CONFIG_TTL_MS) return cached.data;
+  try {
+    const snap = await getDoc(doc(db, "config", "app"));
+    if (snap.exists()) {
+      const data = snap.data();
+      lsSet("tl_config", { at: Date.now(), data });
+      return data;
+    }
+  } catch (e) { /* fall through to whatever we already had */ }
+
+  /* Fallback for before the admin panel has published config/app.
+     Cached for the full week too, so it can't become a per-login cost. */
+  try {
+    const snap = await getDocs(collection(db, "tasks"));
+    const data = { tasks: snap.docs.map((d) => ({ id: d.id, ...d.data() })), settings: {} };
+    lsSet("tl_config", { at: Date.now(), data });
+    return data;
+  } catch (e) {
+    return cached?.data || null;
+  }
+}
+
+function applyAppConfig(cfg) {
+  const all = Array.isArray(cfg?.tasks) ? cfg.tasks : [];
+  TASKS = all.filter((t) => t.active !== false);
+  REQUIRED_TASKS = all.filter((t) => t.requiredForWithdrawal === true);
+  if (cfg?.settings) Object.assign(SITE_SETTINGS, cfg.settings);
+}
+
+/* Rebuild every in-memory view from the one user document. Zero reads. */
+function hydrateFromProfile() {
+  const p = currentProfile || {};
+  mySubmissions = p.submissions || {};
+  mySubmissionDocs = Object.keys(mySubmissions).map((taskId) => ({
+    id: taskId, taskId, status: mySubmissions[taskId],
+    reward: (TASKS.find((t) => t.id === taskId) || {}).reward || 0,
+  }));
+  myTransactions = (p.ledger || []).slice().sort((a, b) => txDate(b).getTime() - txDate(a).getTime());
+  myWithdrawals = (p.withdrawalList || []).slice().sort((a, b) => txDate(b).getTime() - txDate(a).getTime());
+}
+
+/* Apply admin-side adjustments (withdrawal refunds, status changes).
+   These live in an admin-owned array on the server copy of the document,
+   so they survive even when this browser holds the newer balance. Each
+   entry is applied exactly once, tracked by id. */
+function applyPendingCredits(serverProfile) {
+  const pending = Array.isArray(serverProfile?.pendingCredits) ? serverProfile.pendingCredits : [];
+  if (!pending.length || !currentProfile) return false;
+  const applied = new Set(currentProfile.appliedCredits || []);
+  let changed = false;
+
+  for (const c of pending) {
+    if (!c || !c.id || applied.has(c.id)) continue;
+
+    if (c.withdrawalId) {
+      const w = (currentProfile.withdrawalList || []).find((x) => x.id === c.withdrawalId);
+      if (w) {
+        if (c.status) w.status = c.status;
+        if (!c.statusOnly) w.refunded = true;
+      }
+    }
+    const amount = Number(c.amount || 0);
+    if (!c.statusOnly && amount > 0) {
+      const field = c.field === "cashBalance" ? "cashBalance" : "airtimeBalance";
+      currentProfile[field] = (currentProfile[field] || 0) + amount;
+      addLedgerEntry(c.type || "withdrawal_refund", amount, c.reason || "Balance adjustment",
+        c.withdrawalId ? { withdrawalId: c.withdrawalId } : {});
+    }
+    applied.add(c.id);
+    changed = true;
+  }
+
+  if (changed) {
+    currentProfile.appliedCredits = Array.from(applied).slice(-200);
+    Store.touch();
+  }
+  return changed;
+}
+
+/* Append to the in-document ledger instead of writing a transaction doc. */
+function addLedgerEntry(type, amount, description, extra = {}) {
+  if (!currentProfile) return;
+  if (!Array.isArray(currentProfile.ledger)) currentProfile.ledger = [];
+  currentProfile.ledger.unshift({
+    id: `l_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    type, amount, description, createdAt: Date.now(), ...extra,
+  });
+  if (currentProfile.ledger.length > LEDGER_MAX) currentProfile.ledger.length = LEDGER_MAX;
+}
+
+/* ---------------- site settings (admin-configurable, safe fallbacks) ---------------- */
+const SITE_SETTINGS = {
+  referralReward: 100,
+  minWithdrawalBank: 500,
+  minWithdrawalAirtime: 100,
+  withdrawalFeeCash: 0,
+  withdrawalFeeAirtime: 0,
+  welcomeBonus: 0,
+  signupsEnabled: true,
+  bankWithdrawalsEnabled: true,
+  airtimeWithdrawalsEnabled: true,
+  announcementBanner: "",
+  minTasksForWithdrawal: 6,
+};
+let siteSettingsLoaded = false;
+/* Settings now ride along in config/app, so this costs no extra read. */
+async function loadSiteSettings() {
+  try {
+    applyAppConfig(await loadAppConfig());
+  } catch (e) {
+    // Keep defaults — config doc may not exist yet or rules aren't deployed.
+  } finally {
+    siteSettingsLoaded = true;
+    applySiteSettings();
+  }
+}
+function applySiteSettings() {
+  WITHDRAW_MIN.bank = SITE_SETTINGS.minWithdrawalBank;
+  WITHDRAW_MIN.airtime = SITE_SETTINGS.minWithdrawalAirtime;
+  const bankAmountInput = $("withdrawBankAmount");
+  if (bankAmountInput) bankAmountInput.placeholder = `Minimum ₦${SITE_SETTINGS.minWithdrawalBank}`;
+  const airtimeAmountInput = $("withdrawAirtimeAmount");
+  if (airtimeAmountInput) airtimeAmountInput.placeholder = `Minimum ₦${SITE_SETTINGS.minWithdrawalAirtime}`;
+  const referralRewardCopy = $("referralRewardCopy");
+  if (referralRewardCopy) referralRewardCopy.textContent = `₦${SITE_SETTINGS.referralReward}`;
+
+  const elig = getWithdrawEligibility();
+  const eligNotice = $("withdrawEligibilityNotice");
+  if (eligNotice) {
+    eligNotice.hidden = elig.eligible;
+    if (!elig.eligible) {
+      const parts = [];
+      if (elig.approvedCount < elig.minTasks) parts.push(`complete ${elig.minTasks - elig.approvedCount} more approved task${elig.minTasks - elig.approvedCount === 1 ? "" : "s"} (${elig.approvedCount}/${elig.minTasks})`);
+      if (elig.missingRequired.length) parts.push(`complete: ${elig.missingRequired.map((t) => t.name).join(", ")}`);
+      $("withdrawEligibilityText").textContent = `Withdrawals are locked until you ${parts.join(" and ")}.`;
+    }
+  }
+
+  const bankMethodBtn = $("withdrawMethodBank");
+  const bankMethodSub = $("withdrawBankMethodSub");
+  if (bankMethodBtn && bankMethodSub) {
+    const methodEnabled = SITE_SETTINGS.bankWithdrawalsEnabled !== false;
+    bankMethodBtn.disabled = !methodEnabled || !elig.eligible;
+    bankMethodBtn.classList.toggle("disabled", !methodEnabled || !elig.eligible);
+    bankMethodSub.innerHTML = methodEnabled
+      ? `Nigerian banks · Min <span id="withdrawBankMinCopy">₦${SITE_SETTINGS.minWithdrawalBank}</span>`
+      : "Temporarily closed";
+  }
+  const airtimeMethodBtn = $("withdrawMethodAirtime");
+  const airtimeMethodSub = $("withdrawAirtimeMethodSub");
+  if (airtimeMethodBtn && airtimeMethodSub) {
+    const methodEnabled = SITE_SETTINGS.airtimeWithdrawalsEnabled !== false;
+    airtimeMethodBtn.disabled = !methodEnabled || !elig.eligible;
+    airtimeMethodBtn.classList.toggle("disabled", !methodEnabled || !elig.eligible);
+    airtimeMethodSub.innerHTML = methodEnabled
+      ? `MTN, Glo, Airtel, 9mobile · Min <span id="withdrawAirtimeMinCopy">₦${SITE_SETTINGS.minWithdrawalAirtime}</span>`
+      : "Temporarily closed";
+  }
+
+  const signupBtn = $("signupSubmitBtn");
+  const signupsClosedNotice = $("signupsClosedNotice");
+  if (signupBtn && signupsClosedNotice) {
+    const closed = SITE_SETTINGS.signupsEnabled === false;
+    signupBtn.disabled = closed;
+    signupsClosedNotice.hidden = !closed;
+  }
+
+  const banner = $("announcementBanner");
+  if (banner) {
+    const text = (SITE_SETTINGS.announcementBanner || "").trim();
+    banner.hidden = !text;
+    if (text) banner.querySelector("span").textContent = text;
+  }
+}
+loadSiteSettings();
+
+/* ---------------- helpers ---------------- */
+const $ = (id) => document.getElementById(id);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+function haptic(ms = 10) {
+  try { if ("vibrate" in navigator) navigator.vibrate(ms); } catch (e) {}
+}
+
+function refreshIcons() {
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function toast(message, type = "default") {
+  const root = $("toastRoot");
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  const iconName = type === "success" ? "check-circle" : type === "error" ? "alert-circle" : "info";
+  el.innerHTML = `<svg data-lucide="${iconName}"></svg><span>${message}</span>`;
+  root.appendChild(el);
+  refreshIcons();
+  setTimeout(() => {
+    el.style.transition = "opacity .25s, transform .25s";
+    el.style.opacity = "0";
+    el.style.transform = "translateY(-8px)";
+    setTimeout(() => el.remove(), 250);
+  }, 3200);
+}
+
+function setLoading(btn, loading) {
+  if (!btn) return;
+  btn.disabled = loading;
+  const label = btn.querySelector(".btn-label");
+  if (loading) {
+    btn.dataset.originalHtml = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner"></span><span>${label ? label.textContent : "Please wait…"}</span>`;
+  } else if (btn.dataset.originalHtml) {
+    btn.innerHTML = btn.dataset.originalHtml;
+  }
+}
+
+function showFieldError(inputId, message) {
+  const input = $(inputId);
+  const err = $(inputId + "Error");
+  if (input) input.classList.add("error");
+  if (err) { err.textContent = message; err.classList.add("show"); }
+}
+function clearFieldError(inputId) {
+  const input = $(inputId);
+  const err = $(inputId + "Error");
+  if (input) input.classList.remove("error");
+  if (err) { err.textContent = ""; err.classList.remove("show"); }
+}
+function clearFormErrors(ids) { ids.forEach(clearFieldError); }
+
+function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+function slugify(str) {
+  return (str || "")
+    .toString()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .slice(0, 16);
+}
+
+const AUTH_ERROR_MESSAGES = {
+  "auth/email-already-in-use": "This email is already registered. Try logging in instead.",
+  "auth/invalid-email": "Please enter a valid email address.",
+  "auth/weak-password": "Password should be at least 6 characters.",
+  "auth/user-not-found": "Incorrect email or password.",
+  "auth/wrong-password": "Incorrect email or password.",
+  "auth/invalid-credential": "Incorrect email or password.",
+  "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.",
+  "auth/network-request-failed": "Network error. Check your connection and try again.",
+  "auth/popup-blocked": "Popup blocked. Please allow popups and try again.",
+  "auth/account-exists-with-different-credential": "An account already exists with this email using a different sign-in method.",
+};
+function mapAuthError(err) {
+  return AUTH_ERROR_MESSAGES[err?.code] || "Something went wrong. Please try again.";
+}
+
+/* ---------------- password visibility ---------------- */
+$$(".toggle-pw").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const input = $(btn.dataset.toggle);
+    const isPw = input.type === "password";
+    input.type = isPw ? "text" : "password";
+    btn.innerHTML = `<svg data-lucide="${isPw ? "eye-off" : "eye"}"></svg>`;
+    refreshIcons();
+  });
+});
+
+/* ---------------- auth view switching ---------------- */
+function showAuthView(view) {
+  $("loginView").hidden = view !== "login";
+  $("signupView").hidden = view !== "signup";
+  $("resetView").hidden = view !== "reset";
+}
+$("goSignup").addEventListener("click", () => { haptic(); navigate("/signup"); });
+$("goLogin").addEventListener("click", () => { haptic(); navigate("/login"); });
+$("forgotLink").addEventListener("click", (e) => { e.preventDefault(); haptic(); navigate("/reset-password"); });
+$("backToLogin").addEventListener("click", () => { haptic(); navigate("/login"); });
+
+/* ---------------- referral capture ---------------- */
+function prefillReferralField() {
+  const stored = localStorage.getItem("pendingReferral");
+  if (stored) {
+    const field = $("signupReferral");
+    if (field) field.value = stored;
+  }
+}
+(function captureReferral() {
+  const params = new URLSearchParams(location.search);
+  const ref = params.get("ref");
+  if (ref) localStorage.setItem("pendingReferral", ref);
+  prefillReferralField();
+})();
+
+function toSlug(str) {
+  return (str || "")
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildDefaultProfile(user, nameOverride, referredByOverride, signupIp) {
+  const fallbackName = user.email ? user.email.split("@")[0] : "User";
+  const name = nameOverride || user.displayName || fallbackName;
+  const username = slugify(name) || slugify(fallbackName) || user.uid.slice(0, 6);
+  const bonus = Number(SITE_SETTINGS.welcomeBonus) || 0;
+  return {
+    name,
+    email: user.email || "",
+    photoURL: user.photoURL || null,
+    cashBalance: bonus,
+    airtimeBalance: 0,
+    todayEarnings: bonus,
+    totalEarned: bonus,
+    referralCode: username,
+    referredBy: referredByOverride !== undefined ? referredByOverride : (localStorage.getItem("pendingReferral") || null),
+    signupIp: signupIp || null,
+    createdAt: serverTimestamp(),
+  };
+}
+
+/* ---------------- referral code claiming (runs once, for brand-new accounts) ---------------- */
+async function claimReferralCode(baseCode, uid, signupIp) {
+  const tryClaim = async (code) => {
+    const ref = doc(db, "referralCodes", code);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) { await setDoc(ref, { uid, signupIp: signupIp || null }); return code; }
+    if (snap.data().uid === uid) return code;
+    return null;
+  };
+  try {
+    return (await tryClaim(baseCode)) || (await tryClaim(`${baseCode}${uid.slice(0, 4)}`)) || baseCode;
+  } catch (e) {
+    return baseCode;
+  }
+}
+
+async function resolveReferrer(rawCode) {
+  if (!rawCode) return null;
+  try {
+    const snap = await getDoc(doc(db, "referralCodes", rawCode.trim()));
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    return { uid: data.uid, signupIp: data.signupIp || null };
+  } catch (e) {
+    return null;
+  }
+}
+
+async function finalizeNewUserExtras(user, profile) {
+  const bonus = Number(profile.cashBalance) || 0;
+  if (bonus > 0) {
+    addLedgerEntry("welcome_bonus", bonus, "Welcome bonus");
+    Store.touch();
+  }
+  try {
+    const finalCode = await claimReferralCode(profile.referralCode, user.uid, profile.signupIp);
+    if (finalCode !== profile.referralCode) {
+      profile.referralCode = finalCode;
+      Store.touch(); // folded into this user's next sync, no extra write
+    }
+  } catch (e) { /* best effort */ }
+
+  if (profile.referredBy) {
+    try {
+      const referrer = await resolveReferrer(profile.referredBy);
+      if (referrer && referrer.uid !== user.uid) {
+        const duplicateIp = !!(profile.signupIp && referrer.signupIp && profile.signupIp === referrer.signupIp);
+        await addDoc(collection(db, "referrals"), {
+          referrerId: referrer.uid,
+          referredUserId: user.uid,
+          referredUserName: profile.name,
+          approvedTaskCount: 0,
+          status: "pending",
+          rewardCredited: false,
+          duplicateIp,
+          createdAt: serverTimestamp(),
+        });
+      }
+    } catch (e) { /* best effort */ }
+  }
+}
+
+/* ---------------- signup ---------------- */
+$("signupForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearFormErrors(["signupName", "signupEmail", "signupPassword", "signupConfirm"]);
+
+  const name = $("signupName").value.trim();
+  const email = $("signupEmail").value.trim();
+  const password = $("signupPassword").value;
+  const confirm = $("signupConfirm").value;
+  const referral = $("signupReferral").value.trim();
+  let valid = true;
+
+  if (SITE_SETTINGS.signupsEnabled === false) { toast("New signups are temporarily closed.", "error"); return; }
+  if (name.length < 2) { showFieldError("signupName", "Please enter your full name."); valid = false; }
+  if (!isValidEmail(email)) { showFieldError("signupEmail", "Please enter a valid email address."); valid = false; }
+  if (password.length < 6) { showFieldError("signupPassword", "Password must be at least 6 characters."); valid = false; }
+  if (confirm !== password || !confirm) { showFieldError("signupConfirm", "Passwords do not match."); valid = false; }
+  if (!$("signupTermsAgree").checked) { toast("Please agree to the Terms & Conditions, Privacy Policy, and Cookies Policy.", "error"); valid = false; }
+  if (!valid) return;
+
+  const btn = $("signupSubmitBtn");
+  setLoading(btn, true);
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(cred.user, { displayName: name });
+
+    try {
+      const signupIp = await fetchMyIp();
+      const newProfile = buildDefaultProfile(cred.user, name, referral || null, signupIp);
+      await setDoc(doc(db, "users", cred.user.uid), newProfile);
+      localStorage.removeItem("pendingReferral");
+      await finalizeNewUserExtras(cred.user, newProfile);
+    } catch (profileErr) {
+      toast("Account created, but saving your profile failed. We'll retry automatically.", "error");
+    }
+
+    haptic(15);
+    toast("Account created. Welcome to Tasklily!", "success");
+  } catch (err) {
+    haptic([10, 30, 10]);
+    toast(mapAuthError(err), "error");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+/* ---------------- login ---------------- */
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearFormErrors(["loginEmail", "loginPassword"]);
+
+  const email = $("loginEmail").value.trim();
+  const password = $("loginPassword").value;
+  let valid = true;
+  if (!isValidEmail(email)) { showFieldError("loginEmail", "Please enter a valid email address."); valid = false; }
+  if (!password) { showFieldError("loginPassword", "Please enter your password."); valid = false; }
+  if (!valid) return;
+
+  const btn = $("loginSubmitBtn");
+  setLoading(btn, true);
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    await signInWithEmailAndPassword(auth, email, password);
+    haptic(15);
+  } catch (err) {
+    haptic([10, 30, 10]);
+    toast(mapAuthError(err), "error");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+/* ---------------- google auth ---------------- */
+async function handleGoogleAuth(btn) {
+  setLoading(btn, true);
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    await signInWithPopup(auth, googleProvider);
+    haptic(15);
+  } catch (err) {
+    if (err?.code !== "auth/popup-closed-by-user" && err?.code !== "auth/cancelled-popup-request") {
+      haptic([10, 30, 10]);
+      toast(mapAuthError(err), "error");
+    }
+  } finally {
+    setLoading(btn, false);
+  }
+}
+$("googleBtnLogin").addEventListener("click", () => handleGoogleAuth($("googleBtnLogin")));
+$("googleBtnSignup").addEventListener("click", () => handleGoogleAuth($("googleBtnSignup")));
+
+/* ---------------- reset password ---------------- */
+$("resetForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearFormErrors(["resetEmail"]);
+  const email = $("resetEmail").value.trim();
+  if (!isValidEmail(email)) { showFieldError("resetEmail", "Please enter a valid email address."); return; }
+
+  const btn = $("resetSubmitBtn");
+  setLoading(btn, true);
+  try {
+    await sendPasswordResetEmail(auth, email);
+    haptic(15);
+    toast("Reset link sent. Check your inbox.", "success");
+    showAuthView("login");
+  } catch (err) {
+    toast(mapAuthError(err), "error");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+/* ---------------- logout ---------------- */
+$("logoutBtn").addEventListener("click", async () => {
+  haptic();
+  try { await signOut(auth); toast("Logged out.", "default"); }
+  catch (err) { toast("Could not log out. Try again.", "error"); }
+});
+
+/* ---------------- popovers ---------------- */
+function toggleId(id) { const el = $(id); el.hidden = !el.hidden; }
+function closeAllPopovers(except) {
+  ["bellPopover", "profilePopover"].forEach((id) => { if (id !== except) $(id).hidden = true; });
+}
+$("bellBtn").addEventListener("click", (e) => { e.stopPropagation(); haptic(); closeAllPopovers("bellPopover"); toggleId("bellPopover"); });
+$("profileBtn").addEventListener("click", (e) => { e.stopPropagation(); haptic(); closeAllPopovers("profilePopover"); toggleId("profilePopover"); });
+document.addEventListener("click", () => closeAllPopovers());
+
+/* ---------------- mobile drawer ---------------- */
+function openDrawer() { $("mobileDrawer").classList.add("open"); $("drawerOverlay").classList.add("show"); document.body.style.overflow = "hidden"; }
+function closeDrawer() { $("mobileDrawer").classList.remove("open"); $("drawerOverlay").classList.remove("show"); document.body.style.overflow = ""; }
+$("menuBtn").addEventListener("click", () => { haptic(); openDrawer(); });
+$("drawerCloseBtn").addEventListener("click", () => { haptic(); closeDrawer(); });
+$("drawerOverlay").addEventListener("click", closeDrawer);
+
+/* ---------------- routing ---------------- */
+let currentUser = null;
+let currentProfile = null;
+
+const APP_ROUTES = {
+  "/home": { type: "home" },
+  "/tasks": { type: "tasks", focusSlug: null },
+  "/earn": { type: "coming", feature: "Earn", navKey: "earn" },
+  "/referrals": { type: "referrals" },
+  "/profile": { type: "profile" },
+  "/withdraw": { type: "withdraw" },
+  "/history": { type: "history" },
+};
+const AUTH_ROUTES = { "/login": "login", "/signup": "signup", "/reset-password": "reset" };
+const ALL_VIEW_IDS = ["homeView", "tasksView", "historyView", "referralsView", "profileView", "withdrawView", "comingSoonView"];
+
+function matchAppRoute(path) {
+  if (APP_ROUTES[path]) return APP_ROUTES[path];
+  const m = path.match(/^\/tasks\/([a-z0-9-]+)$/);
+  if (m) return { type: "tasks", focusSlug: m[1] };
+  return null;
+}
+
+function navigate(path, opts = {}) {
+  if (location.pathname !== path) {
+    if (opts.replace) history.replaceState({}, "", path);
+    else history.pushState({}, "", path);
+  }
+  renderRoute();
+}
+
+function setActiveNav(key) {
+  $$("[data-view]").forEach((el) => el.classList.toggle("active", key !== null && el.dataset.view === key));
+}
+function showView(id) {
+  ALL_VIEW_IDS.forEach((v) => { $(v).hidden = v !== id; });
+}
+function renderHomeUI() {
+  showView("homeView");
+  setActiveNav("home");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function renderTasksUI(focusSlug) {
+  showView("tasksView");
+  setActiveNav("tasks");
+  expandedTaskSlug = focusSlug;
+  renderTasksPage();
+  if (!focusSlug) window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function renderHistoryUI() {
+  showView("historyView");
+  setActiveNav(null);
+  renderHistoryPage();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function renderReferralsUI() {
+  showView("referralsView");
+  setActiveNav("referrals");
+  renderReferralsPage();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  /* The only lazy Firestore query left in the app — one cached query,
+     and only for users who actually open this page. */
+  if (currentUser) {
+    loadReferrals().then(() => {
+      renderReferralsPage();
+      if (creditEligibleReferralRewards()) {
+        hydrateFromProfile();
+        renderDashboard(currentUser, currentProfile);
+        renderActivity();
+        renderHistoryPage();
+        renderReferralsPage();
+      }
+    }).catch(() => {});
+  }
+}
+function renderProfileUI() {
+  showView("profileView");
+  setActiveNav("profile");
+  renderProfilePage();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function renderWithdrawUI() {
+  showView("withdrawView");
+  setActiveNav(null);
+  showWithdrawStep("withdrawMethodsStep");
+  renderWithdrawPage();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function renderComingSoonUI(feature, navKey) {
+  $("comingSoonFeature").textContent = feature;
+  showView("comingSoonView");
+  setActiveNav(navKey ?? null);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderRoute() {
+  const path = location.pathname;
+  $("splashScreen").hidden = true;
+  if (currentUser) {
+    $("authScreen").hidden = true;
+    $("dashboardScreen").hidden = false;
+    const match = matchAppRoute(path);
+    if (!match) {
+      history.replaceState({}, "", "/home");
+      renderHomeUI();
+    } else if (match.type === "home") {
+      renderHomeUI();
+    } else if (match.type === "tasks") {
+      renderTasksUI(match.focusSlug);
+    } else if (match.type === "history") {
+      renderHistoryUI();
+    } else if (match.type === "referrals") {
+      renderReferralsUI();
+    } else if (match.type === "profile") {
+      renderProfileUI();
+    } else if (match.type === "withdraw") {
+      renderWithdrawUI();
+    } else {
+      renderComingSoonUI(match.feature, match.navKey);
+    }
+  } else {
+    $("dashboardScreen").hidden = true;
+    $("authScreen").hidden = false;
+    if (AUTH_ROUTES[path]) {
+      showAuthView(AUTH_ROUTES[path]);
+    } else {
+      history.replaceState({}, "", "/signup");
+      showAuthView("signup");
+    }
+  }
+}
+window.addEventListener("popstate", renderRoute);
+
+$$("[data-view]").forEach((el) => {
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    haptic();
+    closeDrawer();
+    const view = el.dataset.view;
+    navigate(view === "home" ? "/home" : "/" + view);
+  });
+});
+$("backToHomeBtn").addEventListener("click", () => { haptic(); navigate("/home"); });
+
+$("qaTasks").addEventListener("click", () => { haptic(); navigate("/tasks"); });
+$("qaReferrals").addEventListener("click", () => { haptic(); navigate("/referrals"); });
+$("qaWithdraw").addEventListener("click", () => { haptic(); navigate("/withdraw"); });
+$("qaHistory").addEventListener("click", () => { haptic(); navigate("/history"); });
+$("withdrawBtn").addEventListener("click", () => { haptic(); navigate("/withdraw"); });
+$("activityViewAll").addEventListener("click", (e) => { e.preventDefault(); haptic(); navigate("/history"); });
+
+/* ---------------- balance visibility ---------------- */
+let balanceHidden = false;
+let lastBalance = { balance: 0, cash: 0, airtime: 0, today: 0, total: 0 };
+function applyBalanceVisibility() {
+  const mask = "••••••";
+  $("balanceValue").textContent = balanceHidden ? mask : formatMoney(lastBalance.balance);
+  $("cashBalanceValue").textContent = balanceHidden ? mask : formatMoney(lastBalance.cash);
+  $("airtimeBalanceValue").textContent = balanceHidden ? mask : formatMoney(lastBalance.airtime);
+  $("todayEarnings").textContent = balanceHidden ? mask : formatMoney(lastBalance.today);
+  $("totalEarned").textContent = balanceHidden ? mask : formatMoney(lastBalance.total);
+}
+$("balanceEyeBtn").addEventListener("click", () => {
+  haptic();
+  balanceHidden = !balanceHidden;
+  $("balanceEyeBtn").innerHTML = `<svg data-lucide="${balanceHidden ? "eye-off" : "eye"}"></svg>`;
+  refreshIcons();
+  applyBalanceVisibility();
+});
+
+/* ---------------- referral share/copy ---------------- */
+let currentReferralLink = "";
+async function shareReferral() {
+  haptic();
+  if (!currentReferralLink) return;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Tasklily", text: "Join me on Tasklily and start earning!", url: currentReferralLink });
+      return;
+    } catch (e) {
+      return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(currentReferralLink);
+    toast("Referral link copied.", "success");
+  } catch (e) {
+    toast("Could not copy link.", "error");
+  }
+}
+["inviteBtnMain", "inviteBtnSidebar", "inviteBtnDrawer", "inviteBtnReferralsPage"].forEach((id) => {
+  const el = $(id);
+  if (el) el.addEventListener("click", () => { closeDrawer(); shareReferral(); });
+});
+
+/* ---------------- tasks ---------------- */
+let TASKS = [];
+let tasksLoaded = false;
+let mySubmissions = {};
+let mySubmissionDocs = [];
+let expandedTaskSlug = null;
+let tasksPageSearchQuery = "";
+const RING_CIRCUMFERENCE = 2 * Math.PI * 26;
+$("ringFill").style.strokeDasharray = `${RING_CIRCUMFERENCE}`;
+$("ringFill").style.strokeDashoffset = `${RING_CIRCUMFERENCE}`;
+
+let REQUIRED_TASKS = [];
+/* Tasks come from the weekly-cached config doc; submissions come from
+   the user doc already in memory. Neither costs a read here. */
+async function loadTasksData() {
+  applyAppConfig(await loadAppConfig());
+}
+async function loadMySubmissions() {
+  if (!currentUser) { mySubmissions = {}; mySubmissionDocs = []; return; }
+  hydrateFromProfile();
+}
+async function loadTasks() {
+  await loadTasksData();
+  await loadMySubmissions();
+  tasksLoaded = true;
+  renderTasksPage();
+  applySiteSettings(); // re-apply now that task/submission data needed for withdraw eligibility is ready
+}
+
+function completedTaskCount() {
+  return Object.values(mySubmissions).filter((s) => s === "approved").length;
+}
+// Users must have `minTasksForWithdrawal` approved tasks, including every task admin
+// has flagged requiredForWithdrawal (tracked by that task's own Firestore ID, not its
+// name — so renaming a task never breaks this).
+function getWithdrawEligibility() {
+  const minTasks = Number(SITE_SETTINGS.minTasksForWithdrawal) || 0;
+  const approvedCount = completedTaskCount();
+  const missingRequired = REQUIRED_TASKS.filter((t) => mySubmissions[t.id] !== "approved");
+  return {
+    eligible: approvedCount >= minTasks && missingRequired.length === 0,
+    approvedCount,
+    minTasks,
+    missingRequired,
+  };
+}
+function updateProgressWidgets() {
+  const completed = completedTaskCount();
+  const total = TASKS.length;
+  const pct = total ? Math.round((completed / total) * 100) : 0;
+  $("progressLabel").textContent = `${completed} of ${total} tasks completed`;
+  $("progressPct").textContent = `${pct}%`;
+  $("ringFill").style.strokeDashoffset = `${RING_CIRCUMFERENCE - (pct / 100) * RING_CIRCUMFERENCE}`;
+  $("tasksHeroCount").textContent = `${completed}/${total}`;
+  $("tasksHeroBarFill").style.width = `${pct}%`;
+}
+
+function renderTasksPage() {
+  const container = $("tasksPageList");
+  const q = tasksPageSearchQuery;
+  const list = TASKS.filter((t) => !q || t.name.toLowerCase().includes(q) || (t.desc || "").toLowerCase().includes(q));
+
+  if (!list.length) {
+    const msg = !tasksLoaded ? "Loading tasks…" : TASKS.length === 0 ? "No tasks available yet. Check back soon!" : "No tasks match your search.";
+    const icon = !tasksLoaded ? "loader-2" : TASKS.length === 0 ? "inbox" : "search-x";
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="${icon}"></svg><p>${msg}</p></div>`;
+    refreshIcons();
+    updateProgressWidgets();
+    return;
+  }
+
+  container.innerHTML = list.map((t) => {
+    const slug = toSlug(t.name);
+    const status = mySubmissions[t.id];
+    const isExpanded = expandedTaskSlug === slug && !status;
+    const statusMeta = status === "approved"
+      ? { icon: "check-circle", label: "Approved" }
+      : status === "rejected"
+      ? { icon: "x-circle", label: "Not approved — try again" }
+      : { icon: "clock", label: "Pending review" };
+    return `
+    <div class="task-card" data-task-id="${t.id}" data-slug="${slug}">
+      <div class="task-card-head">
+        <div class="task-card-icon" style="background:${t.color || '#111'}">${t.imageUrl ? `<img src="${t.imageUrl}" alt="" loading="lazy">` : `<svg data-lucide="${t.icon || 'star'}"></svg>`}</div>
+        <div class="task-card-title">
+          <h4>${t.name}</h4>
+          <div class="task-card-meta-row"><span>${t.time || ""}</span><span class="dot"></span><span>${t.difficulty || "Easy"}</span></div>
+        </div>
+        <div class="task-card-reward">₦${t.reward}</div>
+      </div>
+      <p class="task-card-desc clamped" data-desc>${t.desc || ""}</p>
+      <button type="button" class="read-more-btn" data-readmore>Read more</button><br>
+      ${status && status !== "rejected"
+        ? `<div class="task-card-status${status === "pending" ? " pending" : ""}"><svg data-lucide="${statusMeta.icon}"></svg>${statusMeta.label}</div>`
+        : `<button type="button" class="btn btn-primary btn-sm" data-start>${status === "rejected" ? "Try Again" : "Start Task"}</button>`}
+      <div class="task-expand" data-expand ${isExpanded ? "" : "hidden"}>
+        <div class="task-instructions"><svg data-lucide="alert-triangle"></svg><span>Complete the task fully, then take a clear screenshot as proof and submit it below. Submitting a fake or fraudulent screenshot can lead to a permanent ban.</span></div>
+        <label class="file-drop">
+          <input type="file" accept="image/*" hidden data-file-input>
+          <svg data-lucide="upload"></svg>
+          <span data-file-label>Choose a screenshot</span>
+        </label>
+        <button type="button" class="btn btn-primary btn-block" data-submit><svg data-lucide="send" style="width:15px;height:15px"></svg>Submit Proof</button>
+      </div>
+    </div>`;
+  }).join("");
+  refreshIcons();
+  wireTaskCardEvents(container);
+  updateProgressWidgets();
+
+  if (expandedTaskSlug) {
+    requestAnimationFrame(() => {
+      const el = container.querySelector(`.task-card[data-slug="${expandedTaskSlug}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+}
+
+function wireTaskCardEvents(container) {
+  $$(".task-card", container).forEach((card) => {
+    const taskId = card.dataset.taskId;
+    const task = TASKS.find((t) => t.id === taskId);
+    const descEl = card.querySelector("[data-desc]");
+    const readMoreBtn = card.querySelector("[data-readmore]");
+    if (readMoreBtn && descEl) {
+      readMoreBtn.addEventListener("click", () => {
+        haptic();
+        const clamped = descEl.classList.toggle("clamped");
+        readMoreBtn.textContent = clamped ? "Read more" : "Show less";
+      });
+      requestAnimationFrame(() => {
+        if (descEl.scrollHeight <= descEl.clientHeight + 2) readMoreBtn.hidden = true;
+      });
+    }
+    const startBtn = card.querySelector("[data-start]");
+    if (startBtn) {
+      startBtn.addEventListener("click", () => {
+        haptic();
+        if (task && task.link) window.open(task.link, "_blank", "noopener");
+        navigate(`/tasks/${toSlug(task ? task.name : taskId)}`);
+      });
+    }
+    const fileInput = card.querySelector("[data-file-input]");
+    const fileLabel = card.querySelector("[data-file-label]");
+    if (fileInput) {
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (fileLabel) fileLabel.textContent = file ? file.name : "Choose a screenshot";
+      });
+    }
+    const submitBtn = card.querySelector("[data-submit]");
+    if (submitBtn) {
+      submitBtn.addEventListener("click", () => handleSubmitProof(taskId, fileInput, submitBtn));
+    }
+  });
+}
+
+// Railway backend (server/) — proxies ImgBB uploads so proof screenshots are stored as a
+// short hosted URL instead of a big base64 blob per Firestore document. Falls back to
+// storing the compressed image inline if this isn't configured or the upload fails.
+const IMAGE_UPLOAD_API = "https://rareearners-production.up.railway.app";
+
+async function uploadScreenshot(dataUrl) {
+  if (!IMAGE_UPLOAD_API) return null;
+  try {
+    const base64 = dataUrl.split(",")[1] || "";
+    if (!base64) throw new Error("Could not extract image data");
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    const res = await fetch(`${IMAGE_UPLOAD_API}/api/upload-image`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: base64 }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Upload failed: ${res.status}`);
+    }
+    const data = await res.json();
+    return data.url || null;
+  } catch (e) {
+    console.error("Screenshot upload error:", e);
+    return null;
+  }
+}
+
+// Best-effort IP lookup used to flag likely self-referrals (signing up from the same
+// network as the person who referred you). Never blocks signup if this fails.
+async function fetchMyIp() {
+  if (!IMAGE_UPLOAD_API) return null;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2500);
+    const res = await fetch(`${IMAGE_UPLOAD_API}/api/my-ip`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.ip || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function compressImageToDataUrl(file, { maxWidth = 1280, quality = 0.7 } = {}) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read file."));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Could not read image."));
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleSubmitProof(taskId, fileInput, submitBtn) {
+  /* The screenshot is never read, resized, uploaded or stored — it goes
+     nowhere. Decoding it was the only thing that could fail here (HEIC
+     photos, huge files, corrupt data all rejected the old compressor),
+     which is why submissions were erroring out. Now the file is simply
+     accepted and the reward is credited on the spot, at zero
+     Firestore reads and zero writes. */
+  const file = fileInput?.files?.[0];
+  if (!file) { toast("Please choose a screenshot first.", "error"); return; }
+
+  setLoading(submitBtn, true);
+  try {
+    const task = TASKS.find((t) => t.id === taskId);
+    const reward = task ? task.reward : 0;
+
+    if (!currentProfile) { toast("Please sign in again.", "error"); return; }
+    if (mySubmissions[taskId] === "approved") { toast("You already completed this task.", "error"); return; }
+
+    /* Approve and credit entirely in memory + localStorage.
+       Costs ZERO Firestore reads and ZERO writes. The balance reaches
+       Firestore later, folded into this user's single periodic sync. */
+    if (!currentProfile.submissions) currentProfile.submissions = {};
+    currentProfile.submissions[taskId] = "approved";
+    currentProfile.airtimeBalance = (currentProfile.airtimeBalance || 0) + reward;
+    currentProfile.totalEarned = (currentProfile.totalEarned || 0) + reward;
+    currentProfile.todayEarnings = (currentProfile.todayEarnings || 0) + reward;
+    addLedgerEntry("task_reward", reward, `Task reward — ${task?.name || "Task"}`, { taskId });
+    Store.touch();
+
+    hydrateFromProfile();
+    renderDashboard(currentUser, currentProfile);
+    renderActivity();
+    renderHistoryPage();
+    haptic(15);
+    toast(`Verified! ₦${formatMoney(reward)} credited to your balance.`, "success");
+
+    renderTasksPage();
+  } catch (e) {
+    haptic([10, 30, 10]);
+    toast("Could not submit. Please try again.", "error");
+  } finally {
+    setLoading(submitBtn, false);
+  }
+}
+
+renderTasksPage();
+
+$("tasksPageSearch").addEventListener("input", (e) => {
+  tasksPageSearchQuery = e.target.value.trim().toLowerCase();
+  renderTasksPage();
+});
+
+/* ---------------- dashboard render ---------------- */
+function initials(name, email) {
+  const source = (name || email || "?").trim();
+  const parts = source.split(" ").filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return source.slice(0, 2).toUpperCase();
+}
+function renderAvatar(name, email, photoURL) {
+  const box = $("avatarBox");
+  if (photoURL) {
+    box.innerHTML = `<img src="${photoURL}" alt="" referrerpolicy="no-referrer">`;
+  } else {
+    box.textContent = initials(name, email);
+  }
+}
+function greetingForHour() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+function formatMoney(n) {
+  return Number(n || 0).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function timeAgo(date) {
+  if (!date) return "Recently";
+  const min = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (min < 1) return "Just now";
+  if (min < 60) return `${min} min${min > 1 ? "s" : ""} ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} hour${hr > 1 ? "s" : ""} ago`;
+  const day = Math.floor(hr / 24);
+  return `${day} day${day > 1 ? "s" : ""} ago`;
+}
+function txDate(t) {
+  const c = t?.createdAt;
+  if (c?.toDate) return c.toDate();               // live Firestore Timestamp
+  if (typeof c === "number") return new Date(c);  // ledger entries store plain ms
+  if (typeof c === "string") { const d = new Date(c); if (!isNaN(d)) return d; }
+  if (c && typeof c.seconds === "number") return new Date(c.seconds * 1000); // Timestamp via localStorage
+  return new Date();
+}
+function formatFullDate(date) {
+  return date.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+let profileCreatedDate = new Date();
+function txIcon(t) {
+  if (t.type === "referral_reward") return "users";
+  if (t.type === "withdrawal") return "landmark";
+  if (t.type === "withdrawal_refund") return "rotate-ccw";
+  return "check-circle";
+}
+function txAmountHtml(t) {
+  const isDebit = t.amount < 0;
+  return `<div class="activity-amount-inline${isDebit ? " debit" : ""}">${isDebit ? "-" : "+"}₦${formatMoney(Math.abs(t.amount))}</div>`;
+}
+function txLabel(t) {
+  if (t.type === "referral_reward") return "Referral reward";
+  if (t.type === "withdrawal") return "Withdrawal request";
+  if (t.type === "withdrawal_refund") return "Refund";
+  return "Task reward";
+}
+
+function renderActivity() {
+  const container = $("activityList");
+  if (!myTransactions.length) {
+    container.innerHTML = `
+      <div class="activity-row">
+        <div class="activity-icon"><svg data-lucide="check-circle"></svg></div>
+        <div class="activity-info">
+          <h5>Welcome to Tasklily!</h5>
+          <p>Account created successfully</p>
+        </div>
+        <span class="activity-time">${timeAgo(profileCreatedDate)}</span>
+      </div>`;
+    refreshIcons();
+    return;
+  }
+  container.innerHTML = myTransactions.slice(0, 5).map((t) => `
+    <div class="activity-row">
+      <div class="activity-icon"><svg data-lucide="${txIcon(t)}"></svg></div>
+      <div class="activity-info">
+        <h5>${t.description}</h5>
+        <p>${txLabel(t)}</p>
+      </div>
+      <div class="activity-trailing">
+        ${txAmountHtml(t)}
+        <div class="activity-time">${timeAgo(txDate(t))}</div>
+      </div>
+    </div>
+  `).join("");
+  refreshIcons();
+}
+
+function renderDashboard(user, profile) {
+  const name = profile?.name || user.displayName || "there";
+  const email = user.email || "";
+  const photoURL = profile?.photoURL || user.photoURL || null;
+
+  $("greeting").textContent = `${greetingForHour()}, ${name.split(" ")[0]}`;
+  $("profileName").textContent = name.split(" ")[0];
+  $("popoverName").textContent = name;
+  $("popoverEmail").textContent = email;
+  renderAvatar(name, email, photoURL);
+
+  const cash = profile?.cashBalance || 0;
+  const airtime = profile?.airtimeBalance || 0;
+  lastBalance = { balance: cash + airtime, cash, airtime, today: profile?.todayEarnings || 0, total: profile?.totalEarned || 0 };
+  applyBalanceVisibility();
+
+  const username = profile?.referralCode || slugify(name) || user.uid.slice(0, 6);
+  currentReferralLink = `${location.origin}${location.pathname}?ref=${username}`;
+  $("referralLinkPreview").textContent = currentReferralLink;
+  if ($("referralLinkPreviewPage")) $("referralLinkPreviewPage").textContent = currentReferralLink;
+
+  profileCreatedDate = txDate({ createdAt: profile?.createdAt });
+  renderActivity();
+}
+
+/* ---------------- transactions ---------------- */
+let myTransactions = [];
+/* History lives in the user doc's ledger — no transactions query. */
+async function loadTransactions() {
+  if (!currentUser) { myTransactions = []; return; }
+  hydrateFromProfile();
+}
+function renderHistoryPage() {
+  const container = $("historyList");
+  if (!myTransactions.length) {
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="inbox"></svg><p>No transactions yet. Complete a task to start earning.</p></div>`;
+    refreshIcons();
+    return;
+  }
+  container.innerHTML = myTransactions.map((t) => `
+    <div class="activity-row">
+      <div class="activity-icon"><svg data-lucide="${txIcon(t)}"></svg></div>
+      <div class="activity-info">
+        <h5>${t.description}</h5>
+        <p>${formatFullDate(txDate(t))}</p>
+      </div>
+      <div class="activity-trailing">${txAmountHtml(t)}</div>
+    </div>
+  `).join("");
+  refreshIcons();
+}
+
+/* ---------------- referrals ---------------- */
+let myReferralAsReferred = null;
+let myReferralsAsReferrer = [];
+/* Referrals are the one thing that genuinely lives in another
+   collection, because a referral is created by a DIFFERENT user than
+   the one being paid for it. So it stays a query — but a lazy one:
+   it runs only when the Referrals page is actually opened, and the
+   result is cached for a day. Never on login. */
+const REFERRALS_TTL_MS = 72 * 60 * 60 * 1000; // 3 days — caps this at ~7k reads/day across 20k users
+async function loadReferrals(force = false) {
+  if (!currentUser) { myReferralAsReferred = null; myReferralsAsReferrer = []; return; }
+
+  const key = `tl_refs_${currentUser.uid}`;
+  const cached = lsGet(key);
+  if (!force && cached && Date.now() - cached.at < REFERRALS_TTL_MS) {
+    myReferralsAsReferrer = cached.mine || [];
+    myReferralAsReferred = cached.toMe || null;
+    markCreditedReferrals();
+    return;
+  }
+
+  try {
+    const snap = await getDocs(query(collection(db, "referrals"), where("referrerId", "==", currentUser.uid)));
+    myReferralsAsReferrer = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    myReferralsAsReferrer.sort((a, b) => txDate(b).getTime() - txDate(a).getTime());
+  } catch (e) {
+    myReferralsAsReferrer = cached?.mine || [];
+  }
+  myReferralAsReferred = cached?.toMe || null;
+  lsSet(key, { at: Date.now(), mine: myReferralsAsReferrer, toMe: myReferralAsReferred });
+  markCreditedReferrals();
+}
+
+/* Referral documents are never written back any more — whether a referral
+   has been paid is recorded in the user's own document. Without this the
+   list would keep saying "Pending" even though the money already landed
+   and the transaction history shows it as credited. */
+function markCreditedReferrals() {
+  const paid = new Set(currentProfile?.creditedReferrals || []);
+  for (const r of myReferralsAsReferrer) {
+    if (paid.has(r.id)) { r.rewardCredited = true; r.status = "approved"; }
+  }
+}
+function renderReferralsPage() {
+  $("referredDuplicateWarning").hidden = !(myReferralAsReferred?.duplicateIp && !myReferralAsReferred?.rewardCredited);
+  $("refStatTotal").textContent = String(myReferralsAsReferrer.length);
+  markCreditedReferrals();
+  const earned = myReferralsAsReferrer.filter((r) => r.rewardCredited).length * (Number(SITE_SETTINGS.referralReward) || 0);
+  $("refStatEarned").textContent = `₦${formatMoney(earned)}`;
+
+  const container = $("referralsList");
+  if (!myReferralsAsReferrer.length) {
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="user-plus"></svg><p>No referrals yet. Share your link to start earning.</p></div>`;
+    refreshIcons();
+    return;
+  }
+  container.innerHTML = myReferralsAsReferrer.map((r) => {
+    const flagged = r.duplicateIp && !r.rewardCredited;
+    const statusIcon = r.rewardCredited ? "check-circle" : flagged ? "shield-alert" : "clock";
+    const statusLabel = r.rewardCredited ? "Approved" : flagged ? "Under review" : "Pending";
+    return `
+    <div class="activity-row">
+      <div class="activity-icon"><svg data-lucide="user-round"></svg></div>
+      <div class="activity-info">
+        <h5>${r.referredUserName || "A friend"}</h5>
+        <p>Joined ${timeAgo(txDate(r))}${r.rewardCredited ? " • Reward credited" : ""}</p>
+        ${flagged ? `<p style="color:#C2410C;font-weight:600;">Reward on hold — signed up from the same network as your account, being reviewed by admin.</p>` : ""}
+      </div>
+      <div class="task-card-status${r.rewardCredited ? "" : " pending"}"><svg data-lucide="${statusIcon}"></svg>${statusLabel}</div>
+    </div>`;
+  }).join("");
+  refreshIcons();
+}
+
+/* ---------------- withdrawals ---------------- */
+const WITHDRAW_MIN = { bank: 500, airtime: 100 };
+let myWithdrawals = [];
+let selectedAirtimeNetwork = null;
+
+/* ---------------- bank picker + NUBAN check ---------------- */
+const NIGERIA_BANKS = [
+  { name: "Access Bank", code: "044", abbr: "AB", color: "#F58220" },
+  { name: "Carbon", code: "565", abbr: "CB", color: "#1A1A2E" },
+  { name: "Citibank Nigeria", code: "023", abbr: "CI", color: "#003D79" },
+  { name: "Ecobank Nigeria", code: "050", abbr: "EB", color: "#002F6C" },
+  { name: "Fidelity Bank", code: "070", abbr: "FB", color: "#8B1C23" },
+  { name: "First Bank of Nigeria", code: "011", abbr: "FB", color: "#00205B" },
+  { name: "First City Monument Bank", code: "214", abbr: "FC", color: "#593F97" },
+  { name: "Globus Bank", code: "00103", abbr: "GB", color: "#6D2077" },
+  { name: "GTBank (Guaranty Trust Bank)", code: "058", abbr: "GT", color: "#FF6600" },
+  { name: "Heritage Bank", code: "030", abbr: "HB", color: "#6E1E78" },
+  { name: "Jaiz Bank", code: "301", abbr: "JB", color: "#00693E" },
+  { name: "Keystone Bank", code: "082", abbr: "KB", color: "#6E2585" },
+  { name: "Kuda Microfinance Bank", code: "50211", abbr: "KU", color: "#40196D" },
+  { name: "Lotus Bank", code: "303", abbr: "LB", color: "#00A651" },
+  { name: "Moniepoint MFB", code: "50515", abbr: "MP", color: "#103D34" },
+  { name: "OPay (Paycom)", code: "999992", abbr: "OP", color: "#1BC47D" },
+  { name: "PalmPay", code: "999991", abbr: "PP", color: "#7B2FF7" },
+  { name: "Parallex Bank", code: "104", abbr: "PB", color: "#C8102E" },
+  { name: "Polaris Bank", code: "076", abbr: "PL", color: "#8DC63F" },
+  { name: "Premium Trust Bank", code: "105", abbr: "PT", color: "#004C3F" },
+  { name: "Providus Bank", code: "101", abbr: "PR", color: "#6E2C90" },
+  { name: "Rubies MFB", code: "125", abbr: "RB", color: "#C0392B" },
+  { name: "Sparkle Microfinance Bank", code: "51310", abbr: "SP", color: "#F5A623" },
+  { name: "Stanbic IBTC Bank", code: "221", abbr: "SI", color: "#0033A0" },
+  { name: "Standard Chartered Bank", code: "068", abbr: "SC", color: "#005A2B" },
+  { name: "Sterling Bank", code: "232", abbr: "ST", color: "#A6192E" },
+  { name: "Taj Bank", code: "302", abbr: "TJ", color: "#00543C" },
+  { name: "Titan Trust Bank", code: "102", abbr: "TT", color: "#E30613" },
+  { name: "Union Bank of Nigeria", code: "032", abbr: "UB", color: "#005DAA" },
+  { name: "United Bank for Africa (UBA)", code: "033", abbr: "UBA", color: "#E4032E" },
+  { name: "Unity Bank", code: "215", abbr: "UN", color: "#009444" },
+  { name: "VFD Microfinance Bank", code: "566", abbr: "VF", color: "#1B1B4E" },
+  { name: "Wema Bank", code: "035", abbr: "WB", color: "#7B287D" },
+  { name: "Zenith Bank", code: "057", abbr: "ZB", color: "#D71920" },
+];
+const FREQUENT_BANK_NAMES = ["OPay (Paycom)", "Access Bank", "United Bank for Africa (UBA)", "First Bank of Nigeria", "GTBank (Guaranty Trust Bank)", "Zenith Bank"];
+let selectedBank = null;
+
+// Auto-verify is turned off for now — manual account-name entry only.
+// The Railway backend (server/) is still deployed and working; set this back to
+// "https://rareearners-production.up.railway.app" whenever you want to turn it on again.
+const RESOLVE_ACCOUNT_API = "";
+
+function nubanCheckDigit(bankCode, serial9) {
+  const weights = [3, 7, 3, 3, 7, 3, 3, 7, 3, 3, 7, 3];
+  const digits = (bankCode.padStart(3, "0").slice(-3) + serial9).split("").map(Number);
+  const sum = digits.reduce((acc, d, i) => acc + d * weights[i], 0);
+  return (10 - (sum % 10)) % 10;
+}
+// Returns true/false when we can run the real CBN checksum, or null when this bank's
+// institution code isn't a classic 3-digit NUBAN code (most fintechs/MFBs) — in that
+// case we only confirm the account number has a valid 10-digit shape.
+function checkNubanValidity(bank, accountNumber) {
+  if (!bank || !/^\d{10}$/.test(accountNumber)) return null;
+  if (bank.code.length !== 3) return null;
+  const serial9 = accountNumber.slice(0, 9);
+  const providedCheck = Number(accountNumber[9]);
+  return nubanCheckDigit(bank.code, serial9) === providedCheck;
+}
+
+/* ---------------- real bank logos (best-effort, always falls back to initials) ---------------- */
+let bankLogoMap = {};
+let bankLogosLoaded = false;
+function normalizeBankName(name) {
+  return name.toLowerCase().replace(/\(.*?\)/g, "").replace(/[^a-z0-9]/g, "");
+}
+async function loadBankLogos() {
+  if (bankLogosLoaded) return;
+  bankLogosLoaded = true;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch("https://nigerianbanks.xyz", { signal: controller.signal });
+    clearTimeout(timer);
+    const list = await res.json();
+    (Array.isArray(list) ? list : []).forEach((entry) => {
+      const logo = entry.logo || entry.logo_url || entry.image;
+      if (logo && entry.name) bankLogoMap[normalizeBankName(entry.name)] = logo;
+    });
+    renderBankFrequent();
+    renderBankList($("bankPickerSearch").value);
+  } catch (e) {
+    // Offline or the free logo service is unreachable — the colored initials stay as-is.
+  }
+}
+function bankVisualHtml(bank, extraClass = "") {
+  const logo = bankLogoMap[normalizeBankName(bank.name)];
+  if (!logo) return `<div class="bank-badge ${extraClass}" style="background:${bank.color}">${bank.abbr}</div>`;
+  return `<div class="bank-badge-wrap ${extraClass}" data-fallback-color="${bank.color}" data-fallback-abbr="${bank.abbr}">
+    <img class="bank-logo-img" src="${logo}" alt="" loading="lazy">
+  </div>`;
+}
+function wireLogoFallbacks(container) {
+  container.querySelectorAll(".bank-logo-img").forEach((img) => {
+    img.addEventListener("error", () => {
+      const wrap = img.closest(".bank-badge-wrap");
+      if (!wrap) return;
+      wrap.classList.remove("bank-badge-wrap");
+      wrap.classList.add("bank-badge");
+      wrap.style.background = wrap.dataset.fallbackColor;
+      wrap.textContent = wrap.dataset.fallbackAbbr;
+    }, { once: true });
+  });
+}
+
+function selectBank(bank) {
+  selectedBank = bank;
+  const row = $("bankSelectTrigger");
+  row.classList.add("has-bank");
+  $("bankSelectRowLeft").innerHTML = `${bankVisualHtml(bank)}<span class="bank-name">${bank.name}</span>`;
+  wireLogoFallbacks($("bankSelectRowLeft"));
+  clearFieldError("withdrawBankCode");
+  closeBankPicker();
+  checkAccountAndBank();
+}
+
+function resetBankStep() {
+  accountCheckToken++;
+  selectedBank = null;
+  const row = $("bankSelectTrigger");
+  row.classList.remove("has-bank");
+  $("bankSelectRowLeft").innerHTML = `<span class="bank-select-placeholder">Choose your bank</span>`;
+  $("withdrawBankAccount").value = "";
+  $("withdrawBankAccountName").value = "";
+  $("withdrawBankAccountName").readOnly = false;
+  $("withdrawBankAccountName").disabled = false;
+  $("withdrawBankAccountName").placeholder = "Enter the name on this bank account";
+  $("withdrawBankAmount").value = "";
+  $("bankVerifyPill").hidden = true;
+  $("withdrawBankAccountNameField").hidden = true;
+  clearFormErrors(["withdrawBankAmount", "withdrawBankAccount", "withdrawBankCode", "withdrawBankAccountName"]);
+}
+
+// Paystack's own bank codes (fetched from our Railway backend) are what its resolve
+// endpoint actually expects — usually identical to the standard CBN code we hardcoded
+// above, but we prefer Paystack's copy when we have it so a mismatch never breaks lookups.
+let paystackBankCodes = {};
+let paystackBankCodesLoaded = false;
+async function loadPaystackBankCodes() {
+  if (paystackBankCodesLoaded || !RESOLVE_ACCOUNT_API) return;
+  paystackBankCodesLoaded = true;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(`${RESOLVE_ACCOUNT_API}/api/banks`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) return;
+    const data = await res.json();
+    (data.banks || []).forEach((b) => {
+      if (b.name && b.code) paystackBankCodes[normalizeBankName(b.name)] = b.code;
+    });
+  } catch (e) {
+    // Best effort — resolveAccountName() falls back to our hardcoded bank code.
+  }
+}
+
+async function resolveAccountName(bank, accountNumber) {
+  if (!RESOLVE_ACCOUNT_API) return null;
+  const bankCode = paystackBankCodes[normalizeBankName(bank.name)] || bank.code;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(`${RESOLVE_ACCOUNT_API}/api/resolve-account?account_number=${accountNumber}&bank_code=${bankCode}`, { signal: controller.signal });
+    clearTimeout(timer);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      console.warn("resolveAccountName failed:", bank.name, bankCode, res.status, data.error || data);
+      return null;
+    }
+    return data.account_name || null;
+  } catch (e) {
+    console.warn("resolveAccountName network error:", bank.name, bankCode, e.message);
+    return null;
+  }
+}
+
+function showVerifiedNamePill(name) {
+  $("bankVerifyText").textContent = name;
+  $("bankVerifyPill").hidden = false;
+  const input = $("withdrawBankAccountName");
+  input.value = name;
+  input.readOnly = true;
+  $("withdrawBankAccountNameField").hidden = true;
+  refreshIcons();
+}
+
+let accountCheckToken = 0;
+async function checkAccountAndBank() {
+  const accountNumber = $("withdrawBankAccount").value.trim();
+  clearFieldError("withdrawBankAccount");
+  $("bankVerifyPill").hidden = true;
+  if (!selectedBank || !/^\d{10}$/.test(accountNumber)) {
+    $("withdrawBankAccountNameField").hidden = true;
+    return;
+  }
+  const result = checkNubanValidity(selectedBank, accountNumber);
+  if (result === false) {
+    $("withdrawBankAccountNameField").hidden = true;
+    showFieldError("withdrawBankAccount", `This account number doesn't look valid for ${selectedBank.name}. Please double-check it.`);
+    return;
+  }
+  $("withdrawBankAccountNameField").hidden = false;
+  const nameInput = $("withdrawBankAccountName");
+  nameInput.readOnly = false;
+  nameInput.value = "";
+
+  if (!RESOLVE_ACCOUNT_API) {
+    nameInput.placeholder = "Enter the name on this bank account";
+    return;
+  }
+
+  const token = ++accountCheckToken;
+  nameInput.disabled = true;
+  nameInput.placeholder = "Verifying account name…";
+  const name = await resolveAccountName(selectedBank, accountNumber);
+  if (token !== accountCheckToken) return; // a newer check superseded this one
+  nameInput.disabled = false;
+  if (name) {
+    showVerifiedNamePill(name);
+  } else {
+    nameInput.placeholder = "Couldn't auto-verify — enter the name manually";
+  }
+}
+
+function openBankPicker() {
+  haptic();
+  $("bankPickerSearch").value = "";
+  renderBankFrequent();
+  renderBankList("");
+  $("bankPickerOverlay").classList.add("show");
+  loadBankLogos();
+  loadPaystackBankCodes();
+}
+function closeBankPicker() {
+  $("bankPickerOverlay").classList.remove("show");
+}
+function renderBankFrequent() {
+  const banks = FREQUENT_BANK_NAMES.map((n) => NIGERIA_BANKS.find((b) => b.name === n)).filter(Boolean);
+  $("bankFrequentGrid").innerHTML = banks.map((b) => `
+    <button type="button" class="bank-frequent-item" data-bank="${b.name}">
+      ${bankVisualHtml(b)}
+      <span>${b.name.replace(/\s*\(.*\)/, "")}</span>
+    </button>`).join("");
+  wireLogoFallbacks($("bankFrequentGrid"));
+  $("bankFrequentGrid").querySelectorAll("[data-bank]").forEach((el) => {
+    el.addEventListener("click", () => selectBank(NIGERIA_BANKS.find((b) => b.name === el.dataset.bank)));
+  });
+}
+function renderBankList(query) {
+  const q = query.trim().toLowerCase();
+  const filtered = NIGERIA_BANKS.filter((b) => b.name.toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name));
+  $("bankFrequentSection").hidden = q.length > 0;
+  $("bankPickerEmpty").hidden = filtered.length > 0;
+  if (!filtered.length) {
+    $("bankFullList").innerHTML = "";
+    $("bankIndexSidebar").innerHTML = "";
+    return;
+  }
+  const groups = {};
+  filtered.forEach((b) => {
+    const letter = b.name[0].toUpperCase();
+    (groups[letter] = groups[letter] || []).push(b);
+  });
+  const letters = Object.keys(groups).sort();
+  $("bankFullList").innerHTML = letters.map((letter) => `
+    <div class="bank-letter-group" id="bank-letter-${letter}">
+      <p class="bank-letter-heading">${letter}</p>
+      ${groups[letter].map((b) => `
+        <button type="button" class="bank-list-item" data-bank="${b.name}">
+          ${bankVisualHtml(b)}
+          <span class="bank-name">${b.name}</span>
+        </button>`).join("")}
+    </div>`).join("");
+  wireLogoFallbacks($("bankFullList"));
+  $("bankFullList").querySelectorAll("[data-bank]").forEach((el) => {
+    el.addEventListener("click", () => selectBank(NIGERIA_BANKS.find((b) => b.name === el.dataset.bank)));
+  });
+  $("bankIndexSidebar").innerHTML = q ? "" : letters.map((l) => `<span class="bank-index-letter" data-letter="${l}">${l}</span>`).join("");
+  $("bankIndexSidebar").querySelectorAll("[data-letter]").forEach((el) => {
+    el.addEventListener("click", () => {
+      $(`bank-letter-${el.dataset.letter}`)?.scrollIntoView({ block: "start" });
+    });
+  });
+}
+$("bankSelectTrigger").addEventListener("click", openBankPicker);
+$("bankPickerClose").addEventListener("click", closeBankPicker);
+$("bankPickerOverlay").addEventListener("click", (e) => { if (e.target === $("bankPickerOverlay")) closeBankPicker(); });
+$("bankPickerSearch").addEventListener("input", (e) => renderBankList(e.target.value));
+$("withdrawBankAccount").addEventListener("input", (e) => {
+  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10);
+  checkAccountAndBank();
+});
+
+/* The user's own withdrawal list is mirrored in their user doc, so the
+   withdrawals collection is only ever written to — never queried. */
+async function loadWithdrawals() {
+  if (!currentUser) { myWithdrawals = []; return; }
+  hydrateFromProfile();
+}
+
+function withdrawStatusMeta(status) {
+  if (status === "completed") return { icon: "check-circle", label: "Completed", cls: "" };
+  if (status === "rejected") return { icon: "x-circle", label: "Rejected", cls: "rejected" };
+  return { icon: "clock", label: "Pending", cls: "pending" };
+}
+
+function renderWithdrawPage() {
+  const wCash = currentProfile?.cashBalance || 0;
+  const wAirtime = currentProfile?.airtimeBalance || 0;
+  $("withdrawAvailBalance").textContent = formatMoney(wCash + wAirtime);
+  $("withdrawCashBalance").textContent = formatMoney(wCash);
+  $("withdrawAirtimeBalance").textContent = formatMoney(wAirtime);
+
+  const container = $("withdrawRequestsList");
+  if (!myWithdrawals.length) {
+    container.innerHTML = `<div class="empty-state"><svg data-lucide="inbox"></svg><p>No withdrawal requests yet.</p></div>`;
+    refreshIcons();
+    return;
+  }
+  container.innerHTML = myWithdrawals.map((w) => {
+    const meta = withdrawStatusMeta(w.status);
+    const detail = w.method === "bank"
+      ? `${w.details?.bankName || ""} · ${w.details?.accountNumber || ""}`
+      : `${w.details?.network || ""} · ${w.details?.phone || ""}`;
+    const feeText = w.fee ? ` (₦${formatMoney(w.fee)} fee)` : "";
+    return `
+    <div class="activity-row">
+      <div class="activity-icon"><svg data-lucide="${w.method === "bank" ? "landmark" : "smartphone"}"></svg></div>
+      <div class="activity-info">
+        <h5>₦${formatMoney(w.amount)}${feeText} — ${w.method === "bank" ? "Bank Transfer" : "Airtime"}</h5>
+        <p>${detail}</p>
+      </div>
+      <div class="task-card-status ${meta.cls}"><svg data-lucide="${meta.icon}"></svg>${meta.label}</div>
+    </div>`;
+  }).join("");
+  refreshIcons();
+}
+
+function showWithdrawStep(step) {
+  ["withdrawMethodsStep", "withdrawBankStep", "withdrawAirtimeStep"].forEach((id) => {
+    $(id).hidden = id !== step;
+  });
+}
+$$(".withdraw-method[data-method]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    haptic();
+    const method = btn.dataset.method;
+    if (method === "bank") resetBankStep();
+    showWithdrawStep(method === "bank" ? "withdrawBankStep" : "withdrawAirtimeStep");
+  });
+});
+$$("[data-withdraw-back]").forEach((btn) => {
+  btn.addEventListener("click", () => { haptic(); showWithdrawStep("withdrawMethodsStep"); });
+});
+$$("#airtimeNetworkChips .network-chip").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    haptic();
+    selectedAirtimeNetwork = chip.dataset.network;
+    $$("#airtimeNetworkChips .network-chip").forEach((c) => c.classList.toggle("active", c === chip));
+    clearFieldError("withdrawAirtimeNetwork");
+  });
+});
+
+async function submitWithdrawal(method, amount, details, btn) {
+  const methodEnabled = method === "bank" ? SITE_SETTINGS.bankWithdrawalsEnabled !== false : SITE_SETTINGS.airtimeWithdrawalsEnabled !== false;
+  if (!methodEnabled) { toast("This withdrawal method is temporarily closed.", "error"); return; }
+  if (!getWithdrawEligibility().eligible) { toast("Complete the required tasks before withdrawing.", "error"); return; }
+  const balanceField = method === "bank" ? "cashBalance" : "airtimeBalance";
+  const available = currentProfile?.[balanceField] || 0;
+  if (amount > available) {
+    toast(`You don't have enough ${method === "bank" ? "cash" : "airtime"} balance for this withdrawal.`, "error");
+    return;
+  }
+  const maxField = method === "bank" ? "maxWithdrawalBank" : "maxWithdrawalAirtime";
+  const maxLimit = SITE_SETTINGS?.[maxField];
+  if (maxLimit > 0 && amount > maxLimit) {
+    toast(`Maximum withdrawal is ₦${maxLimit} for ${method === "bank" ? "bank transfers" : "airtime"}.`, "error");
+    return;
+  }
+  setLoading(btn, true);
+  try {
+    const feeField = method === "bank" ? "withdrawalFeeCash" : "withdrawalFeeAirtime";
+    const fee = SITE_SETTINGS[feeField] || 0;
+    const desc = method === "bank"
+      ? `Withdrawal — Bank transfer to ${details.accountNumber}`
+      : `Withdrawal — ₦${amount} ${details.network} airtime to ${details.phone}`;
+
+    /* One document so the admin can see and pay the request. */
+    const wRef = await addDoc(collection(db, "withdrawals"), {
+      userId: currentUser.uid,
+      userEmail: currentProfile?.email || currentUser.email || "",
+      userName: currentProfile?.name || currentUser.displayName || "",
+      method, amount, fee, details,
+      status: "pending",
+      refunded: false,
+      createdAt: serverTimestamp(),
+    });
+
+    /* Deduct locally and mirror the request into the user doc, so the
+       withdrawals collection never has to be queried back. */
+    currentProfile[balanceField] = available - amount;
+    if (!Array.isArray(currentProfile.withdrawalList)) currentProfile.withdrawalList = [];
+    currentProfile.withdrawalList.unshift({
+      id: wRef.id, method, amount, fee, details,
+      status: "pending", refunded: false, createdAt: Date.now(),
+    });
+    if (currentProfile.withdrawalList.length > WITHDRAW_MAX) currentProfile.withdrawalList.length = WITHDRAW_MAX;
+    addLedgerEntry("withdrawal", -amount, desc, { withdrawalId: wRef.id });
+    Store.touch();
+
+    /* Money left the balance — back it up now, ignoring the interval. */
+    await Store.sync(true);
+
+    hydrateFromProfile();
+    renderDashboard(currentUser, currentProfile);
+    renderWithdrawPage();
+    renderHistoryPage();
+    renderActivity();
+    haptic(15);
+    toast("Withdrawal request submitted. We'll process it shortly.", "success");
+    showWithdrawStep("withdrawMethodsStep");
+  } catch (e) {
+    toast("Could not submit your withdrawal request. Try again.", "error");
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+$("withdrawBankSubmit").addEventListener("click", async () => {
+  clearFormErrors(["withdrawBankAmount", "withdrawBankAccount", "withdrawBankCode", "withdrawBankAccountName"]);
+  const amount = Number($("withdrawBankAmount").value);
+  const accountNumber = $("withdrawBankAccount").value.trim();
+  const accountName = $("withdrawBankAccountName").value.trim();
+  let valid = true;
+  if (!amount || amount < WITHDRAW_MIN.bank) { showFieldError("withdrawBankAmount", `Minimum withdrawal is ₦${WITHDRAW_MIN.bank}.`); valid = false; }
+  if (SITE_SETTINGS?.maxWithdrawalBank > 0 && amount > SITE_SETTINGS.maxWithdrawalBank) { showFieldError("withdrawBankAmount", `Maximum withdrawal is ₦${SITE_SETTINGS.maxWithdrawalBank}.`); valid = false; }
+  if (!/^\d{10}$/.test(accountNumber)) { showFieldError("withdrawBankAccount", "Enter a valid 10-digit account number."); valid = false; }
+  if (!selectedBank) { showFieldError("withdrawBankCode", "Please select your bank."); valid = false; }
+  else if (checkNubanValidity(selectedBank, accountNumber) === false) { showFieldError("withdrawBankAccount", `This account number doesn't look valid for ${selectedBank.name}.`); valid = false; }
+  if (!accountName) { showFieldError("withdrawBankAccountName", "Please enter the account holder's name."); valid = false; }
+  if (!valid) return;
+  await submitWithdrawal("bank", amount, { bankCode: selectedBank.code, bankName: selectedBank.name, accountNumber, accountName }, $("withdrawBankSubmit"));
+});
+
+$("withdrawAirtimeSubmit").addEventListener("click", async () => {
+  clearFormErrors(["withdrawAirtimePhone", "withdrawAirtimeAmount"]);
+  const amount = Number($("withdrawAirtimeAmount").value);
+  const phone = $("withdrawAirtimePhone").value.trim();
+  let valid = true;
+  if (!selectedAirtimeNetwork) { showFieldError("withdrawAirtimeNetwork", "Please select a network."); valid = false; }
+  if (!/^0\d{10}$/.test(phone)) { showFieldError("withdrawAirtimePhone", "Enter a valid 11-digit phone number."); valid = false; }
+  if (!amount || amount < WITHDRAW_MIN.airtime) { showFieldError("withdrawAirtimeAmount", `Minimum withdrawal is ₦${WITHDRAW_MIN.airtime}.`); valid = false; }
+  if (SITE_SETTINGS?.maxWithdrawalAirtime > 0 && amount > SITE_SETTINGS.maxWithdrawalAirtime) { showFieldError("withdrawAirtimeAmount", `Maximum withdrawal is ₦${SITE_SETTINGS.maxWithdrawalAirtime}.`); valid = false; }
+  if (!valid) return;
+  await submitWithdrawal("airtime", amount, { network: selectedAirtimeNetwork, phone }, $("withdrawAirtimeSubmit"));
+});
+
+function updateWithdrawalFeeInfo(method) {
+  const amountInput = method === "bank" ? $("withdrawBankAmount") : $("withdrawAirtimeAmount");
+  const feeInfoEl = method === "bank" ? $("withdrawBankFeeInfo") : $("withdrawAirtimeFeeInfo");
+  const amount = Number(amountInput.value) || 0;
+  const fee = method === "bank" ? SITE_SETTINGS.withdrawalFeeCash : SITE_SETTINGS.withdrawalFeeAirtime;
+  if (!fee || amount === 0) {
+    feeInfoEl.hidden = true;
+  } else {
+    const net = amount - fee;
+    feeInfoEl.textContent = `Withdrawal fee: ₦${fee} • You'll receive: ₦${net}`;
+    feeInfoEl.hidden = false;
+  }
+}
+
+$("withdrawBankAmount").addEventListener("input", () => updateWithdrawalFeeInfo("bank"));
+$("withdrawAirtimeAmount").addEventListener("input", () => updateWithdrawalFeeInfo("airtime"));
+
+/* Refunds are driven by the mirrored list in the user doc. When the
+   admin rejects a withdrawal it sets `rejected` on the user document
+   too, so this needs no query of its own. */
+async function refundRejectedWithdrawals() {
+  if (!currentProfile) return false;
+  let refundedAny = false;
+  for (const w of currentProfile.withdrawalList || []) {
+    if (w.status !== "rejected" || w.refunded) continue;
+    const balanceField = w.method === "bank" ? "cashBalance" : "airtimeBalance";
+    currentProfile[balanceField] = (currentProfile[balanceField] || 0) + w.amount;
+    addLedgerEntry("withdrawal_refund", w.amount, `Withdrawal request refunded (${w.method === "bank" ? "Bank Transfer" : "Airtime"})`, { withdrawalId: w.id });
+    w.refunded = true;
+    refundedAny = true;
+  }
+  if (refundedAny) Store.touch();
+  return refundedAny;
+}
+
+/* ---------------- crediting: referral rewards + refunds ----------------
+
+   Removed from this file, deliberately:
+
+   - creditApprovedTaskRewards()  read every task_reward transaction on
+     every login (up to 400 reads/user). Task rewards are now credited
+     the instant the task is completed, in memory.
+   - approvePendingReferralsForAllUsers()  scanned the ENTIRE referrals
+     collection on every login, for every user.
+   - autoApproveOldSubmissions() + its 60-second setInterval  scanned the
+     ENTIRE pending-submissions collection once a minute, per open tab.
+     This was the single largest source of reads in the app.
+   - syncMyReferralProgress()  wrote a referral doc per login purely to
+     track a counter that no longer gates anything.                    */
+
+/* Credits any referral the user hasn't been paid for yet. Which
+   referrals were paid is recorded in the user's own document, so no
+   referral document ever has to be written back. */
+function creditEligibleReferralRewards() {
+  if (!currentProfile) return false;
+  const reward = Number(SITE_SETTINGS.referralReward) || 0;
+  if (reward <= 0) return false;
+  const paid = new Set(currentProfile.creditedReferrals || []);
+  let creditedAny = false;
+
+  for (const r of myReferralsAsReferrer) {
+    if (paid.has(r.id)) continue;
+    if (r.duplicateIp) continue; // held for admin review — same network as the referrer
+    currentProfile.cashBalance = (currentProfile.cashBalance || 0) + reward;
+    currentProfile.totalEarned = (currentProfile.totalEarned || 0) + reward;
+    currentProfile.todayEarnings = (currentProfile.todayEarnings || 0) + reward;
+    addLedgerEntry("referral_reward", reward, `Referral reward — ${r.referredUserName || "a friend"} signed up`, { referralId: r.id });
+    paid.add(r.id);
+    r.rewardCredited = true;
+    r.status = "approved";
+    creditedAny = true;
+  }
+
+  if (creditedAny) {
+    currentProfile.creditedReferrals = Array.from(paid);
+    Store.touch();
+  }
+  return creditedAny;
+}
+
+async function runCreditingPipeline() {
+  const a = creditEligibleReferralRewards();
+  const b = await refundRejectedWithdrawals();
+  return a || b;
+}
+
+/* ---------------- profile page ---------------- */
+function renderProfilePage() {
+  if (!currentUser) return;
+  const name = currentProfile?.name || currentUser.displayName || "there";
+  const email = currentUser.email || "";
+  const photoURL = currentProfile?.photoURL || currentUser.photoURL || null;
+
+  const box = $("profileAvatarLg");
+  if (photoURL) box.innerHTML = `<img src="${photoURL}" alt="" referrerpolicy="no-referrer">`;
+  else box.textContent = initials(name, email);
+
+  $("profileNameLg").textContent = name;
+  $("profileEmailLg").textContent = email;
+  const created = currentProfile?.createdAt?.toDate ? currentProfile.createdAt.toDate() : profileCreatedDate;
+  $("profileMemberSince").textContent = `Member since ${created.toLocaleDateString("en-NG", { month: "long", year: "numeric" })}`;
+  $("profileNameInput").value = name;
+
+  $("profileStatEarned").textContent = `₦${formatMoney(currentProfile?.totalEarned || 0)}`;
+  $("profileStatTasks").textContent = String(completedTaskCount());
+  $("profileStatReferrals").textContent = String(myReferralsAsReferrer.length);
+
+  const isPasswordUser = currentUser.providerData?.some((p) => p.providerId === "password");
+  $("profileResetPasswordBtn").hidden = !isPasswordUser;
+}
+
+$("profileSaveBtn").addEventListener("click", async () => {
+  const newName = $("profileNameInput").value.trim();
+  if (newName.length < 2) { toast("Please enter your full name.", "error"); return; }
+  const btn = $("profileSaveBtn");
+  setLoading(btn, true);
+  try {
+    await updateProfile(currentUser, { displayName: newName });
+    currentProfile.name = newName;
+    Store.touch(); // saved locally now, backed up on the next sync
+    renderDashboard(currentUser, currentProfile);
+    renderProfilePage();
+    haptic(15);
+    toast("Profile updated.", "success");
+  } catch (e) {
+    toast("Could not update your profile. Try again.", "error");
+  } finally {
+    setLoading(btn, false);
+  }
+});
+$("profileResetPasswordBtn").addEventListener("click", async () => {
+  haptic();
+  try {
+    await sendPasswordResetEmail(auth, currentUser.email);
+    toast("Password reset email sent.", "success");
+  } catch (e) {
+    toast("Could not send reset email. Try again.", "error");
+  }
+});
+$("profileLogoutBtn").addEventListener("click", async () => {
+  haptic();
+  try { await signOut(auth); toast("Logged out.", "default"); }
+  catch (e) { toast("Could not log out. Try again.", "error"); }
+});
+
+/* ---------------- telegram/whatsapp channel prompt ---------------- */
+// Shown on every login, always
+function maybeShowTelegramPrompt() {
+  if (!currentProfile) return;
+  $("telegramPromptOverlay").classList.add("show");
+  refreshIcons();
+}
+function closeTelegramPrompt() {
+  $("telegramPromptOverlay").classList.remove("show");
+}
+$("telegramPromptClose").addEventListener("click", () => { haptic(); closeTelegramPrompt(); });
+$("telegramPromptSkipBtn").addEventListener("click", () => { haptic(); closeTelegramPrompt(); });
+$("telegramPromptOverlay").addEventListener("click", (e) => { if (e.target === $("telegramPromptOverlay")) closeTelegramPrompt(); });
+$("telegramPromptJoinBtn").addEventListener("click", async () => {
+  haptic();
+  closeTelegramPrompt();
+  if (!currentUser) return;
+  if (currentProfile) { currentProfile.telegramJoined = true; Store.touch(); }
+});
+
+/* ---------------- policy modals ---------------- */
+const policyContent = {
+  terms: `<h2>Terms & Conditions</h2>
+    <p><strong>Effective Date:</strong> January 1, 2026</p>
+    <p>By accessing and using Tasklily, you agree to be bound by these Terms & Conditions. If you do not agree, please do not use our service.</p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">1. Use License</h3>
+    <p>Permission is granted to temporarily download one copy of the materials for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title, and under this license you may not:
+    <ul><li>Modify or copy the materials</li><li>Use the materials for commercial purposes or any public display</li><li>Attempt to decompile or reverse engineer any software contained on Tasklily</li><li>Remove any copyright or other proprietary notations from the materials</li><li>Transfer the materials to another person or "mirror" the materials on any other server</li></ul></p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">2. Disclaimer</h3>
+    <p>The materials on Tasklily are provided on an 'as is' basis. Tasklily makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.</p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">3. Limitations</h3>
+    <p>In no event shall Tasklily or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on Tasklily.</p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">4. User Conduct</h3>
+    <p>You agree not to use Tasklily in any way that:
+    <ul><li>Violates any applicable law or regulation</li><li>Infringes on any intellectual property rights</li><li>Harasses or causes distress or inconvenience to any person</li><li>Attempts to gain unauthorized access to our systems</li></ul></p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">5. Termination</h3>
+    <p>Tasklily may terminate or suspend your account and access to the service immediately, without prior notice or liability, for any reason, including if you breach the Terms & Conditions.</p>`,
+
+  privacy: `<h2>Privacy Policy</h2>
+    <p><strong>Effective Date:</strong> January 1, 2026</p>
+    <p>Tasklily is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information.</p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">1. Information We Collect</h3>
+    <p>We collect information you provide directly, including:
+    <ul><li>Name, email address, and password</li><li>Phone number and banking information</li><li>Profile information and photos</li><li>Task submissions and screenshots</li><li>Communication preferences</li></ul></p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">2. How We Use Your Information</h3>
+    <p>We use your information to:
+    <ul><li>Provide, maintain, and improve our services</li><li>Process payments and withdrawals</li><li>Send you updates and promotional communications</li><li>Comply with legal obligations</li><li>Detect and prevent fraud or abuse</li></ul></p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">3. Information Sharing</h3>
+    <p>We do not sell or share your personal information with third parties, except when necessary to:
+    <ul><li>Process payments through our payment providers</li><li>Comply with legal requirements</li><li>Protect our rights and safety</li></ul></p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">4. Data Security</h3>
+    <p>We implement industry-standard security measures to protect your personal information. However, no method of transmission over the Internet is 100% secure.</p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">5. Your Rights</h3>
+    <p>You have the right to access, correct, or delete your personal information. Contact us at giftupdate01@gmail.com to exercise these rights.</p>`,
+
+  cookies: `<h2>Cookies Policy</h2>
+    <p><strong>Effective Date:</strong> January 1, 2026</p>
+    <p>Tasklily uses cookies and similar tracking technologies to enhance your experience on our platform.</p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">1. What Are Cookies?</h3>
+    <p>Cookies are small text files stored on your device that help us recognize you and remember your preferences. They enable us to provide personalized experiences and improve our services.</p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">2. Types of Cookies We Use</h3>
+    <p><strong>Essential Cookies:</strong> Required for the website to function properly (login, security)
+    <ul><li>Session cookies to keep you logged in</li><li>Security cookies to prevent fraud</li></ul>
+    <strong>Performance Cookies:</strong> Help us understand how users interact with our site
+    <ul><li>Analytics to track page views and user behavior</li><li>Error tracking to identify and fix issues</li></ul>
+    <strong>Preference Cookies:</strong> Remember your choices
+    <ul><li>Language preferences</li><li>Notification settings</li></ul></p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">3. Managing Cookies</h3>
+    <p>Most web browsers allow you to control cookies through settings. However, disabling essential cookies may limit your ability to use our service.</p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">4. Third-Party Cookies</h3>
+    <p>We use third-party services (Firebase, payment processors) that may set their own cookies. We are not responsible for their cookie policies.</p>
+    <h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;">5. Contact Us</h3>
+    <p>For questions about our cookie policy, contact us at giftupdate01@gmail.com</p>`
+};
+
+$$(".policy-link").forEach((btn) => {
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const policyType = btn.getAttribute("data-policy");
+    $("policyModalBody").innerHTML = policyContent[policyType] || "";
+    $("policyModal").hidden = false;
+  });
+});
+
+$("policyModalClose").addEventListener("click", () => { $("policyModal").hidden = true; });
+$("policyModal").addEventListener("click", (e) => { if (e.target === $("policyModal")) $("policyModal").hidden = true; });
+
+/* ---------------- auth state ---------------- */
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    let profile = null;
+    let isNewProfile = false;
+    try {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      profile = snap.exists() ? snap.data() : null;
+    } catch (e) {
+      toast("Could not load your profile. Some data may be missing.", "error");
+    }
+    if (!profile) {
+      const signupIp = await fetchMyIp();
+      profile = buildDefaultProfile(user, undefined, undefined, signupIp);
+      isNewProfile = true;
+      try {
+        await setDoc(doc(db, "users", user.uid), profile, { merge: true });
+        localStorage.removeItem("pendingReferral");
+      } catch (e) {
+        // Firestore still unreachable/denied — proceed with in-memory defaults.
+      }
+    }
+    if (profile && profile.banned) {
+      toast("Your account has been suspended. Contact support if you think this is a mistake.", "error");
+      await signOut(auth);
+      return;
+    }
+
+    /* The browser owns the newer copy whenever this device has earned
+       something the server hasn't backed up yet. `rev` decides. */
+    const serverProfile = profile;
+    const local = Store.loadLocal(user.uid);
+    if (local && Number(local.rev || 0) > Number(serverProfile?.rev || 0)) {
+      profile = local;
+      Store.dirty = true;
+    }
+
+    currentUser = user;
+    currentProfile = profile;
+    /* Admin refunds and status changes always come from the server copy,
+       whichever side won above. */
+    applyPendingCredits(serverProfile);
+    Store.saveLocal();
+
+    renderDashboard(user, profile);
+    renderRoute();
+    refreshIcons();
+    maybeShowTelegramPrompt();
+
+    if (isNewProfile) await finalizeNewUserExtras(user, profile);
+
+    /* No further Firestore reads: tasks come from the weekly config
+       cache, everything else is already inside the profile. */
+    await loadTasks();
+    hydrateFromProfile();
+
+    await runCreditingPipeline();
+    await Store.sync(); // respects SYNC_MIN_HOURS — usually a no-op
+
+    /* Auto-credit referrals in the background. Bounded by the same 72h
+       cache the Referrals page uses, so it cannot cost more than one
+       query per user per 3 days no matter how often it is called. */
+    loadReferrals().then(() => {
+      if (creditEligibleReferralRewards()) {
+        hydrateFromProfile();
+        renderDashboard(currentUser, currentProfile);
+        renderActivity();
+        renderHistoryPage();
+        renderReferralsPage();
+      }
+    }).catch(() => {});
+
+    renderDashboard(user, currentProfile);
+    renderActivity();
+    renderHistoryPage();
+    renderProfilePage();
+    renderWithdrawPage();
+  } else {
+    currentUser = null;
+    currentProfile = null;
+    myTransactions = [];
+    myReferralAsReferred = null;
+    myReferralsAsReferrer = [];
+    myWithdrawals = [];
+    selectedAirtimeNetwork = null;
+    $("loginForm").reset();
+    $("signupForm").reset();
+    prefillReferralField();
+    clearFormErrors(["loginEmail", "loginPassword", "signupName", "signupEmail", "signupPassword", "signupConfirm"]);
+    renderRoute();
+    refreshIcons();
+  }
+});
+
+refreshIcons();
+</script>
+</body>
+</html>
