@@ -1143,10 +1143,9 @@ let ADMIN_SUBMISSIONS = [];
 
 async function loadSubmissionsAdmin() {
   try {
-    const q = query(collection(db, "taskSubmissions"), where("status", "==", "pending"));
+    const q = query(collection(db, "taskSubmissions"), where("status", "==", "pending"), orderBy("submittedAt", "asc"), limit(5000));
     const snap = await getDocs(q);
     ADMIN_SUBMISSIONS = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    ADMIN_SUBMISSIONS.sort((a, b) => (a.submittedAt?.toMillis?.() || 0) - (b.submittedAt?.toMillis?.() || 0));
   } catch (e) {
     ADMIN_SUBMISSIONS = [];
     toast("Could not load submissions.", "error");
@@ -1170,7 +1169,7 @@ function renderSubmissionsAdmin() {
   const page = ADMIN_SUBMISSIONS.slice(start, end);
   let html = page.map((s) => `
     <div class="submission-card">
-      <img class="submission-shot" src="${s.screenshot || ""}" alt="Proof screenshot" data-zoom="${s.screenshot || ""}" loading="lazy">
+      <div class="submission-shot" data-zoom="${s.screenshot || ""}" style="background:#f0f0f0;width:100%;height:120px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#999;font-size:12px;">Click to view</div>
       <div class="submission-meta">
         <h4>${s.taskName || "Task"} — ₦${s.reward || 0}</h4>
         <p>${s.userName || "Unknown user"} · ${formatDate(s.submittedAt)}</p>
@@ -1197,7 +1196,7 @@ function renderSubmissionsAdmin() {
       const page2 = ADMIN_SUBMISSIONS.slice(start2, end2);
       let more = page2.map((s) => `
         <div class="submission-card">
-          <img class="submission-shot" src="${s.screenshot || ""}" alt="Proof screenshot" data-zoom="${s.screenshot || ""}" loading="lazy">
+          <div class="submission-shot" data-zoom="${s.screenshot || ""}" style="background:#f0f0f0;width:100%;height:120px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#999;font-size:12px;">Click to view</div>
           <div class="submission-meta">
             <h4>${s.taskName || "Task"} — ₦${s.reward || 0}</h4>
             <p>${s.userName || "Unknown user"} · ${formatDate(s.submittedAt)}</p>
@@ -2019,8 +2018,42 @@ $("saveProviderIdsBtn").addEventListener("click", async () => {
 
 /* ================= OVERVIEW ================= */
 async function refreshOverview() {
-  await Promise.all([loadTasksAdmin(), loadUsersAdmin(), loadWithdrawalsAdmin(), loadSubmissionsAdmin(), loadFlaggedReferralsAdmin()]);
-  renderOverview();
+  renderOverviewQuick();
+  loadTasksAdmin().catch(() => {});
+  loadUsersAdmin().catch(() => {});
+  loadWithdrawalsAdmin().catch(() => {});
+  loadSubmissionsAdmin().catch(() => {});
+  loadFlaggedReferralsAdmin().catch(() => {});
+}
+async function renderOverviewQuick() {
+  try {
+    const [usersSnap, subSnap, tasksSnap, wSnap, flagSnap] = await Promise.all([
+      getDocs(query(collection(db, "users"), limit(1))),
+      getDocs(query(collection(db, "taskSubmissions"), where("status", "==", "pending"), limit(1))),
+      getDocs(query(collection(db, "tasks"), limit(1))),
+      getDocs(query(collection(db, "withdrawals"), where("status", "==", "pending"), limit(1))),
+      getDocs(query(collection(db, "flaggedReferrals"), limit(1))),
+    ]);
+    const userCount = (await getDoc(doc(db, "stats", "summary"))).data()?.totalUsers || "—";
+    const subCount = (await getDoc(doc(db, "stats", "summary"))).data()?.pendingSubmissions || "—";
+    const taskCount = (await getDoc(doc(db, "stats", "summary"))).data()?.activeTasks || "—";
+    const withdrawCount = (await getDoc(doc(db, "stats", "summary"))).data()?.pendingWithdrawals || "—";
+    const withdrawAmount = (await getDoc(doc(db, "stats", "summary"))).data()?.pendingAmount || "—";
+    const flagCount = (await getDoc(doc(db, "stats", "summary"))).data()?.flaggedReferrals || "—";
+    $("statUsers").textContent = userCount;
+    $("statPendingSubmissions").textContent = subCount;
+    $("statTasks").textContent = taskCount;
+    $("statPendingWithdrawals").textContent = withdrawCount;
+    $("statPendingAmount").textContent = withdrawAmount === "—" ? "—" : formatMoney(withdrawAmount);
+    $("statFlaggedReferrals").textContent = flagCount;
+  } catch (e) {
+    $("statUsers").textContent = "—";
+    $("statPendingSubmissions").textContent = "—";
+    $("statTasks").textContent = "—";
+    $("statPendingWithdrawals").textContent = "—";
+    $("statPendingAmount").textContent = "—";
+    $("statFlaggedReferrals").textContent = "—";
+  }
 }
 function renderOverview() {
   $("statUsers").textContent = ADMIN_USERS.length;
