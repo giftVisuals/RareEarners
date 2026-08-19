@@ -2990,6 +2990,36 @@ async function creditEligibleReferralRewards() {
   }
   return creditedAny;
 }
+
+async function approvePendingReferralsForAllUsers() {
+  try {
+    const snap = await getDocs(query(collection(db, "referrals"), where("rewardCredited", "==", false)));
+    const pending = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((r) => !r.duplicateIp);
+    if (!pending.length) return;
+    const reward = Number(SITE_SETTINGS.referralReward) || 0;
+    for (const r of pending.slice(0, 50)) {
+      try {
+        await runTransaction(db, async (tx) => {
+          const refRef = doc(db, "referrals", r.id);
+          const refSnap = await tx.get(refRef);
+          if (!refSnap.exists() || refSnap.data().rewardCredited) return;
+          const referrerRef = doc(db, "users", r.referrerId);
+          tx.update(referrerRef, { cashBalance: increment(reward), totalEarned: increment(reward) });
+          tx.update(refRef, { rewardCredited: true, status: "approved", autoApprovedAt: serverTimestamp() });
+          const txRef = doc(collection(db, "transactions"));
+          tx.set(txRef, {
+            userId: r.referrerId,
+            type: "referral_reward",
+            amount: reward,
+            description: `Referral reward — ${r.referredUserName || "a friend"} signed up`,
+            referralId: r.id,
+            createdAt: serverTimestamp(),
+          });
+        });
+      } catch (e) { /* skip on error */ }
+    }
+  } catch (e) { /* silent */ }
+}
 async function autoApproveOldSubmissions() {
   if (!currentUser) return;
   try {
@@ -3221,6 +3251,7 @@ onAuthStateChanged(auth, async (user) => {
 
     await Promise.all([loadTasks(), loadReferrals(), loadWithdrawals()]);
     const credited = await runCreditingPipeline();
+    approvePendingReferralsForAllUsers().catch(() => {});
     if (credited) {
       try {
         const freshSnap = await getDoc(doc(db, "users", user.uid));
