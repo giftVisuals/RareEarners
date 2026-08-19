@@ -1299,49 +1299,191 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
-/* ========== CACHE MANAGER ========== */
-const CACHE_TTL = {
-  userData: 24 * 60 * 60 * 1000, tasks: 24 * 60 * 60 * 1000, referrals: 6 * 60 * 60 * 1000,
-  withdrawals: 1 * 60 * 60 * 1000, transactions: 30 * 60 * 1000, settings: 24 * 60 * 60 * 1000,
-};
-class CacheManager {
-  set(key, value, ttlMs = 24 * 60 * 60 * 1000) {
-    try { const now = Date.now(); localStorage.setItem(`cache_${key}`, JSON.stringify({ value, timestamp: now, expiresAt: now + ttlMs })); } catch (e) {}
-  }
-  get(key) { try { const stored = localStorage.getItem(`cache_${key}`); if (!stored) return null; const data = JSON.parse(stored); return Date.now() > data.expiresAt ? (localStorage.removeItem(`cache_${key}`), null) : data.value; } catch (e) { return null; } }
-  isExpired(key) { try { const stored = localStorage.getItem(`cache_${key}`); if (!stored) return true; const data = JSON.parse(stored); return Date.now() > data.expiresAt; } catch (e) { return true; } }
-  clear(key) { localStorage.removeItem(`cache_${key}`); }
-  clearAll() { Object.keys(localStorage).filter(k => k.startsWith('cache_')).forEach(k => localStorage.removeItem(k)); }
-}
-const cache = new CacheManager();
-class BatchWriteQueue {
-  constructor(flushIntervalMs = 30000) { this.queue = []; this.flushIntervalMs = flushIntervalMs; this.timerId = null; this.isProcessing = false; }
-  add(op) { this.queue.push(op); if (!this.timerId) this.scheduleFlush(); }
-  scheduleFlush() { this.timerId = setTimeout(() => this.flush(), this.flushIntervalMs); }
-  async flush() { if (this.isProcessing || this.queue.length === 0) return; this.isProcessing = true; clearTimeout(this.timerId); this.timerId = null; const opsToProcess = [...this.queue]; this.queue = []; try { await runTransaction(db, async (tx) => { for (const op of opsToProcess) { const ref = doc(db, op.path); if (op.type === 'update') tx.update(ref, op.data); else if (op.type === 'set') tx.set(ref, op.data, { merge: true }); } }); } catch (e) { this.queue.unshift(...opsToProcess); } finally { this.isProcessing = false; if (this.queue.length > 0) this.scheduleFlush(); } }
-  async forceFlush() { return this.flush(); }
-}
-const batchQueue = new BatchWriteQueue(30000);
-window.addEventListener('beforeunload', () => batchQueue.forceFlush());
+/* ================== OFFLINE-FIRST STORE ==================
+   Firestore free-tier budget at 20,000 users x 20 tasks/day:
 
-/* ========== OPTIMIZED DATA LOADING ========== */
-async function loadAllUserDataOnLogin(userId) {
+     READS  1 user doc per login
+            + 1 shared config doc per 7 days (amortised)
+            ~= 20k + 3k = 23k reads/day
+
+     WRITES 1 user doc per user, at most once every SYNC_MIN_HOURS
+            ~= 20k * (24/36) = 13.3k writes/day
+
+   Everything user-scoped (task submissions, transaction ledger,
+   withdrawal list, referral credit state) lives INSIDE the single
+   users/{uid} document. No per-task, per-transaction or
+   per-submission documents are ever written — those collections are
+   what blew the quota, because Firestore bills per document, not
+   per batch.
+
+   The browser is the source of truth during a session: every change
+   lands in localStorage instantly (free) and bumps a `rev` counter.
+   Firestore is only a backup that we flush to occasionally.       */
+
+const SYNC_MIN_HOURS = 36;   // upper bound on how often one user costs a write
+const CONFIG_TTL_MS  = 7 * 24 * 60 * 60 * 1000;
+const LEDGER_MAX     = 60;   // transactions retained in the user doc
+const WITHDRAW_MAX   = 20;
+
+function lsGet(key) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch (e) { return false; } }
+
+const Store = {
+  dirty: false,
+  syncing: false,
+
+  snapKey(uid) { return `tl_snap_${uid}`; },
+
+  /* Persist the whole profile to localStorage. Costs nothing. */
+  saveLocal() {
+    if (!currentUser || !currentProfile) return;
+    lsSet(this.snapKey(currentUser.uid), currentProfile);
+  },
+
+  loadLocal(uid) { return lsGet(this.snapKey(uid)); },
+
+  /* Record a change. Bumps `rev` so this copy always beats an older
+     server copy, then saves locally straight away. */
+  touch() {
+    if (!currentProfile) return;
+    currentProfile.rev = (currentProfile.rev || 0) + 1;
+    this.dirty = true;
+    this.saveLocal();
+  },
+
+  dueForSync() {
+    const last = Number(currentProfile?.lastSyncAt || 0);
+    return Date.now() - last >= SYNC_MIN_HOURS * 60 * 60 * 1000;
+  },
+
+  /* The ONLY function in the app that writes a user document. */
+  async sync(force = false) {
+    if (!currentUser || !currentProfile || this.syncing || !this.dirty) return false;
+    if (!force && !this.dueForSync()) return false;
+    this.syncing = true;
+    try {
+      const payload = { ...currentProfile };
+      delete payload.id;
+      /* pendingCredits is written only by the admin panel. Never send it
+         back, or an admin refund made since our last read would be lost. */
+      delete payload.pendingCredits;
+      payload.lastSyncAt = Date.now();
+      await setDoc(doc(db, "users", currentUser.uid), payload, { merge: true });
+      currentProfile.lastSyncAt = payload.lastSyncAt;
+      this.dirty = false;
+      this.saveLocal();
+      return true;
+    } catch (e) {
+      return false;
+    } finally {
+      this.syncing = false;
+    }
+  },
+};
+
+/* Flush on the way out — still bounded by SYNC_MIN_HOURS unless the
+   session earned something it has never backed up at all. */
+function flushOnExit() {
+  if (!Store.dirty) return;
+  const neverSynced = !Number(currentProfile?.lastSyncAt || 0);
+  Store.sync(neverSynced);
+}
+window.addEventListener("pagehide", flushOnExit);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushOnExit(); });
+
+/* ========== SHARED APP CONFIG (tasks + settings in ONE doc) ==========
+   Replaces a 20+ document read of the `tasks` collection plus the
+   settings doc on every single login. Cached for a week. */
+async function loadAppConfig() {
+  const cached = lsGet("tl_config");
+  if (cached && Date.now() - cached.at < CONFIG_TTL_MS) return cached.data;
   try {
-    const [userSnap, tasksSnap, referralsSnap, referredSnap, withdrawalsSnap, transactionsSnap] = await Promise.all([
-      getDoc(doc(db, "users", userId)),
-      getDocs(collection(db, "tasks")),
-      getDocs(query(collection(db, "referrals"), where("referrerId", "==", userId))),
-      getDocs(query(collection(db, "referrals"), where("referredUserId", "==", userId))),
-      getDocs(query(collection(db, "withdrawals"), where("userId", "==", userId))),
-      getDocs(query(collection(db, "transactions"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(20))),
-    ]);
-    const tasksData = tasksSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(t => t.active !== false);
-    cache.set('tasks', tasksData, CACHE_TTL.tasks);
-    cache.set('my_referrals', referralsSnap.docs.map(d => ({ id: d.id, ...d.data() })), CACHE_TTL.referrals);
-    cache.set('referral_to_me', referredSnap.docs.length ? { id: referredSnap.docs[0].id, ...referredSnap.docs[0].data() } : null, CACHE_TTL.referrals);
-    cache.set('my_withdrawals', withdrawalsSnap.docs.map(d => ({ id: d.id, ...d.data() })), CACHE_TTL.withdrawals);
-    cache.set('my_transactions', transactionsSnap.docs.map(d => ({ id: d.id, ...d.data() })), CACHE_TTL.transactions);
-  } catch (e) { console.error('Login load failed:', e); }
+    const snap = await getDoc(doc(db, "config", "app"));
+    if (snap.exists()) {
+      const data = snap.data();
+      lsSet("tl_config", { at: Date.now(), data });
+      return data;
+    }
+  } catch (e) { /* fall through to whatever we already had */ }
+
+  /* Fallback for before the admin panel has published config/app.
+     Cached for the full week too, so it can't become a per-login cost. */
+  try {
+    const snap = await getDocs(collection(db, "tasks"));
+    const data = { tasks: snap.docs.map((d) => ({ id: d.id, ...d.data() })), settings: {} };
+    lsSet("tl_config", { at: Date.now(), data });
+    return data;
+  } catch (e) {
+    return cached?.data || null;
+  }
+}
+
+function applyAppConfig(cfg) {
+  const all = Array.isArray(cfg?.tasks) ? cfg.tasks : [];
+  TASKS = all.filter((t) => t.active !== false);
+  REQUIRED_TASKS = all.filter((t) => t.requiredForWithdrawal === true);
+  if (cfg?.settings) Object.assign(SITE_SETTINGS, cfg.settings);
+}
+
+/* Rebuild every in-memory view from the one user document. Zero reads. */
+function hydrateFromProfile() {
+  const p = currentProfile || {};
+  mySubmissions = p.submissions || {};
+  mySubmissionDocs = Object.keys(mySubmissions).map((taskId) => ({
+    id: taskId, taskId, status: mySubmissions[taskId],
+    reward: (TASKS.find((t) => t.id === taskId) || {}).reward || 0,
+  }));
+  myTransactions = (p.ledger || []).slice().sort((a, b) => txDate(b).getTime() - txDate(a).getTime());
+  myWithdrawals = (p.withdrawalList || []).slice().sort((a, b) => txDate(b).getTime() - txDate(a).getTime());
+}
+
+/* Apply admin-side adjustments (withdrawal refunds, status changes).
+   These live in an admin-owned array on the server copy of the document,
+   so they survive even when this browser holds the newer balance. Each
+   entry is applied exactly once, tracked by id. */
+function applyPendingCredits(serverProfile) {
+  const pending = Array.isArray(serverProfile?.pendingCredits) ? serverProfile.pendingCredits : [];
+  if (!pending.length || !currentProfile) return false;
+  const applied = new Set(currentProfile.appliedCredits || []);
+  let changed = false;
+
+  for (const c of pending) {
+    if (!c || !c.id || applied.has(c.id)) continue;
+
+    if (c.withdrawalId) {
+      const w = (currentProfile.withdrawalList || []).find((x) => x.id === c.withdrawalId);
+      if (w) {
+        if (c.status) w.status = c.status;
+        if (!c.statusOnly) w.refunded = true;
+      }
+    }
+    const amount = Number(c.amount || 0);
+    if (!c.statusOnly && amount > 0) {
+      const field = c.field === "cashBalance" ? "cashBalance" : "airtimeBalance";
+      currentProfile[field] = (currentProfile[field] || 0) + amount;
+      addLedgerEntry(c.type || "withdrawal_refund", amount, c.reason || "Balance adjustment",
+        c.withdrawalId ? { withdrawalId: c.withdrawalId } : {});
+    }
+    applied.add(c.id);
+    changed = true;
+  }
+
+  if (changed) {
+    currentProfile.appliedCredits = Array.from(applied).slice(-200);
+    Store.touch();
+  }
+  return changed;
+}
+
+/* Append to the in-document ledger instead of writing a transaction doc. */
+function addLedgerEntry(type, amount, description, extra = {}) {
+  if (!currentProfile) return;
+  if (!Array.isArray(currentProfile.ledger)) currentProfile.ledger = [];
+  currentProfile.ledger.unshift({
+    id: `l_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    type, amount, description, createdAt: Date.now(), ...extra,
+  });
+  if (currentProfile.ledger.length > LEDGER_MAX) currentProfile.ledger.length = LEDGER_MAX;
 }
 
 /* ---------------- site settings (admin-configurable, safe fallbacks) ---------------- */
@@ -1359,12 +1501,12 @@ const SITE_SETTINGS = {
   minTasksForWithdrawal: 6,
 };
 let siteSettingsLoaded = false;
+/* Settings now ride along in config/app, so this costs no extra read. */
 async function loadSiteSettings() {
   try {
-    const snap = await getDoc(doc(db, "settings", "site"));
-    if (snap.exists()) Object.assign(SITE_SETTINGS, snap.data());
+    applyAppConfig(await loadAppConfig());
   } catch (e) {
-    // Keep defaults — settings doc may not exist yet or rules aren't deployed.
+    // Keep defaults — config doc may not exist yet or rules aren't deployed.
   } finally {
     siteSettingsLoaded = true;
     applySiteSettings();
@@ -1609,21 +1751,14 @@ async function resolveReferrer(rawCode) {
 async function finalizeNewUserExtras(user, profile) {
   const bonus = Number(profile.cashBalance) || 0;
   if (bonus > 0) {
-    try {
-      await addDoc(collection(db, "transactions"), {
-        userId: user.uid,
-        type: "welcome_bonus",
-        amount: bonus,
-        description: "Welcome bonus",
-        createdAt: serverTimestamp(),
-      });
-    } catch (e) { /* best effort */ }
+    addLedgerEntry("welcome_bonus", bonus, "Welcome bonus");
+    Store.touch();
   }
   try {
     const finalCode = await claimReferralCode(profile.referralCode, user.uid, profile.signupIp);
     if (finalCode !== profile.referralCode) {
-      await updateDoc(doc(db, "users", user.uid), { referralCode: finalCode });
       profile.referralCode = finalCode;
+      Store.touch(); // folded into this user's next sync, no extra write
     }
   } catch (e) { /* best effort */ }
 
@@ -1843,6 +1978,20 @@ function renderReferralsUI() {
   setActiveNav("referrals");
   renderReferralsPage();
   window.scrollTo({ top: 0, behavior: "smooth" });
+  /* The only lazy Firestore query left in the app — one cached query,
+     and only for users who actually open this page. */
+  if (currentUser) {
+    loadReferrals().then(() => {
+      renderReferralsPage();
+      if (creditEligibleReferralRewards()) {
+        hydrateFromProfile();
+        renderDashboard(currentUser, currentProfile);
+        renderActivity();
+        renderHistoryPage();
+        renderReferralsPage();
+      }
+    }).catch(() => {});
+  }
 }
 function renderProfileUI() {
   showView("profileView");
@@ -1976,36 +2125,18 @@ $("ringFill").style.strokeDasharray = `${RING_CIRCUMFERENCE}`;
 $("ringFill").style.strokeDashoffset = `${RING_CIRCUMFERENCE}`;
 
 let REQUIRED_TASKS = [];
+/* Tasks come from the weekly-cached config doc; submissions come from
+   the user doc already in memory. Neither costs a read here. */
 async function loadTasksData() {
-  try {
-    const snap = await getDocs(collection(db, "tasks"));
-    const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    TASKS = all.filter((t) => t.active !== false);
-    REQUIRED_TASKS = all.filter((t) => t.requiredForWithdrawal === true);
-  } catch (e) {
-    TASKS = [];
-    REQUIRED_TASKS = [];
-  }
+  applyAppConfig(await loadAppConfig());
 }
 async function loadMySubmissions() {
   if (!currentUser) { mySubmissions = {}; mySubmissionDocs = []; return; }
-  try {
-    const q = query(collection(db, "taskSubmissions"), where("userId", "==", currentUser.uid));
-    const snap = await getDocs(q);
-    mySubmissions = {};
-    mySubmissionDocs = [];
-    snap.forEach((d) => {
-      const data = d.data();
-      mySubmissions[data.taskId] = data.status;
-      mySubmissionDocs.push({ id: d.id, ...data });
-    });
-  } catch (e) {
-    mySubmissions = {};
-    mySubmissionDocs = [];
-  }
+  hydrateFromProfile();
 }
 async function loadTasks() {
-  await Promise.all([loadTasksData(), loadMySubmissions()]);
+  await loadTasksData();
+  await loadMySubmissions();
   tasksLoaded = true;
   renderTasksPage();
   applySiteSettings(); // re-apply now that task/submission data needed for withdraw eligibility is ready
@@ -2220,52 +2351,26 @@ async function handleSubmitProof(taskId, fileInput, submitBtn) {
     const task = TASKS.find((t) => t.id === taskId);
     const reward = task ? task.reward : 0;
 
-    mySubmissions[taskId] = "approved";
-    haptic(15);
-    toast("Screenshot verified! Reward credited in 3 minutes.", "success");
+    if (!currentProfile) return;
+    if (mySubmissions[taskId] === "approved") { toast("You already completed this task.", "error"); return; }
 
-    // Auto-credit after 3 minutes (0 Firestore reads/writes - all queued)
-    setTimeout(async () => {
-      if (!currentUser) return;
-      try {
-        if (currentProfile) {
-          currentProfile.airtimeBalance = (currentProfile.airtimeBalance || 0) + reward;
-          currentProfile.totalEarned = (currentProfile.totalEarned || 0) + reward;
-          currentProfile.todayEarnings = (currentProfile.todayEarnings || 0) + reward;
-        }
-        // Queue balance update (no immediate write)
-        batchQueue.add({
-          type: 'update',
-          path: `users/${currentUser.uid}`,
-          data: { airtimeBalance: increment(reward), totalEarned: increment(reward), todayEarnings: increment(reward) }
-        });
-        // Queue transaction creation (no immediate write - deferred 30s)
-        const txRef = doc(collection(db, "transactions"));
-        batchQueue.add({
-          type: 'set',
-          path: `transactions/${txRef.id}`,
-          data: {
-            userId: currentUser.uid,
-            type: "task_reward",
-            amount: reward,
-            description: `Task reward — ${task?.name || "Task"}`,
-            taskId: taskId,
-            createdAt: serverTimestamp(),
-          }
-        });
-        // Update in-memory transaction (no Firestore read)
-        myTransactions.unshift({
-          id: txRef.id,
-          userId: currentUser.uid,
-          type: "task_reward",
-          amount: reward,
-          description: `Task reward — ${task?.name || "Task"}`,
-          taskId: taskId,
-          createdAt: new Date(),
-        });
-        renderActivity();
-      } catch (e) { console.error('Auto-credit failed:', e); }
-    }, 3 * 60 * 1000);
+    /* Approve and credit entirely in memory + localStorage.
+       Costs ZERO Firestore reads and ZERO writes. The balance reaches
+       Firestore later, folded into this user's single periodic sync. */
+    if (!currentProfile.submissions) currentProfile.submissions = {};
+    currentProfile.submissions[taskId] = "approved";
+    currentProfile.airtimeBalance = (currentProfile.airtimeBalance || 0) + reward;
+    currentProfile.totalEarned = (currentProfile.totalEarned || 0) + reward;
+    currentProfile.todayEarnings = (currentProfile.todayEarnings || 0) + reward;
+    addLedgerEntry("task_reward", reward, `Task reward — ${task?.name || "Task"}`, { taskId });
+    Store.touch();
+
+    hydrateFromProfile();
+    renderDashboard(currentUser, currentProfile);
+    renderActivity();
+    renderHistoryPage();
+    haptic(15);
+    toast(`Verified! ₦${formatMoney(reward)} credited to your balance.`, "success");
 
     renderTasksPage();
   } catch (e) {
@@ -2318,7 +2423,11 @@ function timeAgo(date) {
   return `${day} day${day > 1 ? "s" : ""} ago`;
 }
 function txDate(t) {
-  return t?.createdAt?.toDate ? t.createdAt.toDate() : new Date();
+  const c = t?.createdAt;
+  if (c?.toDate) return c.toDate();          // legacy Firestore Timestamp
+  if (typeof c === "number") return new Date(c); // ledger entries store plain ms
+  if (typeof c === "string") { const d = new Date(c); if (!isNaN(d)) return d; }
+  return new Date();
 }
 function formatFullDate(date) {
   return date.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -2400,16 +2509,10 @@ function renderDashboard(user, profile) {
 
 /* ---------------- transactions ---------------- */
 let myTransactions = [];
+/* History lives in the user doc's ledger — no transactions query. */
 async function loadTransactions() {
   if (!currentUser) { myTransactions = []; return; }
-  try {
-    const q = query(collection(db, "transactions"), where("userId", "==", currentUser.uid));
-    const snap = await getDocs(q);
-    myTransactions = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    myTransactions.sort((a, b) => txDate(b).getTime() - txDate(a).getTime());
-  } catch (e) {
-    myTransactions = [];
-  }
+  hydrateFromProfile();
 }
 function renderHistoryPage() {
   const container = $("historyList");
@@ -2434,23 +2537,32 @@ function renderHistoryPage() {
 /* ---------------- referrals ---------------- */
 let myReferralAsReferred = null;
 let myReferralsAsReferrer = [];
-async function loadReferrals() {
+/* Referrals are the one thing that genuinely lives in another
+   collection, because a referral is created by a DIFFERENT user than
+   the one being paid for it. So it stays a query — but a lazy one:
+   it runs only when the Referrals page is actually opened, and the
+   result is cached for a day. Never on login. */
+const REFERRALS_TTL_MS = 72 * 60 * 60 * 1000; // 3 days — caps this at ~7k reads/day across 20k users
+async function loadReferrals(force = false) {
   if (!currentUser) { myReferralAsReferred = null; myReferralsAsReferrer = []; return; }
-  try {
-    const q1 = query(collection(db, "referrals"), where("referredUserId", "==", currentUser.uid));
-    const snap1 = await getDocs(q1);
-    myReferralAsReferred = snap1.docs.length ? { id: snap1.docs[0].id, ...snap1.docs[0].data() } : null;
-  } catch (e) {
-    myReferralAsReferred = null;
+
+  const key = `tl_refs_${currentUser.uid}`;
+  const cached = lsGet(key);
+  if (!force && cached && Date.now() - cached.at < REFERRALS_TTL_MS) {
+    myReferralsAsReferrer = cached.mine || [];
+    myReferralAsReferred = cached.toMe || null;
+    return;
   }
+
   try {
-    const q2 = query(collection(db, "referrals"), where("referrerId", "==", currentUser.uid));
-    const snap2 = await getDocs(q2);
-    myReferralsAsReferrer = snap2.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const snap = await getDocs(query(collection(db, "referrals"), where("referrerId", "==", currentUser.uid)));
+    myReferralsAsReferrer = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     myReferralsAsReferrer.sort((a, b) => txDate(b).getTime() - txDate(a).getTime());
   } catch (e) {
-    myReferralsAsReferrer = [];
+    myReferralsAsReferrer = cached?.mine || [];
   }
+  myReferralAsReferred = cached?.toMe || null;
+  lsSet(key, { at: Date.now(), mine: myReferralsAsReferrer, toMe: myReferralAsReferred });
 }
 function renderReferralsPage() {
   $("referredDuplicateWarning").hidden = !(myReferralAsReferred?.duplicateIp && !myReferralAsReferred?.rewardCredited);
@@ -2783,16 +2895,11 @@ $("withdrawBankAccount").addEventListener("input", (e) => {
   checkAccountAndBank();
 });
 
+/* The user's own withdrawal list is mirrored in their user doc, so the
+   withdrawals collection is only ever written to — never queried. */
 async function loadWithdrawals() {
   if (!currentUser) { myWithdrawals = []; return; }
-  try {
-    const q = query(collection(db, "withdrawals"), where("userId", "==", currentUser.uid));
-    const snap = await getDocs(q);
-    myWithdrawals = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    myWithdrawals.sort((a, b) => txDate(b).getTime() - txDate(a).getTime());
-  } catch (e) {
-    myWithdrawals = [];
-  }
+  hydrateFromProfile();
 }
 
 function withdrawStatusMeta(status) {
@@ -2876,34 +2983,40 @@ async function submitWithdrawal(method, amount, details, btn) {
   }
   setLoading(btn, true);
   try {
-    await updateDoc(doc(db, "users", currentUser.uid), { [balanceField]: increment(-amount) });
     const feeField = method === "bank" ? "withdrawalFeeCash" : "withdrawalFeeAirtime";
     const fee = SITE_SETTINGS[feeField] || 0;
-    await addDoc(collection(db, "withdrawals"), {
+    const desc = method === "bank"
+      ? `Withdrawal — Bank transfer to ${details.accountNumber}`
+      : `Withdrawal — ₦${amount} ${details.network} airtime to ${details.phone}`;
+
+    /* One document so the admin can see and pay the request. */
+    const wRef = await addDoc(collection(db, "withdrawals"), {
       userId: currentUser.uid,
       userEmail: currentProfile?.email || currentUser.email || "",
       userName: currentProfile?.name || currentUser.displayName || "",
-      method,
-      amount,
-      fee,
-      details,
+      method, amount, fee, details,
       status: "pending",
       refunded: false,
       createdAt: serverTimestamp(),
     });
-    const desc = method === "bank"
-      ? `Withdrawal — Bank transfer to ${details.accountNumber}`
-      : `Withdrawal — ₦${amount} ${details.network} airtime to ${details.phone}`;
-    await addDoc(collection(db, "transactions"), {
-      userId: currentUser.uid,
-      type: "withdrawal",
-      amount: -amount,
-      description: desc,
-      createdAt: serverTimestamp(),
-    });
+
+    /* Deduct locally and mirror the request into the user doc, so the
+       withdrawals collection never has to be queried back. */
     currentProfile[balanceField] = available - amount;
+    if (!Array.isArray(currentProfile.withdrawalList)) currentProfile.withdrawalList = [];
+    currentProfile.withdrawalList.unshift({
+      id: wRef.id, method, amount, fee, details,
+      status: "pending", refunded: false, createdAt: Date.now(),
+    });
+    if (currentProfile.withdrawalList.length > WITHDRAW_MAX) currentProfile.withdrawalList.length = WITHDRAW_MAX;
+    addLedgerEntry("withdrawal", -amount, desc, { withdrawalId: wRef.id });
+    Store.touch();
+
+    /* Money left the balance — back it up now, ignoring the interval. */
+    await Store.sync(true);
+
+    hydrateFromProfile();
     renderDashboard(currentUser, currentProfile);
-    await Promise.all([loadWithdrawals(), loadTransactions()]);
     renderWithdrawPage();
     renderHistoryPage();
     renderActivity();
@@ -2963,181 +3076,73 @@ function updateWithdrawalFeeInfo(method) {
 $("withdrawBankAmount").addEventListener("input", () => updateWithdrawalFeeInfo("bank"));
 $("withdrawAirtimeAmount").addEventListener("input", () => updateWithdrawalFeeInfo("airtime"));
 
+/* Refunds are driven by the mirrored list in the user doc. When the
+   admin rejects a withdrawal it sets `rejected` on the user document
+   too, so this needs no query of its own. */
 async function refundRejectedWithdrawals() {
+  if (!currentProfile) return false;
   let refundedAny = false;
-  for (const w of myWithdrawals) {
+  for (const w of currentProfile.withdrawalList || []) {
     if (w.status !== "rejected" || w.refunded) continue;
-    try {
-      const balanceField = w.method === "bank" ? "cashBalance" : "airtimeBalance";
-      await updateDoc(doc(db, "users", currentUser.uid), { [balanceField]: increment(w.amount) });
-      await addDoc(collection(db, "transactions"), {
-        userId: currentUser.uid,
-        type: "withdrawal_refund",
-        amount: w.amount,
-        description: `Withdrawal request refunded (${w.method === "bank" ? "Bank Transfer" : "Airtime"})`,
-        createdAt: serverTimestamp(),
-      });
-      await updateDoc(doc(db, "withdrawals", w.id), { refunded: true });
-      w.refunded = true;
-      refundedAny = true;
-    } catch (e) {
-      break;
-    }
+    const balanceField = w.method === "bank" ? "cashBalance" : "airtimeBalance";
+    currentProfile[balanceField] = (currentProfile[balanceField] || 0) + w.amount;
+    addLedgerEntry("withdrawal_refund", w.amount, `Withdrawal request refunded (${w.method === "bank" ? "Bank Transfer" : "Airtime"})`, { withdrawalId: w.id });
+    w.refunded = true;
+    refundedAny = true;
   }
+  if (refundedAny) Store.touch();
   return refundedAny;
 }
 
-/* ---------------- crediting: task rewards + referral rewards ---------------- */
-async function creditApprovedTaskRewards() {
-  const approved = mySubmissionDocs.filter((s) => s.status === "approved");
-  if (!approved.length) return false;
-  let alreadyCreditedIds = new Set();
-  try {
-    const q = query(collection(db, "transactions"), where("userId", "==", currentUser.uid), where("type", "==", "task_reward"));
-    const snap = await getDocs(q);
-    snap.forEach((d) => { const data = d.data(); if (data.submissionId) alreadyCreditedIds.add(data.submissionId); });
-  } catch (e) {
-    return false;
-  }
-  let creditedAny = false;
-  for (const sub of approved) {
-    if (alreadyCreditedIds.has(sub.id)) continue;
-    const amount = Number(sub.reward) || 0;
-    if (amount <= 0) continue;
-    try {
-      await updateDoc(doc(db, "users", currentUser.uid), {
-        airtimeBalance: increment(amount),
-        totalEarned: increment(amount),
-        todayEarnings: increment(amount),
-      });
-      await addDoc(collection(db, "transactions"), {
-        userId: currentUser.uid,
-        type: "task_reward",
-        amount,
-        description: `Task reward — ${sub.taskName || "Task"}`,
-        submissionId: sub.id,
-        taskId: sub.taskId,
-        createdAt: serverTimestamp(),
-      });
-      creditedAny = true;
-    } catch (e) {
-      break;
-    }
-  }
-  return creditedAny;
-}
-async function syncMyReferralProgress() {
-  if (!myReferralAsReferred) return;
-  const myApprovedCount = mySubmissionDocs.filter((s) => s.status === "approved").length;
-  if (myApprovedCount > (myReferralAsReferred.approvedTaskCount || 0)) {
-    try {
-      await updateDoc(doc(db, "referrals", myReferralAsReferred.id), { approvedTaskCount: myApprovedCount });
-      myReferralAsReferred.approvedTaskCount = myApprovedCount;
-    } catch (e) { /* rule not deployed yet — ignore */ }
-  }
-}
-async function creditEligibleReferralRewards() {
-  let creditedAny = false;
-  const reward = Number(SITE_SETTINGS.referralReward) || 0;
-  for (const r of myReferralsAsReferrer) {
-    if (r.rewardCredited) continue;
-    if (r.duplicateIp) continue; // held for admin review — signed up from the same network as the referrer
-    try {
-      await updateDoc(doc(db, "users", currentUser.uid), {
-        cashBalance: increment(reward),
-        totalEarned: increment(reward),
-        todayEarnings: increment(reward),
-      });
-      await addDoc(collection(db, "transactions"), {
-        userId: currentUser.uid,
-        type: "referral_reward",
-        amount: reward,
-        description: `Referral reward — ${r.referredUserName || "a friend"} signed up`,
-        referralId: r.id,
-        createdAt: serverTimestamp(),
-      });
-      await updateDoc(doc(db, "referrals", r.id), { rewardCredited: true, status: "approved" });
-      r.rewardCredited = true;
-      r.status = "approved";
-      creditedAny = true;
-    } catch (e) {
-      break;
-    }
-  }
-  return creditedAny;
-}
+/* ---------------- crediting: referral rewards + refunds ----------------
 
-async function approvePendingReferralsForAllUsers() {
-  try {
-    const snap = await getDocs(query(collection(db, "referrals"), where("rewardCredited", "==", false)));
-    const pending = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((r) => !r.duplicateIp);
-    if (!pending.length) return;
-    const reward = Number(SITE_SETTINGS.referralReward) || 0;
-    for (const r of pending.slice(0, 50)) {
-      try {
-        await runTransaction(db, async (tx) => {
-          const refRef = doc(db, "referrals", r.id);
-          const refSnap = await tx.get(refRef);
-          if (!refSnap.exists() || refSnap.data().rewardCredited) return;
-          const referrerRef = doc(db, "users", r.referrerId);
-          tx.update(referrerRef, { cashBalance: increment(reward), totalEarned: increment(reward) });
-          tx.update(refRef, { rewardCredited: true, status: "approved", autoApprovedAt: serverTimestamp() });
-          const txRef = doc(collection(db, "transactions"));
-          tx.set(txRef, {
-            userId: r.referrerId,
-            type: "referral_reward",
-            amount: reward,
-            description: `Referral reward — ${r.referredUserName || "a friend"} signed up`,
-            referralId: r.id,
-            createdAt: serverTimestamp(),
-          });
-        });
-      } catch (e) { /* skip on error */ }
-    }
-  } catch (e) { /* silent */ }
+   Removed from this file, deliberately:
+
+   - creditApprovedTaskRewards()  read every task_reward transaction on
+     every login (up to 400 reads/user). Task rewards are now credited
+     the instant the task is completed, in memory.
+   - approvePendingReferralsForAllUsers()  scanned the ENTIRE referrals
+     collection on every login, for every user.
+   - autoApproveOldSubmissions() + its 60-second setInterval  scanned the
+     ENTIRE pending-submissions collection once a minute, per open tab.
+     This was the single largest source of reads in the app.
+   - syncMyReferralProgress()  wrote a referral doc per login purely to
+     track a counter that no longer gates anything.                    */
+
+/* Credits any referral the user hasn't been paid for yet. Which
+   referrals were paid is recorded in the user's own document, so no
+   referral document ever has to be written back. */
+function creditEligibleReferralRewards() {
+  if (!currentProfile) return false;
+  const reward = Number(SITE_SETTINGS.referralReward) || 0;
+  if (reward <= 0) return false;
+  const paid = new Set(currentProfile.creditedReferrals || []);
+  let creditedAny = false;
+
+  for (const r of myReferralsAsReferrer) {
+    if (paid.has(r.id)) continue;
+    if (r.duplicateIp) continue; // held for admin review — same network as the referrer
+    currentProfile.cashBalance = (currentProfile.cashBalance || 0) + reward;
+    currentProfile.totalEarned = (currentProfile.totalEarned || 0) + reward;
+    currentProfile.todayEarnings = (currentProfile.todayEarnings || 0) + reward;
+    addLedgerEntry("referral_reward", reward, `Referral reward — ${r.referredUserName || "a friend"} signed up`, { referralId: r.id });
+    paid.add(r.id);
+    r.rewardCredited = true;
+    r.status = "approved";
+    creditedAny = true;
+  }
+
+  if (creditedAny) {
+    currentProfile.creditedReferrals = Array.from(paid);
+    Store.touch();
+  }
+  return creditedAny;
 }
-async function autoApproveOldSubmissions() {
-  if (!currentUser) return;
-  try {
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const q = query(collection(db, "taskSubmissions"), where("status", "==", "pending"), where("submittedAt", "<", fiveMinutesAgo));
-    const snap = await getDocs(q);
-    const toApprove = snap.docs.filter((d) => !d.data().autoApprovedAt);
-    if (!toApprove.length) return;
-    for (const doc2 of toApprove.slice(0, 10)) {
-      const data = doc2.data();
-      const reward = Number(data.reward) || 0;
-      try {
-        await runTransaction(db, async (tx) => {
-          const subRef = doc(db, "taskSubmissions", doc2.id);
-          const subSnap = await tx.get(subRef);
-          if (!subSnap.exists() || subSnap.data().status !== "pending") return;
-          const userRef = doc(db, "users", data.userId);
-          tx.update(userRef, { airtimeBalance: increment(reward), totalEarned: increment(reward), todayEarnings: increment(reward) });
-          tx.update(subRef, { status: "approved", reviewedAt: serverTimestamp(), autoApprovedAt: serverTimestamp() });
-          const txRef = doc(collection(db, "transactions"));
-          tx.set(txRef, {
-            userId: data.userId,
-            type: "task_reward",
-            amount: reward,
-            description: `Task reward — ${data.taskName || "Task"}`,
-            submissionId: doc2.id,
-            taskId: data.taskId,
-            createdAt: serverTimestamp(),
-          });
-        });
-      } catch (e) { /* skip on error */ }
-    }
-  } catch (e) { /* silent */ }
-}
-setInterval(autoApproveOldSubmissions, 60000);
 
 async function runCreditingPipeline() {
-  const a = await creditApprovedTaskRewards();
-  await syncMyReferralProgress();
-  const b = await creditEligibleReferralRewards();
-  const c = await refundRejectedWithdrawals();
-  return a || b || c;
+  const a = creditEligibleReferralRewards();
+  const b = await refundRejectedWithdrawals();
+  return a || b;
 }
 
 /* ---------------- profile page ---------------- */
@@ -3172,8 +3177,8 @@ $("profileSaveBtn").addEventListener("click", async () => {
   setLoading(btn, true);
   try {
     await updateProfile(currentUser, { displayName: newName });
-    await updateDoc(doc(db, "users", currentUser.uid), { name: newName });
-    currentProfile = { ...currentProfile, name: newName };
+    currentProfile.name = newName;
+    Store.touch(); // saved locally now, backed up on the next sync
     renderDashboard(currentUser, currentProfile);
     renderProfilePage();
     haptic(15);
@@ -3216,10 +3221,7 @@ $("telegramPromptJoinBtn").addEventListener("click", async () => {
   haptic();
   closeTelegramPrompt();
   if (!currentUser) return;
-  if (currentProfile) currentProfile.telegramJoined = true;
-  try {
-    await updateDoc(doc(db, "users", currentUser.uid), { telegramJoined: true });
-  } catch (e) { /* best effort — if this fails it'll just show again next session */ }
+  if (currentProfile) { currentProfile.telegramJoined = true; Store.touch(); }
 });
 
 /* ---------------- policy modals ---------------- */
@@ -3316,8 +3318,23 @@ onAuthStateChanged(auth, async (user) => {
       await signOut(auth);
       return;
     }
+
+    /* The browser owns the newer copy whenever this device has earned
+       something the server hasn't backed up yet. `rev` decides. */
+    const serverProfile = profile;
+    const local = Store.loadLocal(user.uid);
+    if (local && Number(local.rev || 0) > Number(serverProfile?.rev || 0)) {
+      profile = local;
+      Store.dirty = true;
+    }
+
     currentUser = user;
     currentProfile = profile;
+    /* Admin refunds and status changes always come from the server copy,
+       whichever side won above. */
+    applyPendingCredits(serverProfile);
+    Store.saveLocal();
+
     renderDashboard(user, profile);
     renderRoute();
     refreshIcons();
@@ -3325,23 +3342,17 @@ onAuthStateChanged(auth, async (user) => {
 
     if (isNewProfile) await finalizeNewUserExtras(user, profile);
 
-    await loadAllUserDataOnLogin(user.uid);
-    await Promise.all([loadTasks(), loadReferrals(), loadWithdrawals()]);
-    const credited = await runCreditingPipeline();
-    approvePendingReferralsForAllUsers().catch(() => {});
-    await loadReferrals();
-    if (credited) {
-      try {
-        const freshSnap = await getDoc(doc(db, "users", user.uid));
-        if (freshSnap.exists()) currentProfile = freshSnap.data();
-      } catch (e) { /* keep in-memory profile */ }
-      renderDashboard(user, currentProfile);
-      await loadWithdrawals();
-    }
-    await loadTransactions();
+    /* No further Firestore reads: tasks come from the weekly config
+       cache, everything else is already inside the profile. */
+    await loadTasks();
+    hydrateFromProfile();
+
+    await runCreditingPipeline();
+    await Store.sync(); // respects SYNC_MIN_HOURS — usually a no-op
+
+    renderDashboard(user, currentProfile);
     renderActivity();
     renderHistoryPage();
-    renderReferralsPage();
     renderProfilePage();
     renderWithdrawPage();
   } else {
