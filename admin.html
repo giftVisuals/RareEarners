@@ -1777,7 +1777,9 @@ async function loadAirtimeWalletBalance() {
   if (data && typeof data.balance === "number") {
     el.textContent = `GeoDnaTech wallet balance: ₦${formatMoney(data.balance)}`;
   } else {
-    el.textContent = "Could not fetch GeoDnaTech wallet balance.";
+    const errorMsg = data?.error || "Could not fetch wallet balance.";
+    el.textContent = `⚠️ ${errorMsg}`;
+    console.error("GeoDnaTech balance error:", errorMsg);
   }
 }
 
