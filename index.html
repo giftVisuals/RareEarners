@@ -2224,7 +2224,7 @@ async function handleSubmitProof(taskId, fileInput, submitBtn) {
     haptic(15);
     toast("Screenshot verified! Reward credited in 3 minutes.", "success");
 
-    // Auto-credit after 3 minutes (ZERO Firestore cost until session end)
+    // Auto-credit after 3 minutes (0 Firestore reads/writes - all queued)
     setTimeout(async () => {
       if (!currentUser) return;
       try {
@@ -2233,21 +2233,36 @@ async function handleSubmitProof(taskId, fileInput, submitBtn) {
           currentProfile.totalEarned = (currentProfile.totalEarned || 0) + reward;
           currentProfile.todayEarnings = (currentProfile.todayEarnings || 0) + reward;
         }
-        // Queue for batch write (will sync on logout or periodic flush)
+        // Queue balance update (no immediate write)
         batchQueue.add({
           type: 'update',
           path: `users/${currentUser.uid}`,
           data: { airtimeBalance: increment(reward), totalEarned: increment(reward), todayEarnings: increment(reward) }
         });
-        await addDoc(collection(db, "transactions"), {
+        // Queue transaction creation (no immediate write - deferred 30s)
+        const txRef = doc(collection(db, "transactions"));
+        batchQueue.add({
+          type: 'set',
+          path: `transactions/${txRef.id}`,
+          data: {
+            userId: currentUser.uid,
+            type: "task_reward",
+            amount: reward,
+            description: `Task reward — ${task?.name || "Task"}`,
+            taskId: taskId,
+            createdAt: serverTimestamp(),
+          }
+        });
+        // Update in-memory transaction (no Firestore read)
+        myTransactions.unshift({
+          id: txRef.id,
           userId: currentUser.uid,
           type: "task_reward",
           amount: reward,
           description: `Task reward — ${task?.name || "Task"}`,
           taskId: taskId,
-          createdAt: serverTimestamp(),
+          createdAt: new Date(),
         });
-        await loadTransactions();
         renderActivity();
       } catch (e) { console.error('Auto-credit failed:', e); }
     }, 3 * 60 * 1000);
