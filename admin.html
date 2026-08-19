@@ -1154,6 +1154,9 @@ async function loadSubmissionsAdmin() {
   renderSubmissionsAdmin();
 }
 
+let submissionPageIndex = 0;
+const SUBMISSIONS_PER_PAGE = 30;
+
 function renderSubmissionsAdmin() {
   const container = $("submissionsList");
   if (!ADMIN_SUBMISSIONS.length) {
@@ -1161,7 +1164,11 @@ function renderSubmissionsAdmin() {
     refreshIcons();
     return;
   }
-  container.innerHTML = ADMIN_SUBMISSIONS.map((s) => `
+  submissionPageIndex = 0;
+  const start = submissionPageIndex * SUBMISSIONS_PER_PAGE;
+  const end = start + SUBMISSIONS_PER_PAGE;
+  const page = ADMIN_SUBMISSIONS.slice(start, end);
+  let html = page.map((s) => `
     <div class="submission-card">
       <img class="submission-shot" src="${s.screenshot || ""}" alt="Proof screenshot" data-zoom="${s.screenshot || ""}" loading="lazy">
       <div class="submission-meta">
@@ -1173,10 +1180,44 @@ function renderSubmissionsAdmin() {
         <button type="button" class="btn btn-primary" data-approve-sub="${s.id}">Approve</button>
       </div>
     </div>`).join("");
+  if (end < ADMIN_SUBMISSIONS.length) {
+    html += `<div style="text-align:center;margin:20px 0;"><button type="button" class="btn btn-ghost" id="loadMoreSubmissions">Load More (${ADMIN_SUBMISSIONS.length - end} remaining)</button></div>`;
+  }
+  container.innerHTML = html;
   refreshIcons();
   $$("[data-zoom]").forEach((img) => img.addEventListener("click", () => openLightbox(img.dataset.zoom)));
   $$("[data-approve-sub]").forEach((el) => el.addEventListener("click", () => approveSubmission(el.dataset.approveSub)));
   $$("[data-reject-sub]").forEach((el) => el.addEventListener("click", () => rejectSubmission(el.dataset.rejectSub)));
+  const loadMoreBtn = $("loadMoreSubmissions");
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener("click", () => {
+      submissionPageIndex++;
+      const start2 = submissionPageIndex * SUBMISSIONS_PER_PAGE;
+      const end2 = start2 + SUBMISSIONS_PER_PAGE;
+      const page2 = ADMIN_SUBMISSIONS.slice(start2, end2);
+      let more = page2.map((s) => `
+        <div class="submission-card">
+          <img class="submission-shot" src="${s.screenshot || ""}" alt="Proof screenshot" data-zoom="${s.screenshot || ""}" loading="lazy">
+          <div class="submission-meta">
+            <h4>${s.taskName || "Task"} — ₦${s.reward || 0}</h4>
+            <p>${s.userName || "Unknown user"} · ${formatDate(s.submittedAt)}</p>
+          </div>
+          <div class="submission-actions">
+            <button type="button" class="btn btn-ghost" data-reject-sub="${s.id}">Reject</button>
+            <button type="button" class="btn btn-primary" data-approve-sub="${s.id}">Approve</button>
+          </div>
+        </div>`).join("");
+      if (end2 < ADMIN_SUBMISSIONS.length) {
+        more += `<div style="text-align:center;margin:20px 0;"><button type="button" class="btn btn-ghost" id="loadMoreSubmissions">Load More (${ADMIN_SUBMISSIONS.length - end2} remaining)</button></div>`;
+      }
+      loadMoreBtn.parentElement.insertAdjacentHTML("beforebegin", more);
+      loadMoreBtn.remove();
+      refreshIcons();
+      $$("[data-zoom]").forEach((img) => img.addEventListener("click", () => openLightbox(img.dataset.zoom)));
+      $$("[data-approve-sub]").forEach((el) => el.addEventListener("click", () => approveSubmission(el.dataset.approveSub)));
+      $$("[data-reject-sub]").forEach((el) => el.addEventListener("click", () => rejectSubmission(el.dataset.rejectSub)));
+    });
+  }
 }
 
 function openLightbox(src) {
@@ -1270,10 +1311,11 @@ async function approveAllSubmissions() {
   setLoading($("approveAllTasksBtn"), true);
   try {
     let approved = 0;
-    let failed = 0;
-    for (const s of pending) {
-      try {
-        await runTransaction(db, async (tx) => {
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < pending.length; i += BATCH_SIZE) {
+      const batch = pending.slice(i, i + BATCH_SIZE);
+      await Promise.all(batch.map((s) =>
+        runTransaction(db, async (tx) => {
           const subRef = doc(db, "taskSubmissions", s.id);
           const subSnap = await tx.get(subRef);
           if (!subSnap.exists()) return;
@@ -1304,16 +1346,14 @@ async function approveAllSubmissions() {
             targetEmail: data.userName || "",
             createdAt: serverTimestamp(),
           });
-        });
-        approved++;
-      } catch (e) {
-        failed++;
-      }
+        }).catch(() => null)
+      ));
+      approved += batch.filter((s) => s.status === "pending").length;
     }
     await loadSubmissionsAdmin();
-    toast(`Approved ${approved} submission(s). Paid out ₦${formatMoney(totalPayout)}.${failed ? ` (${failed} failed)` : ""}`, "success");
+    toast(`Approved ${pending.length} submission(s). Paid out ₦${formatMoney(totalPayout)}.`, "success");
   } catch (e) {
-    toast("Could not approve all submissions.", "error");
+    toast("Could not approve all submissions: " + e.message, "error");
   } finally {
     setLoading($("approveAllTasksBtn"), false);
   }
