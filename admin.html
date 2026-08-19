@@ -2029,25 +2029,26 @@ async function refreshOverview() {
 async function renderOverviewQuick() {
   try {
     const [usersSnap, subSnap, tasksSnap, wSnap, flagSnap] = await Promise.all([
-      getDocs(query(collection(db, "users"), limit(1))),
-      getDocs(query(collection(db, "taskSubmissions"), where("status", "==", "pending"), limit(1))),
-      getDocs(query(collection(db, "tasks"), limit(1))),
-      getDocs(query(collection(db, "withdrawals"), where("status", "==", "pending"), limit(1))),
-      getDocs(query(collection(db, "flaggedReferrals"), limit(1))),
+      getDocs(query(collection(db, "users"))),
+      getDocs(query(collection(db, "taskSubmissions"), where("status", "==", "pending"))),
+      getDocs(query(collection(db, "tasks"))),
+      getDocs(query(collection(db, "withdrawals"), where("status", "==", "pending"))),
+      getDocs(query(collection(db, "flaggedReferrals"))),
     ]);
-    const userCount = (await getDoc(doc(db, "stats", "summary"))).data()?.totalUsers || "—";
-    const subCount = (await getDoc(doc(db, "stats", "summary"))).data()?.pendingSubmissions || "—";
-    const taskCount = (await getDoc(doc(db, "stats", "summary"))).data()?.activeTasks || "—";
-    const withdrawCount = (await getDoc(doc(db, "stats", "summary"))).data()?.pendingWithdrawals || "—";
-    const withdrawAmount = (await getDoc(doc(db, "stats", "summary"))).data()?.pendingAmount || "—";
-    const flagCount = (await getDoc(doc(db, "stats", "summary"))).data()?.flaggedReferrals || "—";
+    const userCount = usersSnap.size;
+    const subCount = subSnap.size;
+    const taskCount = tasksSnap.docs.filter((d) => d.data().active !== false).length;
+    const withdrawCount = wSnap.size;
+    const withdrawAmount = wSnap.docs.reduce((sum, d) => sum + (Number(d.data().amount) || 0), 0);
+    const flagCount = flagSnap.size;
     $("statUsers").textContent = userCount;
     $("statPendingSubmissions").textContent = subCount;
     $("statTasks").textContent = taskCount;
     $("statPendingWithdrawals").textContent = withdrawCount;
-    $("statPendingAmount").textContent = withdrawAmount === "—" ? "—" : formatMoney(withdrawAmount);
+    $("statPendingAmount").textContent = formatMoney(withdrawAmount);
     $("statFlaggedReferrals").textContent = flagCount;
   } catch (e) {
+    console.error("renderOverviewQuick error:", e);
     $("statUsers").textContent = "—";
     $("statPendingSubmissions").textContent = "—";
     $("statTasks").textContent = "—";

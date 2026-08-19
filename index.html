@@ -3251,7 +3251,8 @@ onAuthStateChanged(auth, async (user) => {
 
     await Promise.all([loadTasks(), loadReferrals(), loadWithdrawals()]);
     const credited = await runCreditingPipeline();
-    approvePendingReferralsForAllUsers().catch(() => {});
+    await approvePendingReferralsForAllUsers().catch(() => {});
+    await loadReferrals();
     if (credited) {
       try {
         const freshSnap = await getDoc(doc(db, "users", user.uid));
