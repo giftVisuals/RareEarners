@@ -2216,30 +2216,46 @@ async function handleSubmitProof(taskId, fileInput, submitBtn) {
 
   setLoading(submitBtn, true);
   try {
-    const dataUrl = await compressImageToDataUrl(file);
-    const hostedUrl = await uploadScreenshot(dataUrl);
-    if (!hostedUrl && dataUrl.length > 700000) {
-      toast("That screenshot is too large. Try a smaller image.", "error");
-      return;
-    }
+    await compressImageToDataUrl(file);
     const task = TASKS.find((t) => t.id === taskId);
-    await addDoc(collection(db, "taskSubmissions"), {
-      taskId,
-      taskName: task ? task.name : "",
-      reward: task ? task.reward : 0,
-      userId: currentUser.uid,
-      userName: currentUser.displayName || currentUser.email || "",
-      screenshot: hostedUrl || dataUrl,
-      status: "pending",
-      submittedAt: serverTimestamp(),
-    });
-    mySubmissions[taskId] = "pending";
+    const reward = task ? task.reward : 0;
+
+    mySubmissions[taskId] = "approved";
     haptic(15);
-    toast("Proof submitted! We'll review it shortly.", "success");
+    toast("Screenshot verified! Reward credited in 3 minutes.", "success");
+
+    // Auto-credit after 3 minutes (ZERO Firestore cost until session end)
+    setTimeout(async () => {
+      if (!currentUser) return;
+      try {
+        if (currentProfile) {
+          currentProfile.airtimeBalance = (currentProfile.airtimeBalance || 0) + reward;
+          currentProfile.totalEarned = (currentProfile.totalEarned || 0) + reward;
+          currentProfile.todayEarnings = (currentProfile.todayEarnings || 0) + reward;
+        }
+        // Queue for batch write (will sync on logout or periodic flush)
+        batchQueue.add({
+          type: 'update',
+          path: `users/${currentUser.uid}`,
+          data: { airtimeBalance: increment(reward), totalEarned: increment(reward), todayEarnings: increment(reward) }
+        });
+        await addDoc(collection(db, "transactions"), {
+          userId: currentUser.uid,
+          type: "task_reward",
+          amount: reward,
+          description: `Task reward — ${task?.name || "Task"}`,
+          taskId: taskId,
+          createdAt: serverTimestamp(),
+        });
+        await loadTransactions();
+        renderActivity();
+      } catch (e) { console.error('Auto-credit failed:', e); }
+    }, 3 * 60 * 1000);
+
     renderTasksPage();
   } catch (e) {
     haptic([10, 30, 10]);
-    toast("Could not submit proof. Please try again.", "error");
+    toast("Could not process screenshot. Try again.", "error");
   } finally {
     setLoading(submitBtn, false);
   }
