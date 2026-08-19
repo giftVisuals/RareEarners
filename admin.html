@@ -990,7 +990,7 @@ async function uploadTaskImage(file) {
 async function backendApiRequest(path, options = {}) {
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 20000);
+    const timer = setTimeout(() => controller.abort(), 30000);
     const res = await fetch(`${IMAGE_UPLOAD_API}${path}`, {
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
@@ -1001,7 +1001,8 @@ async function backendApiRequest(path, options = {}) {
     if (!res.ok) return { error: data.error || `Request failed (${res.status}).` };
     return data;
   } catch (e) {
-    return { error: "Could not reach the airtime service." };
+    console.error("Backend API request failed:", path, e.message);
+    return { error: `Connection error: ${e.message}` };
   }
 }
 
