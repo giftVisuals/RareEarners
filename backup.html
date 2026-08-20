@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tasklily — Airtime Backup</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="https://i.postimg.cc/mkTG5xt3/file-0000000095c081f4a26eb331b9113b67.png">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+<style>
+  :root{
+    --primary:#DC2F45;--primary-dark:#A01F32;--primary-light:#F5D4D8;
+    --bg:#F8FAFC;--text:#0F172A;--text-muted:#64748B;--white:#FFFFFF;
+    --border:rgba(15,23,42,.08);--border-strong:rgba(15,23,42,.14);
+    --shadow-md:0 8px 24px rgba(15,23,42,.08);--shadow-lg:0 20px 48px rgba(15,23,42,.12);
+    --danger:#DC2626;--danger-light:#FEE2E2;--ease:cubic-bezier(.22,.8,.28,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+  input{font-family:inherit;}
+  [hidden]{display:none !important;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:12px;font-size:15px;font-weight:600;transition:transform .15s var(--ease),opacity .15s;white-space:nowrap;}
+  .btn:active{transform:translateY(1px) scale(.97);}
+  .btn-primary{background:linear-gradient(180deg,var(--primary),var(--primary-dark));color:#fff;}
+  .btn-primary:disabled{opacity:.6;}
+  .btn-ghost{background:#fff;color:var(--text);border:1px solid var(--border-strong);}
+  .btn-danger{background:linear-gradient(180deg,#EF4444,#B91C1C);color:#fff;}
+  .btn-block{width:100%;}
+  .btn svg{width:16px;height:16px;flex-shrink:0;}
+  .spinner{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .field{margin-bottom:16px;text-align:left;}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;}
+  .field input{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border-strong);background:#fff;font-size:15px;}
+  .field input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-light);}
+  .field-error{display:none;font-size:12.5px;color:var(--danger);margin-top:6px;}
+  .field-error.show{display:block;}
+
+  .center-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .auth-card{width:100%;max-width:420px;border-radius:24px;padding:36px 32px;background:#fff;border:1px solid var(--border);box-shadow:var(--shadow-md);}
+  .auth-heading{text-align:center;margin-bottom:22px;}
+  .auth-heading h1{font-size:20px;font-weight:800;margin-bottom:6px;}
+  .auth-heading p{font-size:13.5px;color:var(--text-muted);}
+
+  #toastRoot{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;width:min(380px,92vw);}
+  .toast{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:var(--text);color:#fff;font-size:13.5px;font-weight:500;box-shadow:var(--shadow-lg);}
+  .toast.success{background:var(--primary-dark);}
+  .toast.error{background:var(--danger);}
+  .toast svg{width:18px;height:18px;flex-shrink:0;}
+
+  .page{max-width:640px;margin:0 auto;padding:18px 16px 60px;}
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;}
+  .page-head h2{font-size:19px;font-weight:800;}
+  .page-head p{font-size:12.5px;color:var(--text-muted);margin-top:2px;}
+  .icon-btn{width:38px;height:38px;border-radius:10px;background:#fff;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;}
+  .icon-btn svg{width:16px;height:16px;}
+
+  .empty-state{text-align:center;padding:40px 14px;color:var(--text-muted);}
+  .empty-state svg{width:32px;height:32px;margin-bottom:10px;opacity:.5;}
+
+  .wcard{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;}
+  .wcard h4{font-size:16px;font-weight:800;}
+  .wcard p{font-size:13px;color:var(--text-muted);margin-top:3px;}
+  .wcard .amt{font-size:20px;font-weight:800;color:var(--primary-dark);margin:10px 0 4px;}
+  .wcard .actions{display:flex;gap:8px;margin-top:12px;}
+  .wcard .actions .btn{flex:1;}
+</style>
+</head>
+<body>
+
+<div id="toastRoot"></div>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="center-screen">
+  <div class="auth-card">
+    <div class="auth-heading">
+      <h1>Airtime Backup</h1>
+      <p>Admin login — pending airtime withdrawals only.</p>
+    </div>
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" autocomplete="username" placeholder="admin@tasklily.com">
+        <div class="field-error" id="loginEmailError"></div>
+      </div>
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••">
+        <div class="field-error" id="loginPasswordError"></div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn"><span class="btn-label">Log in</span></button>
+    </form>
+  </div>
+</div>
+
+<!-- NOT ADMIN -->
+<div id="notAdminScreen" class="center-screen" hidden>
+  <div class="auth-card">
+    <div class="auth-heading">
+      <h1>Not an admin</h1>
+      <p>This account isn't registered in the admins collection. Log in with your Tasklily admin account.</p>
+    </div>
+    <button type="button" class="btn btn-ghost btn-block" id="notAdminLogoutBtn">Log out</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="mainScreen" hidden class="page">
+  <div class="page-head">
+    <div><h2>Pending Airtime</h2><p>Auto-pay withdrawals waiting to be sent.</p></div>
+    <div style="display:flex;gap:8px;">
+      <button type="button" class="icon-btn" id="refreshBtn" title="Refresh"><svg data-lucide="refresh-cw"></svg></button>
+      <button type="button" class="icon-btn" id="logoutBtn" title="Log out"><svg data-lucide="log-out"></svg></button>
+    </div>
+  </div>
+  <div id="walletBalance" style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px;"></div>
+  <div id="list"><div class="empty-state"><svg data-lucide="loader-2"></svg><p>Loading…</p></div></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+import {
+  getAuth, setPersistence, browserLocalPersistence,
+  signInWithEmailAndPassword, onAuthStateChanged, signOut,
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, updateDoc, collection, getDocs, query, where,
+  serverTimestamp, runTransaction, arrayUnion,
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCx3IdRjDUPN9B-MFjvdZo5XJoptseFq3Q",
+  authDomain: "rareearners.firebaseapp.com",
+  projectId: "rareearners",
+  storageBucket: "rareearners.firebasestorage.app",
+  messagingSenderId: "141222061047",
+  appId: "1:141222061047:web:9c044716391c58d09dc4f2"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const IMAGE_UPLOAD_API = "https://rareearners-production.up.railway.app";
+
+const $ = (id) => document.getElementById(id);
+function refreshIcons() { if (window.lucide) window.lucide.createIcons(); }
+function toast(message, type = "default") {
+  const root = $("toastRoot");
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  const iconName = type === "success" ? "check-circle" : type === "error" ? "alert-circle" : "info";
+  el.innerHTML = `<svg data-lucide="${iconName}"></svg><span></span>`;
+  el.querySelector("span").textContent = message;
+  root.appendChild(el);
+  refreshIcons();
+  setTimeout(() => { el.style.transition = "opacity .25s"; el.style.opacity = "0"; setTimeout(() => el.remove(), 250); }, 3200);
+}
+function setLoading(btn, loading) {
+  if (!btn) return;
+  btn.disabled = loading;
+  if (loading) { btn.dataset.prevHtml = btn.innerHTML; btn.innerHTML = `<span class="spinner"></span>`; }
+  else if (btn.dataset.prevHtml) { btn.innerHTML = btn.dataset.prevHtml; delete btn.dataset.prevHtml; }
+  refreshIcons();
+}
+function formatMoney(n) { return (Number(n) || 0).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+async function backendApiRequest(path, options = {}) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30000);
+    const res = await fetch(`${IMAGE_UPLOAD_API}${path}`, { headers: { "Content-Type": "application/json" }, signal: controller.signal, ...options });
+    clearTimeout(timer);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { error: data.error || `Request failed (${res.status}).` };
+    return data;
+  } catch (e) { return { error: `Connection error: ${e.message}` }; }
+}
+
+let currentAdmin = null;
+
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("loginEmailError").classList.remove("show");
+  $("loginPasswordError").classList.remove("show");
+  const email = $("loginEmail").value.trim();
+  const password = $("loginPassword").value;
+  let valid = true;
+  if (!isValidEmail(email)) { $("loginEmailError").textContent = "Enter a valid email address."; $("loginEmailError").classList.add("show"); valid = false; }
+  if (!password) { $("loginPasswordError").textContent = "Enter your password."; $("loginPasswordError").classList.add("show"); valid = false; }
+  if (!valid) return;
+  const btn = $("loginSubmitBtn");
+  setLoading(btn, true);
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (err) {
+    const map = { "auth/invalid-credential": "Incorrect email or password.", "auth/wrong-password": "Incorrect email or password.", "auth/user-not-found": "No account found with that email.", "auth/too-many-requests": "Too many attempts. Try again later." };
+    toast(map[err?.code] || "Could not log in. Try again.", "error");
+  } finally { setLoading(btn, false); }
+});
+
+function showOnly(id) { ["loginScreen", "notAdminScreen", "mainScreen"].forEach((s) => { $(s).hidden = s !== id; }); }
+$("notAdminLogoutBtn").addEventListener("click", async () => { try { await signOut(auth); } catch (e) {} });
+$("logoutBtn").addEventListener("click", async () => { try { await signOut(auth); } catch (e) {} });
+
+async function checkAdminAccess(user) {
+  if (!user) { showOnly("loginScreen"); return; }
+  try {
+    const snap = await getDoc(doc(db, "admins", user.uid));
+    if (!snap.exists()) { showOnly("notAdminScreen"); return; }
+  } catch (e) { showOnly("notAdminScreen"); return; }
+  currentAdmin = user;
+  showOnly("mainScreen");
+  loadPendingAirtime();
+  loadWallet();
+}
+onAuthStateChanged(auth, (user) => { checkAdminAccess(user); });
+
+async function loadWallet() {
+  const el = $("walletBalance");
+  el.textContent = "Checking GeoDnaTech wallet balance…";
+  const data = await backendApiRequest("/api/geodnatech/balance");
+  if (data && typeof data.balance === "number") el.textContent = `GeoDnaTech wallet balance: ₦${formatMoney(data.balance)}`;
+  else el.textContent = `⚠️ ${data?.error || "Could not fetch wallet balance."}`;
+}
+
+let PENDING_AIRTIME = [];
+
+async function loadPendingAirtime() {
+  const list = $("list");
+  list.innerHTML = `<div class="empty-state"><svg data-lucide="loader-2"></svg><p>Loading…</p></div>`;
+  refreshIcons();
+  try {
+    const q = query(collection(db, "withdrawals"), where("method", "==", "airtime"), where("status", "==", "pending"));
+    const snap = await getDocs(q);
+    PENDING_AIRTIME = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    PENDING_AIRTIME.sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+  } catch (e) {
+    PENDING_AIRTIME = [];
+    toast("Could not load withdrawals.", "error");
+  }
+  renderList();
+}
+$("refreshBtn").addEventListener("click", () => { loadPendingAirtime(); loadWallet(); });
+
+function renderList() {
+  const list = $("list");
+  if (!PENDING_AIRTIME.length) {
+    list.innerHTML = `<div class="empty-state"><svg data-lucide="inbox"></svg><p>No pending airtime withdrawals.</p></div>`;
+    refreshIcons();
+    return;
+  }
+  list.innerHTML = PENDING_AIRTIME.map((w) => `
+    <div class="wcard" data-id="${w.id}">
+      <h4>${w.userName || w.userEmail || "Unknown user"}</h4>
+      <p>${w.details?.network || "—"} · ${w.details?.phone || "—"}</p>
+      <div class="amt">₦${formatMoney(Math.max(0, (w.amount || 0) - (w.fee || 0)))}${w.fee ? ` <span style="font-size:12px;color:var(--text-muted);font-weight:500;">(₦${formatMoney(w.fee)} fee)</span>` : ""}</div>
+      <div class="actions">
+        <button type="button" class="btn btn-ghost" data-reject="${w.id}">Reject</button>
+        <button type="button" class="btn btn-primary" data-approve="${w.id}"><span class="btn-label">Send Airtime</span></button>
+      </div>
+    </div>`).join("");
+  refreshIcons();
+  document.querySelectorAll("[data-approve]").forEach((el) => el.addEventListener("click", () => approveAirtime(el.dataset.approve, el)));
+  document.querySelectorAll("[data-reject]").forEach((el) => el.addEventListener("click", () => rejectWithdrawal(el.dataset.reject)));
+}
+
+async function approveAirtime(wId, btn) {
+  const w = PENDING_AIRTIME.find((x) => x.id === wId);
+  if (!w) return;
+  const network = w.details?.network;
+  const phone = w.details?.phone;
+  if (!network || !phone) { toast("Missing network/phone details.", "error"); return; }
+
+  let providerIds = {};
+  try {
+    const snap = await getDoc(doc(db, "settings", "site"));
+    providerIds = (snap.exists() ? snap.data().airtimeProviderIds : null) || {};
+  } catch (e) { toast("Could not load provider settings.", "error"); return; }
+  const networkId = providerIds[network];
+  if (!networkId) { toast(`No GeoDnaTech Network ID set for ${network}.`, "error"); return; }
+
+  if (!confirm(`Send ₦${formatMoney(Math.max(0, w.amount - (w.fee || 0)))} airtime to ${phone} (${network})?`)) return;
+
+  setLoading(btn, true);
+  try {
+    await runTransaction(db, async (tx) => {
+      const wRef = doc(db, "withdrawals", wId);
+      const wSnap = await tx.get(wRef);
+      if (!wSnap.exists()) throw new Error("Withdrawal not found.");
+      if (wSnap.data().status !== "pending") throw new Error("ALREADY_CLAIMED");
+      tx.update(wRef, { status: "processing", processingAt: serverTimestamp(), processingBy: currentAdmin?.email || "" });
+    });
+  } catch (e) {
+    toast(e?.message === "ALREADY_CLAIMED" ? "Already being processed." : "Could not start processing.", "error");
+    setLoading(btn, false);
+    loadPendingAirtime();
+    return;
+  }
+
+  const amountToSend = Math.max(0, w.amount - (w.fee || 0));
+  const result = await backendApiRequest("/api/geodnatech/airtime", { method: "POST", body: JSON.stringify({ network: networkId, mobile_number: phone, amount: amountToSend }) });
+  if (!result || result.error) {
+    try { await updateDoc(doc(db, "withdrawals", wId), { status: "pending" }); } catch (e) {}
+    toast(result?.error || "Airtime purchase failed. Left pending — you can retry.", "error");
+    setLoading(btn, false);
+    loadPendingAirtime();
+    return;
+  }
+
+  try {
+    await updateDoc(doc(db, "withdrawals", wId), { status: "completed", processedAt: serverTimestamp(), processedBy: currentAdmin?.email || "", providerReference: result.reference ? String(result.reference) : "" });
+    if (w.userId) {
+      try { await updateDoc(doc(db, "users", w.userId), { pendingCredits: arrayUnion({ id: `wc_${wId}`, amount: 0, statusOnly: true, withdrawalId: wId, status: "completed", at: Date.now() }) }); } catch (e) {}
+    }
+    try {
+      await (await import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js")).addDoc(collection(db, "adminLogs"), {
+        adminUid: currentAdmin?.uid || "", adminEmail: currentAdmin?.email || "", action: "withdrawal_approved",
+        targetType: "withdrawal", targetId: wId, amount: w.amount || 0, targetEmail: w.userEmail || "", createdAt: serverTimestamp(),
+      });
+    } catch (e) {}
+    toast("Airtime sent.", "success");
+    loadPendingAirtime();
+  } catch (e) {
+    toast("Airtime was sent, but the record could not be updated — check admin.html.", "error");
+  } finally { setLoading(btn, false); }
+}
+
+async function rejectWithdrawal(wId) {
+  const w = PENDING_AIRTIME.find((x) => x.id === wId);
+  if (!confirm(`Reject and refund ₦${formatMoney(w?.amount)} to ${w?.userName || w?.userEmail || "this user"}?`)) return;
+  try {
+    await runTransaction(db, async (tx) => {
+      const wRef = doc(db, "withdrawals", wId);
+      const wSnap = await tx.get(wRef);
+      if (!wSnap.exists()) throw new Error("Withdrawal not found.");
+      const data = wSnap.data();
+      if (data.status !== "pending") throw new Error("Already processed.");
+      const userRef = doc(db, "users", data.userId);
+      tx.update(userRef, { pendingCredits: arrayUnion({ id: `wr_${wId}`, field: "airtimeBalance", amount: data.amount, type: "withdrawal_refund", reason: "Withdrawal rejected — refunded", withdrawalId: wId, status: "rejected", at: Date.now() }) });
+      tx.update(wRef, { status: "rejected", refunded: true, processedAt: serverTimestamp(), processedBy: currentAdmin?.email || "" });
+    });
+    toast("Rejected and refunded.", "success");
+    loadPendingAirtime();
+  } catch (e) {
+    toast(e?.message || "Could not reject.", "error");
+  }
+}
+</script>
+</body>
+</html>
+
