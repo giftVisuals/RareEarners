@@ -2166,6 +2166,8 @@ async function loadFlaggedReferralsAdmin() {
   } catch (e) {
     ADMIN_FLAGGED_REFERRALS = [];
   }
+  renderFlaggedReferralsAdmin();
+  $("statFlaggedReferrals").textContent = ADMIN_FLAGGED_REFERRALS.length || "—";
 }
 function renderFlaggedReferralsAdmin() {
   const container = $("flaggedReferralsList");
