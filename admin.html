@@ -2275,9 +2275,9 @@ async function loadOverviewLogs() {
   const container = $("overviewLogsList");
   const viewMoreBtn = $("viewMoreActivityBtn");
   try {
-    const snap = await getDocs(collection(db, "adminLogs"));
-    ALL_ADMIN_LOGS = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+    const q = query(collection(db, "adminLogs"), orderBy("createdAt", "desc"), limit(50));
+    const snap = await getDocs(q);
+    ALL_ADMIN_LOGS = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     if (!ALL_ADMIN_LOGS.length) {
       container.innerHTML = `<div class="empty-state"><svg data-lucide="history"></svg><p>No admin activity yet.</p></div>`;
       viewMoreBtn.hidden = true;
